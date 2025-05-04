@@ -3,9 +3,8 @@ import redis, { testRedisConnection } from "@/lib/redis"
 
 // Coordenadas precisas de los spots de kitesurf
 const SPOT_COORDINATES: Record<string, { lat: number; lon: number }> = {
-  "la-ballena": { lat: 42.1777, lon: 3.1257 }, // Sant Pere Pescador
-  "kitesurf-point": { lat: 42.183, lon: 3.124 },
-  "can-martinet": { lat: 42.172, lon: 3.127 },
+  aquarius: { lat: 42.177, lon: 3.107 }, // Aquarius - coordenadas convertidas de 4210.62n, 306.420e
+  "la-gaviota": { lat: 42.226, lon: 3.119 }, // La Gaviota - coordenadas convertidas de 4213.579n, 307.146e
 }
 
 export async function GET(request: NextRequest) {
@@ -72,6 +71,9 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "X-Data-Source": "openweathermap",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       })
     } catch (weatherError) {
@@ -115,22 +117,38 @@ async function getOpenWeatherData(spot: string) {
   }
 
   // Obtener previsión de 5 días con datos cada 3 horas
-  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`
+  // Añadimos parámetros para obtener datos más precisos
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ca&exclude=minutely,alerts`
 
-  const response = await fetch(url, { next: { revalidate: 3600 } }) // Revalidar cada hora
+  // También obtenemos datos actuales para mayor precisión
+  const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ca`
 
-  if (!response.ok) {
-    throw new Error(`Error en la API de OpenWeatherMap: ${response.status} ${response.statusText}`)
+  const [forecastResponse, currentResponse] = await Promise.all([
+    fetch(url, { next: { revalidate: 1800 } }), // Revalidar cada 30 minutos
+    fetch(currentUrl, { next: { revalidate: 1800 } }),
+  ])
+
+  if (!forecastResponse.ok) {
+    throw new Error(
+      `Error en la API de OpenWeatherMap (forecast): ${forecastResponse.status} ${forecastResponse.statusText}`,
+    )
   }
 
-  const data = await response.json()
+  if (!currentResponse.ok) {
+    throw new Error(
+      `Error en la API de OpenWeatherMap (current): ${currentResponse.status} ${currentResponse.statusText}`,
+    )
+  }
+
+  const forecastData = await forecastResponse.json()
+  const currentData = await currentResponse.json()
 
   // Transformar datos al formato que espera la aplicación
-  return transformOpenWeatherData(data)
+  return transformOpenWeatherData(forecastData, currentData)
 }
 
 // Función para transformar datos de OpenWeatherMap al formato de la aplicación
-function transformOpenWeatherData(data: any) {
+function transformOpenWeatherData(data: any, currentData: any) {
   // Verificar que tenemos datos válidos
   if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
     throw new Error("Datos de OpenWeatherMap inválidos")
@@ -139,6 +157,42 @@ function transformOpenWeatherData(data: any) {
   // Agrupar por día
   const dayMap = new Map()
 
+  // Primero, añadir datos actuales para la hora actual
+  const now = new Date()
+  const currentDateStr = now.toISOString().split("T")[0]
+  const currentHours = now.getHours()
+  const currentTimeStr = `${currentHours.toString().padStart(2, "0")}:00`
+
+  // Convertir velocidad del viento de m/s a nudos para datos actuales
+  const currentWindSpeedMps = currentData.wind.speed
+  const currentWindSpeedKnots = Math.round(currentWindSpeedMps * 1.94384)
+
+  // Convertir ráfagas de viento de m/s a nudos para datos actuales
+  const currentWindGustMps = currentData.wind.gust || currentWindSpeedMps * 1.5
+  const currentWindGustKnots = Math.round(currentWindGustMps * 1.94384)
+
+  // Crear objeto para datos actuales
+  const currentHourData = {
+    time: currentTimeStr,
+    windSpeed: currentWindSpeedKnots,
+    windDirection: currentData.wind.deg,
+    windGust: currentWindGustKnots,
+    temperature: Math.round(currentData.main.temp * 10) / 10,
+    humidity: currentData.main.humidity,
+    weather: currentData.weather[0].main,
+    weatherDescription: currentData.weather[0].description,
+    weatherIcon: currentData.weather[0].icon,
+    rain: currentData.rain ? currentData.rain["1h"] || 0 : 0,
+    clouds: currentData.clouds.all,
+  }
+
+  // Inicializar el mapa de días con los datos actuales
+  dayMap.set(currentDateStr, {
+    date: currentDateStr,
+    hours: [currentHourData],
+  })
+
+  // Luego, procesar los datos de pronóstico
   data.list.forEach((item: any) => {
     // Obtener fecha y hora
     const date = new Date(item.dt * 1000)
@@ -164,6 +218,11 @@ function transformOpenWeatherData(data: any) {
         windGust: windGustKnots,
         temperature: Math.round(item.main.temp * 10) / 10,
         humidity: item.main.humidity,
+        weather: item.weather[0].main,
+        weatherDescription: item.weather[0].description,
+        weatherIcon: item.weather[0].icon,
+        rain: item.rain ? (item.rain["3h"] || 0) / 3 : 0, // Convertir lluvia de 3h a 1h
+        clouds: item.clouds.all,
       }
 
       // Añadir al mapa de días
@@ -174,7 +233,13 @@ function transformOpenWeatherData(data: any) {
         })
       }
 
-      dayMap.get(dateStr).hours.push(hourData)
+      // Evitar duplicados (si ya tenemos datos actuales para esta hora)
+      const existingHours = dayMap.get(dateStr).hours
+      const existingHourIndex = existingHours.findIndex((h: any) => h.time === timeStr)
+
+      if (existingHourIndex === -1) {
+        dayMap.get(dateStr).hours.push(hourData)
+      }
     }
   })
 
@@ -367,8 +432,8 @@ function getFallbackData(spot: string) {
   // Ajustar datos según el spot seleccionado
   let adjustedData = JSON.parse(JSON.stringify(baseData))
 
-  if (spot === "kitesurf-point") {
-    // Kitesurf Point tiene vientos ligeramente más fuertes y más constantes
+  if (spot === "la-gaviota") {
+    // La Gaviota tiene vientos ligeramente más fuertes y más constantes
     adjustedData = adjustedData.map((day: any) => {
       day.hours = day.hours.map((hour: any) => {
         return {
@@ -380,8 +445,8 @@ function getFallbackData(spot: string) {
       })
       return day
     })
-  } else if (spot === "can-martinet") {
-    // Can Martinet tiene vientos ligeramente más débiles pero más constantes
+  } else if (spot === "aquarius") {
+    // Aquarius tiene vientos ligeramente más débiles pero más constantes
     adjustedData = adjustedData.map((day: any) => {
       day.hours = day.hours.map((hour: any) => {
         return {

@@ -2,18 +2,26 @@
 export async function getForecastData(spot: string) {
   try {
     // Validar que el spot sea una cadena válida
-    if (!spot || typeof spot !== "string" || !["la-ballena", "kitesurf-point", "can-martinet"].includes(spot)) {
+    if (!spot || typeof spot !== "string" || !["aquarius", "la-gaviota"].includes(spot)) {
       console.error("Spot inválido:", spot)
       // Fallback a un spot por defecto
-      spot = "la-ballena"
+      spot = "aquarius"
     }
 
     // Construir la URL con encodeURIComponent para asegurar que sea válida
-    const apiUrl = `/api/wind-data?spot=${encodeURIComponent(spot)}`
+    const timestamp = new Date().getTime() // Añadir timestamp para evitar caché
+    const apiUrl = `/api/wind-data?spot=${encodeURIComponent(spot)}&_t=${timestamp}`
     console.log("Llamando a API:", apiUrl)
 
     // Intentar obtener datos del backend con más información de depuración
-    const response = await fetch(apiUrl)
+    const response = await fetch(apiUrl, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    })
 
     // Registrar información sobre la respuesta para depuración
     console.log("Respuesta de API:", {
@@ -139,8 +147,8 @@ function getFallbackData(spot: string) {
   // Ajustar datos según el spot seleccionado
   let adjustedData = JSON.parse(JSON.stringify(baseData))
 
-  if (spot === "kitesurf-point") {
-    // Kitesurf Point tiene vientos ligeramente más fuertes y más constantes
+  if (spot === "la-gaviota") {
+    // La Gaviota tiene vientos ligeramente más fuertes y más constantes
     adjustedData = adjustedData.map((day: any) => {
       day.hours = day.hours.map((hour: any) => {
         return {
@@ -152,8 +160,8 @@ function getFallbackData(spot: string) {
       })
       return day
     })
-  } else if (spot === "can-martinet") {
-    // Can Martinet tiene vientos ligeramente más débiles pero más constantes
+  } else if (spot === "aquarius") {
+    // Aquarius tiene vientos ligeramente más débiles pero más constantes
     adjustedData = adjustedData.map((day: any) => {
       day.hours = day.hours.map((hour: any) => {
         return {

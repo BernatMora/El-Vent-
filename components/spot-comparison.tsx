@@ -26,9 +26,8 @@ export function SpotComparison() {
 
   // Lista de spots a comparar
   const spots = [
-    { id: "la-ballena", name: "La Ballena" },
-    { id: "kitesurf-point", name: "Kitesurf Point" },
-    { id: "can-martinet", name: "Can Martinet" },
+    { id: "aquarius", name: "Aquarius" },
+    { id: "la-gaviota", name: "La Gaviota" },
   ]
 
   useEffect(() => {
@@ -220,7 +219,7 @@ export function SpotComparison() {
           <div className="mt-4">
             {loading ? (
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
+                {[1, 2].map((i) => (
                   <Skeleton key={i} className="h-24 w-full" />
                 ))}
               </div>

@@ -18,6 +18,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Cloud, CloudRain, Sun, Umbrella } from "lucide-react"
 
 export function CurrentConditions() {
   const { selectedSpot } = useSpotStore()
@@ -254,6 +255,24 @@ export function CurrentConditions() {
     }
   }
 
+  // Función para renderizar el icono del clima
+  const renderWeatherIcon = () => {
+    if (!currentData || !currentData.weather) return null
+
+    const weather = currentData.weather.toLowerCase()
+    const rain = currentData.rain > 0
+
+    if (rain) {
+      return <CloudRain className="h-10 w-10 text-blue-500" />
+    } else if (weather === "clouds" || currentData.clouds > 70) {
+      return <Cloud className="h-10 w-10 text-gray-500" />
+    } else if (weather === "clear") {
+      return <Sun className="h-10 w-10 text-yellow-500" />
+    } else {
+      return <Cloud className="h-10 w-10 text-gray-400" />
+    }
+  }
+
   return (
     <div>
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -408,6 +427,43 @@ export function CurrentConditions() {
                     Ràfegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Información del clima */}
+            {!loading && currentData && (
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-6 rounded-lg border bg-gray-50 p-4">
+                <div className="flex items-center gap-2">
+                  {renderWeatherIcon()}
+                  <div>
+                    <div className="font-medium">
+                      {currentData.weatherDescription || (currentData.rain > 0 ? "Pluja" : "Sense dades")}
+                    </div>
+                    {currentData.rain > 0 && (
+                      <div className="text-sm text-blue-600">
+                        <Umbrella className="mr-1 inline-block h-4 w-4" />
+                        {currentData.rain.toFixed(1)} mm/h
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{currentData.temperature}°C</div>
+                  <div className="text-sm text-muted-foreground">Temperatura</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-xl font-medium">{currentData.humidity}%</div>
+                  <div className="text-sm text-muted-foreground">Humitat</div>
+                </div>
+
+                {currentData.clouds !== undefined && (
+                  <div className="text-center">
+                    <div className="text-xl font-medium">{currentData.clouds}%</div>
+                    <div className="text-sm text-muted-foreground">Núvols</div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

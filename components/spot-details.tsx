@@ -11,27 +11,21 @@ export function SpotDetails() {
     string,
     { description: string; bestWindDirection: string; bestTide: string; access: string }
   > = {
-    "la-ballena": {
-      description: "Zona principal de kitesurf en Sant Pere Pescador, con amplio espacio para montar el equipo.",
+    aquarius: {
+      description: "Zona principal de kitesurf en Aquarius, con amplio espacio para montar el equipo.",
       bestWindDirection: "NE, E, SE",
       bestTide: "Media y alta",
       access: "Fácil, con parking cercano",
     },
-    "kitesurf-point": {
+    "la-gaviota": {
       description: "Zona norte con condiciones más suaves, ideal para principiantes y días de viento moderado.",
       bestWindDirection: "E, SE",
       bestTide: "Media",
       access: "Medio, camino de arena",
     },
-    "can-martinet": {
-      description: "Zona sur con vientos más constantes, preferida por riders experimentados.",
-      bestWindDirection: "NE, E",
-      bestTide: "Baja y media",
-      access: "Difícil, camino estrecho",
-    },
   }
 
-  const details = spotDetails[selectedSpot] || spotDetails["la-ballena"]
+  const details = spotDetails[selectedSpot] || spotDetails["aquarius"]
 
   return (
     <Card>

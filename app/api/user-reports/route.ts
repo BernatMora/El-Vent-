@@ -3,9 +3,8 @@ import redis, { testRedisConnection } from "@/lib/redis"
 
 // Almacenamiento en memoria para fallback
 const memoryReports: Record<string, any[]> = {
-  "la-ballena": [],
-  "kitesurf-point": [],
-  "can-martinet": [],
+  aquarius: [],
+  "la-gaviota": [],
 }
 
 export async function GET(request: NextRequest) {
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
   const spot = searchParams.get("spot")
 
   // Validar el spot
-  if (!spot || !["la-ballena", "kitesurf-point", "can-martinet"].includes(spot)) {
+  if (!spot || !["aquarius", "la-gaviota"].includes(spot)) {
     return new Response(JSON.stringify({ error: "Spot no válido" }), {
       status: 400,
       headers: {
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
     const spot = searchParams.get("spot")
 
     // Validar el spot
-    if (!spot || !["la-ballena", "kitesurf-point", "can-martinet"].includes(spot)) {
+    if (!spot || !["aquarius", "la-gaviota"].includes(spot)) {
       return new Response(JSON.stringify({ error: "Spot no válido" }), {
         status: 400,
         headers: {

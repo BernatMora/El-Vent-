@@ -9,27 +9,21 @@ export function OptimalSessions() {
 
   // Datos de sesiones óptimas para cada spot
   const spotSessions: Record<string, { morning: boolean; afternoon: boolean; evening: boolean; bestDays: string[] }> = {
-    "la-ballena": {
+    aquarius: {
       morning: false,
       afternoon: true,
       evening: true,
       bestDays: ["Martes", "Miércoles", "Jueves"],
     },
-    "kitesurf-point": {
+    "la-gaviota": {
       morning: true,
       afternoon: true,
       evening: false,
       bestDays: ["Lunes", "Martes", "Viernes"],
     },
-    "can-martinet": {
-      morning: false,
-      afternoon: true,
-      evening: false,
-      bestDays: ["Miércoles", "Jueves", "Domingo"],
-    },
   }
 
-  const sessions = spotSessions[selectedSpot] || spotSessions["la-ballena"]
+  const sessions = spotSessions[selectedSpot] || spotSessions["aquarius"]
 
   return (
     <Card>

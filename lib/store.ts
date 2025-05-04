@@ -22,7 +22,7 @@ type SpotStore = {
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
-  selectedSpot: "la-ballena",
+  selectedSpot: "aquarius",
   userPreferences: {
     weight: 75,
     level: "intermediate",

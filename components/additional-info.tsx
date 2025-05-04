@@ -8,12 +8,11 @@ export function AdditionalInfo() {
 
   // Información adicional para cada spot
   const spotInfo: Record<string, { temperature: number; uvIndex: number; waterTemp: number }> = {
-    "la-ballena": { temperature: 25, uvIndex: 7, waterTemp: 22 },
-    "kitesurf-point": { temperature: 24, uvIndex: 6, waterTemp: 21 },
-    "can-martinet": { temperature: 26, uvIndex: 8, waterTemp: 23 },
+    aquarius: { temperature: 25, uvIndex: 7, waterTemp: 22 },
+    "la-gaviota": { temperature: 24, uvIndex: 6, waterTemp: 21 },
   }
 
-  const info = spotInfo[selectedSpot] || spotInfo["la-ballena"]
+  const info = spotInfo[selectedSpot] || spotInfo["aquarius"]
 
   return (
     <Card>

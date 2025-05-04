@@ -32,7 +32,10 @@ export default function Home() {
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <button
             className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              // Forzar recarga completa sin caché
+              window.location.href = window.location.href.split("?")[0] + "?refresh=" + new Date().getTime()
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

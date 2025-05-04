@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,6 +8,7 @@ import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Cloud, CloudRain, Sun } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -153,6 +153,24 @@ export function WindForecast() {
     return "Flux"
   }
 
+  // Función para renderizar el icono del clima
+  const renderWeatherIcon = (hour: any) => {
+    if (!hour || !hour.weather) return null
+
+    const weather = hour.weather.toLowerCase()
+    const rain = hour.rain > 0
+
+    if (rain) {
+      return <CloudRain className="h-5 w-5 text-blue-500" />
+    } else if (weather === "clouds" || hour.clouds > 70) {
+      return <Cloud className="h-5 w-5 text-gray-500" />
+    } else if (weather === "clear") {
+      return <Sun className="h-5 w-5 text-yellow-500" />
+    } else {
+      return null
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -186,12 +204,13 @@ export function WindForecast() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-5 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
+                    <div className="grid grid-cols-6 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
                       <div>Hora</div>
                       <div>Vent</div>
                       <div>Direcció</div>
                       <div>Ràfegues</div>
                       <div>Flux</div>
+                      <div>Clima</div>
                     </div>
                     {day.hours
                       .filter((hour: any) => {
@@ -201,7 +220,7 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-5 items-center gap-2 rounded-md border p-2 text-center"
+                          className="grid grid-cols-6 items-center gap-2 rounded-md border p-2 text-center"
                         >
                           <div className="font-medium">{hour.time}</div>
                           <div className="font-semibold text-blue-700">
@@ -219,6 +238,12 @@ export function WindForecast() {
                             <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
                           </div>
                           <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
+                          <div className="flex items-center justify-center">
+                            {renderWeatherIcon(hour)}
+                            {hour.rain > 0 && (
+                              <span className="ml-1 text-xs text-blue-600">{hour.rain.toFixed(1)} mm</span>
+                            )}
+                          </div>
                         </div>
                       ))}
                   </div>
