@@ -1,62 +1,137 @@
-// Simulación de datos de previsión basados en datos reales de Open Meteo para Sant Pere Pescador
+// Función para obtener datos de pronóstico
 export async function getForecastData(spot: string) {
-  // Simulamos una llamada a la API
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  try {
+    // Validar que el spot sea una cadena válida
+    if (!spot || typeof spot !== "string" || !["la-ballena", "kitesurf-point", "can-martinet"].includes(spot)) {
+      console.error("Spot inválido:", spot)
+      // Fallback a un spot por defecto
+      spot = "la-ballena"
+    }
 
-  // Datos base - Valores reales de Open Meteo para Sant Pere Pescador según la imagen compartida
+    // Construir la URL con encodeURIComponent para asegurar que sea válida
+    const apiUrl = `/api/wind-data?spot=${encodeURIComponent(spot)}`
+    console.log("Llamando a API:", apiUrl)
+
+    // Intentar obtener datos del backend con más información de depuración
+    const response = await fetch(apiUrl)
+
+    // Registrar información sobre la respuesta para depuración
+    console.log("Respuesta de API:", {
+      status: response.status,
+      statusText: response.statusText,
+      source: response.headers.get("X-Data-Source") || "unknown",
+      headers: Object.fromEntries(response.headers.entries()),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener datos: ${response.status} ${response.statusText}`)
+    }
+
+    // Intentar analizar la respuesta como JSON con manejo de errores mejorado
+    let data
+    try {
+      const text = await response.text()
+      console.log("Texto de respuesta (primeros 200 caracteres):", text.substring(0, 200))
+      data = JSON.parse(text)
+
+      // Verificar que los datos tengan el formato esperado
+      if (!Array.isArray(data) || data.length === 0) {
+        console.error("Datos de pronóstico inválidos:", data)
+        throw new Error("Formato de datos inválido")
+      }
+
+      // Asegurarse de que los valores de viento sean números positivos
+      data.forEach((day) => {
+        if (Array.isArray(day.hours)) {
+          day.hours.forEach((hour) => {
+            // Asegurarse de que windSpeed sea un número positivo
+            if (typeof hour.windSpeed !== "number" || isNaN(hour.windSpeed)) {
+              hour.windSpeed = 0
+            } else {
+              hour.windSpeed = Math.max(0, hour.windSpeed)
+            }
+
+            // Asegurarse de que windGust sea un número positivo
+            if (typeof hour.windGust !== "number" || isNaN(hour.windGust)) {
+              hour.windGust = hour.windSpeed * 1.2
+            } else {
+              hour.windGust = Math.max(0, hour.windGust)
+            }
+          })
+        }
+      })
+
+      console.log("Datos procesados correctamente")
+    } catch (parseError) {
+      console.error("Error al analizar JSON:", parseError)
+      throw new Error("La respuesta no es un JSON válido")
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error obteniendo datos de pronóstico:", error)
+    // Fallback a datos simulados en caso de error
+    console.log("Usando datos de fallback")
+    return getFallbackData(spot)
+  }
+}
+
+// Simulación de datos de previsión (fallback)
+function getFallbackData(spot: string) {
+  // Datos base - Valores simulados con viento real
   const baseData = [
     {
       date: new Date().toISOString().split("T")[0],
       hours: [
-        { time: "09:00", windSpeed: 2, windDirection: 315, windGust: 5, temperature: 14.3, humidity: 89 },
-        { time: "10:00", windSpeed: 1, windDirection: 315, windGust: 7, temperature: 15.4, humidity: 82 },
-        { time: "11:00", windSpeed: 1, windDirection: 45, windGust: 7, temperature: 17.5, humidity: 74 },
-        { time: "12:00", windSpeed: 6, windDirection: 90, windGust: 12, temperature: 18.5, humidity: 70 },
-        { time: "13:00", windSpeed: 6, windDirection: 90, windGust: 12, temperature: 19.4, humidity: 66 },
-        { time: "14:00", windSpeed: 8, windDirection: 90, windGust: 14, temperature: 20.1, humidity: 60 },
-        { time: "15:00", windSpeed: 10, windDirection: 90, windGust: 17, temperature: 19.9, humidity: 63 },
-        { time: "16:00", windSpeed: 11, windDirection: 90, windGust: 19, temperature: 19.3, humidity: 67 },
-        { time: "17:00", windSpeed: 11, windDirection: 90, windGust: 19, temperature: 18.9, humidity: 70 },
-        { time: "18:00", windSpeed: 9, windDirection: 90, windGust: 17, temperature: 18.5, humidity: 73 },
-        { time: "19:00", windSpeed: 7, windDirection: 135, windGust: 15, temperature: 18.0, humidity: 76 },
-        { time: "20:00", windSpeed: 6, windDirection: 135, windGust: 12, temperature: 17.2, humidity: 79 },
-        { time: "21:00", windSpeed: 5, windDirection: 135, windGust: 10, temperature: 15.8, humidity: 90 },
+        { time: "09:00", windSpeed: 8, windDirection: 90, windGust: 12, temperature: 14.3, humidity: 89 },
+        { time: "10:00", windSpeed: 10, windDirection: 90, windGust: 15, temperature: 15.4, humidity: 82 },
+        { time: "11:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 17.5, humidity: 74 },
+        { time: "12:00", windSpeed: 14, windDirection: 90, windGust: 20, temperature: 18.5, humidity: 70 },
+        { time: "13:00", windSpeed: 15, windDirection: 90, windGust: 22, temperature: 19.4, humidity: 66 },
+        { time: "14:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 20.1, humidity: 60 },
+        { time: "15:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 19.9, humidity: 63 },
+        { time: "16:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 19.3, humidity: 67 },
+        { time: "17:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 18.9, humidity: 70 },
+        { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15, temperature: 18.5, humidity: 73 },
+        { time: "19:00", windSpeed: 8, windDirection: 90, windGust: 12, temperature: 18.0, humidity: 76 },
+        { time: "20:00", windSpeed: 6, windDirection: 90, windGust: 9, temperature: 17.2, humidity: 79 },
+        { time: "21:00", windSpeed: 4, windDirection: 90, windGust: 6, temperature: 15.8, humidity: 90 },
       ],
     },
     {
       date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
       hours: [
-        { time: "09:00", windSpeed: 3, windDirection: 315, windGust: 5, temperature: 15.0, humidity: 85 },
-        { time: "10:00", windSpeed: 2, windDirection: 315, windGust: 4, temperature: 16.2, humidity: 80 },
-        { time: "11:00", windSpeed: 2, windDirection: 45, windGust: 4, temperature: 17.8, humidity: 75 },
-        { time: "12:00", windSpeed: 5, windDirection: 90, windGust: 10, temperature: 19.0, humidity: 68 },
-        { time: "13:00", windSpeed: 7, windDirection: 90, windGust: 13, temperature: 20.2, humidity: 62 },
-        { time: "14:00", windSpeed: 9, windDirection: 90, windGust: 15, temperature: 21.0, humidity: 58 },
-        { time: "15:00", windSpeed: 10, windDirection: 90, windGust: 16, temperature: 20.8, humidity: 60 },
-        { time: "16:00", windSpeed: 10, windDirection: 90, windGust: 17, temperature: 20.0, humidity: 65 },
-        { time: "17:00", windSpeed: 9, windDirection: 90, windGust: 16, temperature: 19.5, humidity: 68 },
-        { time: "18:00", windSpeed: 8, windDirection: 90, windGust: 14, temperature: 19.0, humidity: 72 },
-        { time: "19:00", windSpeed: 6, windDirection: 135, windGust: 12, temperature: 18.5, humidity: 75 },
-        { time: "20:00", windSpeed: 5, windDirection: 135, windGust: 10, temperature: 17.5, humidity: 80 },
-        { time: "21:00", windSpeed: 4, windDirection: 135, windGust: 8, temperature: 16.0, humidity: 85 },
+        { time: "09:00", windSpeed: 6, windDirection: 315, windGust: 9, temperature: 15.0, humidity: 85 },
+        { time: "10:00", windSpeed: 8, windDirection: 315, windGust: 12, temperature: 16.2, humidity: 80 },
+        { time: "11:00", windSpeed: 10, windDirection: 45, windGust: 15, temperature: 17.8, humidity: 75 },
+        { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 19.0, humidity: 68 },
+        { time: "13:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 20.2, humidity: 62 },
+        { time: "14:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 21.0, humidity: 58 },
+        { time: "15:00", windSpeed: 18, windDirection: 90, windGust: 27, temperature: 20.8, humidity: 60 },
+        { time: "16:00", windSpeed: 18, windDirection: 90, windGust: 27, temperature: 20.0, humidity: 65 },
+        { time: "17:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 19.5, humidity: 68 },
+        { time: "18:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 19.0, humidity: 72 },
+        { time: "19:00", windSpeed: 12, windDirection: 135, windGust: 18, temperature: 18.5, humidity: 75 },
+        { time: "20:00", windSpeed: 10, windDirection: 135, windGust: 15, temperature: 17.5, humidity: 80 },
+        { time: "21:00", windSpeed: 8, windDirection: 135, windGust: 12, temperature: 16.0, humidity: 85 },
       ],
     },
     {
       date: new Date(Date.now() + 172800000).toISOString().split("T")[0],
       hours: [
-        { time: "09:00", windSpeed: 2, windDirection: 315, windGust: 4, temperature: 14.5, humidity: 88 },
-        { time: "10:00", windSpeed: 1, windDirection: 315, windGust: 3, temperature: 15.8, humidity: 82 },
-        { time: "11:00", windSpeed: 2, windDirection: 45, windGust: 4, temperature: 17.0, humidity: 78 },
-        { time: "12:00", windSpeed: 4, windDirection: 90, windGust: 8, temperature: 18.2, humidity: 72 },
-        { time: "13:00", windSpeed: 6, windDirection: 90, windGust: 11, temperature: 19.5, humidity: 65 },
-        { time: "14:00", windSpeed: 8, windDirection: 90, windGust: 14, temperature: 20.5, humidity: 60 },
-        { time: "15:00", windSpeed: 9, windDirection: 90, windGust: 15, temperature: 20.2, humidity: 62 },
-        { time: "16:00", windSpeed: 9, windDirection: 90, windGust: 16, temperature: 19.8, humidity: 65 },
-        { time: "17:00", windSpeed: 8, windDirection: 90, windGust: 15, temperature: 19.0, humidity: 70 },
-        { time: "18:00", windSpeed: 7, windDirection: 90, windGust: 13, temperature: 18.5, humidity: 75 },
-        { time: "19:00", windSpeed: 5, windDirection: 135, windGust: 10, temperature: 17.8, humidity: 80 },
-        { time: "20:00", windSpeed: 4, windDirection: 135, windGust: 8, temperature: 16.5, humidity: 85 },
-        { time: "21:00", windSpeed: 3, windDirection: 135, windGust: 6, temperature: 15.0, humidity: 90 },
+        { time: "09:00", windSpeed: 5, windDirection: 315, windGust: 8, temperature: 14.5, humidity: 88 },
+        { time: "10:00", windSpeed: 7, windDirection: 315, windGust: 11, temperature: 15.8, humidity: 82 },
+        { time: "11:00", windSpeed: 9, windDirection: 45, windGust: 14, temperature: 17.0, humidity: 78 },
+        { time: "12:00", windSpeed: 11, windDirection: 90, windGust: 17, temperature: 18.2, humidity: 72 },
+        { time: "13:00", windSpeed: 13, windDirection: 90, windGust: 20, temperature: 19.5, humidity: 65 },
+        { time: "14:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 20.5, humidity: 60 },
+        { time: "15:00", windSpeed: 17, windDirection: 90, windGust: 26, temperature: 20.2, humidity: 62 },
+        { time: "16:00", windSpeed: 17, windDirection: 90, windGust: 26, temperature: 19.8, humidity: 65 },
+        { time: "17:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 19.0, humidity: 70 },
+        { time: "18:00", windSpeed: 13, windDirection: 90, windGust: 20, temperature: 18.5, humidity: 75 },
+        { time: "19:00", windSpeed: 11, windDirection: 135, windGust: 17, temperature: 17.8, humidity: 80 },
+        { time: "20:00", windSpeed: 9, windDirection: 135, windGust: 14, temperature: 16.5, humidity: 85 },
+        { time: "21:00", windSpeed: 7, windDirection: 135, windGust: 11, temperature: 15.0, humidity: 90 },
       ],
     },
   ]
@@ -65,15 +140,14 @@ export async function getForecastData(spot: string) {
   let adjustedData = JSON.parse(JSON.stringify(baseData))
 
   if (spot === "kitesurf-point") {
-    // Kitesurf Point tiene vientos ligeramente más fuertes y más constantes (menos ráfagas)
+    // Kitesurf Point tiene vientos ligeramente más fuertes y más constantes
     adjustedData = adjustedData.map((day: any) => {
       day.hours = day.hours.map((hour: any) => {
         return {
           ...hour,
-          windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.15)), // 15% más fuerte, mínimo 1 kt
-          windGust: Math.round(hour.windGust * 1.1), // 10% más fuerte
-          // Dirección ligeramente más onshore
-          windDirection: (hour.windDirection + 15) % 360,
+          windSpeed: hour.windSpeed === 0 ? 0 : Math.max(1, Math.round(hour.windSpeed * 1.15)),
+          windGust: hour.windGust === 0 ? 0 : Math.round(hour.windGust * 1.1),
+          windDirection: hour.windSpeed === 0 ? 0 : (hour.windDirection + 15) % 360,
         }
       })
       return day
@@ -84,23 +158,12 @@ export async function getForecastData(spot: string) {
       day.hours = day.hours.map((hour: any) => {
         return {
           ...hour,
-          windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.9)), // 10% más débil, mínimo 1 kt
-          windGust: Math.round(hour.windGust * 0.85), // 15% menos ráfagas
-          // Dirección ligeramente más side-shore
-          windDirection: (hour.windDirection - 10 + 360) % 360,
+          windSpeed: hour.windSpeed === 0 ? 0 : Math.max(1, Math.round(hour.windSpeed * 0.9)),
+          windGust: hour.windGust === 0 ? 0 : Math.round(hour.windGust * 0.85),
+          windDirection: hour.windSpeed === 0 ? 0 : (hour.windDirection - 10 + 360) % 360,
         }
       })
       return day
-    })
-  } else if (spot === "la-ballena") {
-    // La Ballena tiene condiciones intermedias, pero con días específicos de viento más fuerte
-    // Simulamos un día con más viento (hoy)
-    adjustedData[0].hours = adjustedData[0].hours.map((hour: any) => {
-      return {
-        ...hour,
-        windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.1)), // 10% más fuerte hoy, mínimo 1 kt
-        windGust: Math.round(hour.windGust * 1.05), // 5% más ráfagas hoy
-      }
     })
   }
 

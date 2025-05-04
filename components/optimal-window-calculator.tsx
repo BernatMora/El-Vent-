@@ -69,6 +69,26 @@ export function OptimalWindowCalculator() {
           return hourNum >= 9 && hourNum <= 21 // Solo horas de luz
         })
         .map((hour: any) => {
+          // Si no hay viento, puntuación baja
+          if (hour.windSpeed === 0) {
+            return {
+              time: hour.time,
+              windSpeed: 0,
+              windDirection: 0,
+              directionName: "-",
+              temperature: hour.temperature || 22,
+              waveHeight: "0.0",
+              score: 0,
+              optimalLevel: "low",
+              details: {
+                windSpeedScore: 0,
+                windDirectionScore: 0,
+                temperatureScore: 100,
+                wavesScore: 100,
+              },
+            }
+          }
+
           // Calcular puntuación para cada factor
           let windSpeedScore = 0
           if (hour.windSpeed >= prefs.windSpeed.min && hour.windSpeed <= prefs.windSpeed.max) {
@@ -150,6 +170,7 @@ export function OptimalWindowCalculator() {
   }
 
   const getWindDirectionName = (direction: number) => {
+    if (direction === 0) return "-" // No wind direction
     if (direction >= 337.5 || direction < 22.5) return "N"
     if (direction >= 22.5 && direction < 67.5) return "NE"
     if (direction >= 67.5 && direction < 112.5) return "E"

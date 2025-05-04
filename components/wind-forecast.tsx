@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,15 +14,69 @@ export function WindForecast() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadForecast() {
       try {
         setLoading(true)
+        setError(null)
+        console.log("Cargando pronóstico para spot:", selectedSpot)
         const data = await getForecastData(selectedSpot)
-        setForecast(data)
+
+        // Verificar que los datos sean válidos
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error("Datos de pronóstico inválidos")
+        }
+
+        // Verificar y corregir los datos de viento
+        const processedData = data.map((day) => {
+          if (!Array.isArray(day.hours)) {
+            day.hours = []
+          }
+
+          day.hours = day.hours.map((hour) => {
+            // Asegurarse de que windSpeed sea un número positivo
+            if (typeof hour.windSpeed !== "number" || isNaN(hour.windSpeed)) {
+              hour.windSpeed = 10 // Valor por defecto
+            }
+
+            // Asegurarse de que windGust sea un número positivo
+            if (typeof hour.windGust !== "number" || isNaN(hour.windGust)) {
+              hour.windGust = hour.windSpeed * 1.5 // Valor por defecto
+            }
+
+            return hour
+          })
+
+          return day
+        })
+
+        console.log("Datos de pronóstico procesados:", processedData.length, "días")
+        setForecast(processedData)
       } catch (err) {
-        console.error(err)
+        console.error("Error cargando pronóstico:", err)
+        setError("Error al cargar el pronóstico. Por favor, intenta de nuevo.")
+
+        // Establecer datos de fallback
+        setForecast([
+          {
+            date: new Date().toISOString().split("T")[0],
+            hours: [
+              { time: "12:00", windSpeed: 10, windDirection: 90, windGust: 15 },
+              { time: "15:00", windSpeed: 12, windDirection: 90, windGust: 18 },
+              { time: "18:00", windSpeed: 8, windDirection: 90, windGust: 12 },
+            ],
+          },
+          {
+            date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+            hours: [
+              { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18 },
+              { time: "15:00", windSpeed: 14, windDirection: 90, windGust: 21 },
+              { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15 },
+            ],
+          },
+        ])
       } finally {
         setLoading(false)
       }
@@ -30,7 +86,19 @@ export function WindForecast() {
   }, [selectedSpot])
 
   // Función para renderizar la flecha de dirección del viento
-  const renderWindArrow = (direction: number) => {
+  const renderWindArrow = (direction: number, windSpeed: number) => {
+    // Si no hay viento, mostrar un icono diferente
+    if (windSpeed === 0) {
+      return (
+        <div className="flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#9CA3AF" strokeWidth="2" />
+            <line x1="8" y1="12" x2="16" y2="12" stroke="#9CA3AF" strokeWidth="2" />
+          </svg>
+        </div>
+      )
+    }
+
     // La flecha debe apuntar HACIA DONDE va el viento
     // Necesitamos rotar 180 grados porque en meteorología la dirección indica de donde viene
     const rotationDegree = (direction + 180) % 360
@@ -61,6 +129,7 @@ export function WindForecast() {
 
   // Obtener el nombre del viento según su dirección
   const getWindDirectionName = (direction: number) => {
+    if (direction === 0) return "-" // No wind direction
     if (direction >= 337.5 || direction < 22.5) return "N"
     if (direction >= 22.5 && direction < 67.5) return "NE"
     if (direction >= 67.5 && direction < 112.5) return "E"
@@ -78,6 +147,7 @@ export function WindForecast() {
 
   // Determinar si el flujo es "Molt fluix", "Fluix" o normal basado en la velocidad del viento
   const getFlowDescription = (windSpeed: number) => {
+    if (windSpeed === 0) return "Sense vent"
     if (windSpeed <= 3) return "Molt fluix"
     if (windSpeed <= 7) return "Fluix"
     return "Flux"
@@ -89,63 +159,74 @@ export function WindForecast() {
         <CardTitle>Previsió del Vent</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="0">
-          <TabsList className="grid w-full grid-cols-3">
-            {forecast.map((day, index) => (
-              <TabsTrigger key={day.date} value={index.toString()}>
-                {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
+            {error}
+            <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
+              Recargar página
+            </Button>
+          </div>
+        ) : (
+          <Tabs defaultValue="0">
+            <TabsList className="grid w-full grid-cols-3">
+              {forecast.map((day, index) => (
+                <TabsTrigger key={day.date} value={index.toString()}>
+                  {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          {forecast.map((day, dayIndex) => (
-            <TabsContent key={day.date} value={dayIndex.toString()}>
-              {loading ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="grid grid-cols-5 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
-                    <div>Hora</div>
-                    <div>Vent</div>
-                    <div>Direcció</div>
-                    <div>Ràfegues</div>
-                    <div>Flux</div>
-                  </div>
-                  {day.hours
-                    .filter((hour: any) => {
-                      const hourNum = Number.parseInt(hour.time.split(":")[0])
-                      return hourNum >= 9 && hourNum <= 21
-                    })
-                    .map((hour: any) => (
-                      <div
-                        key={hour.time}
-                        className="grid grid-cols-5 items-center gap-2 rounded-md border p-2 text-center"
-                      >
-                        <div className="font-medium">{hour.time}</div>
-                        <div className="font-semibold text-blue-700">
-                          {Math.round(hour.windSpeed)} kn
-                          <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windSpeed)} km/h)</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          {renderWindArrow(hour.windDirection)}
-                          <span className="mt-1 text-xs">{getWindDirectionName(hour.windDirection)}</span>
-                        </div>
-                        <div className="font-medium text-amber-600">
-                          {Math.round(hour.windGust)} kn
-                          <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
-                        </div>
-                        <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
-                      </div>
+            {forecast.map((day, dayIndex) => (
+              <TabsContent key={day.date} value={dayIndex.toString()}>
+                {loading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
                     ))}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-5 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
+                      <div>Hora</div>
+                      <div>Vent</div>
+                      <div>Direcció</div>
+                      <div>Ràfegues</div>
+                      <div>Flux</div>
+                    </div>
+                    {day.hours
+                      .filter((hour: any) => {
+                        const hourNum = Number.parseInt(hour.time.split(":")[0])
+                        return hourNum >= 9 && hourNum <= 21
+                      })
+                      .map((hour: any) => (
+                        <div
+                          key={hour.time}
+                          className="grid grid-cols-5 items-center gap-2 rounded-md border p-2 text-center"
+                        >
+                          <div className="font-medium">{hour.time}</div>
+                          <div className="font-semibold text-blue-700">
+                            {Math.round(hour.windSpeed)} kn
+                            <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windSpeed)} km/h)</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            {renderWindArrow(hour.windDirection, hour.windSpeed)}
+                            <span className="mt-1 text-xs">
+                              {hour.windSpeed === 0 ? "-" : getWindDirectionName(hour.windDirection)}
+                            </span>
+                          </div>
+                          <div className="font-medium text-amber-600">
+                            {Math.round(hour.windGust)} kn
+                            <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
+                          </div>
+                          <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
       </CardContent>
     </Card>
   )

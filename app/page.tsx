@@ -16,6 +16,7 @@ import { WindChart } from "@/components/wind-chart"
 import { TideInformation } from "@/components/tide-information"
 import { OptimalWindowCalculator } from "@/components/optimal-window-calculator"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
+import { DataSourceIndicator } from "@/components/data-source-indicator"
 
 export default function Home() {
   return (
@@ -28,8 +29,11 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <button className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <button
+            className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200"
+            onClick={() => window.location.reload()}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="mr-2 h-5 w-5"
@@ -67,11 +71,32 @@ export default function Home() {
             </svg>
             Mostra guia de vents
           </button>
+          <a
+            href="/comparar"
+            className="flex items-center justify-center rounded-md bg-amber-100 px-6 py-3 text-amber-700 transition hover:bg-amber-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-2 h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 3v18h18" />
+              <path d="m19 9-5 5-4-4-3 3" />
+            </svg>
+            Comparar spots
+          </a>
         </div>
 
         <div className="mb-8">
           <SpotSelector />
         </div>
+
+        <DataSourceIndicator />
 
         <AlertsBanner />
 

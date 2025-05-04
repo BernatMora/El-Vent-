@@ -47,8 +47,12 @@ export function KiteRecommendation() {
     loadForecast()
   }, [selectedSpot])
 
-  // Función para recomendar tamaño de cometa basado en velocidad del viento y peso del usuario
+  // Update the getKiteSize function to handle no wind
+
   const getKiteSize = (windSpeed: number, userWeight: number, userLevel: string) => {
+    // Si no hay viento, no se recomienda ninguna cometa
+    if (windSpeed === 0) return "No recomanat"
+
     // Ajuste base según el nivel del usuario
     let adjustment = 0
     if (userLevel === "beginner") adjustment = 2 // Principiantes: cometas más grandes
@@ -176,13 +180,14 @@ export function KiteRecommendation() {
                     {forecast[dayIndex] ? formatDate(forecast[dayIndex].date) : ""}
                   </div>
 
+                  {/* Update the JSX where the kite size is displayed */}
                   {prepareHourlyData(dayIndex).map((data: any) => (
                     <div key={data.time} className="flex items-center justify-between rounded-lg border p-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{data.time}</span>
                         <Badge variant="outline">{data.windSpeed} kts</Badge>
                       </div>
-                      <Badge className="bg-blue-600">{data.kiteSize}</Badge>
+                      <Badge className={data.windSpeed === 0 ? "bg-gray-400" : "bg-blue-600"}>{data.kiteSize}</Badge>
                     </div>
                   ))}
 

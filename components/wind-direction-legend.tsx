@@ -21,7 +21,7 @@ export function WindDirectionLegend() {
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              style={{ transform: "rotate(0deg)" }}
+              style={{ transform: "rotate(180deg)" }}
             >
               <path
                 d="M12 4L4 20L12 17L20 20L12 4Z"
@@ -41,7 +41,7 @@ export function WindDirectionLegend() {
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              style={{ transform: "rotate(90deg)" }}
+              style={{ transform: "rotate(270deg)" }}
             >
               <path
                 d="M12 4L4 20L12 17L20 20L12 4Z"

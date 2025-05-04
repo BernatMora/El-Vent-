@@ -61,6 +61,7 @@ export function WindChart() {
 
   // Obtener el nombre del viento según su dirección
   const getWindDirectionName = (direction: number) => {
+    if (direction === 0) return "-" // No wind direction
     if (direction >= 337.5 || direction < 22.5) return "N"
     if (direction >= 22.5 && direction < 67.5) return "NE"
     if (direction >= 67.5 && direction < 112.5) return "E"
@@ -83,16 +84,24 @@ export function WindChart() {
   // Componente personalizado para el tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const windSpeed = payload[0].value
+      const windGust = payload[1].value
+      const hasWind = windSpeed > 0
+
       return (
         <div className="rounded-lg border bg-white p-3 shadow-md">
           <p className="mb-1 font-medium">
             {activeTab} - {label}
           </p>
-          <p className="text-blue-600">Vent: {payload[0].value.toFixed(1)} kn</p>
-          <p className="text-amber-600">Ràfegues: {payload[1].value.toFixed(1)} kn</p>
-          <p>
-            Direcció: {payload[0].payload.directionName} ({payload[0].payload.windDirection}°)
-          </p>
+          <p className={hasWind ? "text-blue-600" : "text-gray-500"}>Vent: {windSpeed.toFixed(1)} kn</p>
+          <p className={hasWind ? "text-amber-600" : "text-gray-500"}>Ràfegues: {windGust.toFixed(1)} kn</p>
+          {hasWind ? (
+            <p>
+              Direcció: {payload[0].payload.directionName} ({payload[0].payload.windDirection}°)
+            </p>
+          ) : (
+            <p className="text-gray-500">Sense vent</p>
+          )}
         </div>
       )
     }
