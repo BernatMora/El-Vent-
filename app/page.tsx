@@ -18,18 +18,29 @@ import { OptimalWindowCalculator } from "@/components/optimal-window-calculator"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { DataSourceIndicator } from "@/components/data-source-indicator"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
-import { useState } from "react"
+import { ForceRefresh } from "@/components/force-refresh"
+import { useEffect } from "react"
 
 export default function Home() {
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  // Registrar el tiempo de carga de la página
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Si no hay un timestamp de actualización, establecerlo ahora
+      if (!localStorage.getItem("lastDataRefresh")) {
+        localStorage.setItem("lastDataRefresh", new Date().getTime().toString())
+      }
 
-  const handleRefreshAll = () => {
-    setIsRefreshing(true)
-
-    // Forzar recarga completa sin caché
-    window.location.href = window.location.href.split("?")[0] + "?refresh=" + new Date().getTime()
-  }
+      // Limpiar caché del navegador
+      if ("caches" in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            console.log("Limpiando caché:", cacheName)
+            caches.delete(cacheName)
+          })
+        })
+      }
+    }
+  }, [])
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4 md:p-8">
@@ -41,16 +52,11 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:justify-center">
-          <Button
-            className="flex items-center justify-center gap-2 bg-blue-600 px-6 py-3 text-white transition hover:bg-blue-700"
-            onClick={handleRefreshAll}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Actualitzant..." : "Actualitza totes les dades"}
-          </Button>
+        <div className="mb-6">
+          <ForceRefresh />
+        </div>
 
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:justify-center">
           <Button
             className="flex items-center justify-center rounded-md bg-green-100 px-6 py-3 text-green-700 transition hover:bg-green-200"
             onClick={() => document.getElementById("wind-guide")?.scrollIntoView({ behavior: "smooth" })}
