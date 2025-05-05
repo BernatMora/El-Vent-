@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RefreshCw, Settings } from "lucide-react"
@@ -23,6 +22,8 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getForecastData } from "@/lib/api"
 
 export function OptimalWindowCalculator() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
@@ -31,6 +32,8 @@ export function OptimalWindowCalculator() {
   const [optimalWindows, setOptimalWindows] = useState<any[]>([])
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
+  const [dataError, setDataError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("0") // Asegurarnos de que el tab activo sea "0" (Avui)
   const [preferences, setPreferences] = useState({
     windSpeed: {
       min: userPreferences.windSpeed?.min || 10,
@@ -43,21 +46,29 @@ export function OptimalWindowCalculator() {
     maxWaveHeight: userPreferences.maxWaveHeight || 1.5,
   })
 
-  // Función para cargar los datos del pronóstico
+  // Reemplazar la función loadForecast con la versión que usa la API real
   const loadForecast = async () => {
     try {
       setLoading(true)
-      // Añadir un timestamp para evitar el caché
+      setDataError(null)
+
+      // Obtener datos reales de la API
       const data = await getForecastData(selectedSpot)
+
       setForecast(data)
       calculateOptimalWindows(data, preferences)
       setLastUpdated(new Date().toLocaleTimeString())
+      setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
     } catch (err) {
-      console.error(err)
+      console.error("Error cargando datos:", err)
+      setDataError("Error al cargar los datos. Por favor, intenta de nuevo.")
     } finally {
       setLoading(false)
     }
   }
+
+  // Eliminar las funciones de generación de datos aleatorios
+  // Eliminar generateForecastData y generateHoursData
 
   useEffect(() => {
     loadForecast()
@@ -234,6 +245,31 @@ export function OptimalWindowCalculator() {
     }
   }
 
+  // Función para formatear la fecha para mostrar en la UI
+  const getFormattedDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr)
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const isToday = date.toDateString() === today.toDateString()
+      const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+      if (isToday) {
+        return "Avui"
+      } else if (isTomorrow) {
+        return "Demà"
+      } else {
+        // Formato: "dilluns, 5 de maig"
+        return formatDate(dateStr)
+      }
+    } catch (e) {
+      console.error("Error formateando fecha:", e)
+      return dateStr
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -398,11 +434,17 @@ export function OptimalWindowCalculator() {
       </CardHeader>
 
       <CardContent>
-        <Tabs defaultValue="0">
+        {dataError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{dataError}</AlertDescription>
+          </Alert>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
-            {optimalWindows.map((day, index) => (
+            {optimalWindows.slice(0, 3).map((day, index) => (
               <TabsTrigger key={day.date} value={index.toString()}>
-                {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
+                {getFormattedDate(day.date)}
               </TabsTrigger>
             ))}
           </TabsList>

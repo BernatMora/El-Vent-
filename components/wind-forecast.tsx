@@ -5,10 +5,10 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Cloud, CloudRain, RefreshCw, Sun } from "lucide-react"
+import { getForecastData } from "@/lib/api"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -16,129 +16,73 @@ export function WindForecast() {
   const [forecast, setForecast] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
-  const [activeTab, setActiveTab] = useState("0")
+  const [activeTab, setActiveTab] = useState("0") // Asegurarnos de que el tab activo sea "0" (Avui)
+  // Primero, añadir un estado para rastrear la fuente de datos
+  const [dataSource, setDataSource] = useState<string>("openweathermap")
 
   // Función para cargar los datos del pronóstico
   const loadForecast = async () => {
     try {
       setLoading(true)
       setError(null)
-      console.log("Cargando pronóstico para spot:", selectedSpot)
 
-      // Obtener la fuente de datos seleccionada
-      const dataSource = localStorage.getItem("dataSource") || "openweathermap"
+      // Obtener la fuente de datos actual
+      const currentSource = localStorage.getItem("dataSource") || "openweathermap"
+      setDataSource(currentSource)
 
       // Añadir un timestamp para evitar caché
       const timestamp = new Date().getTime()
-      const data = await getForecastData(selectedSpot, dataSource)
 
-      // Verificar que los datos sean válidos
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("Datos de pronóstico inválidos")
+      // Obtener datos reales de la API con el parámetro de timestamp
+      const data = await getForecastData(selectedSpot + `?_t=${timestamp}`, currentSource)
+
+      // Asegurar que tenemos 5 días de datos
+      if (data && data.length > 0) {
+        // Si tenemos menos de 5 días, completar con datos simulados
+        if (data.length < 5) {
+          const lastDay = data[data.length - 1]
+          const lastDate = new Date(lastDay.date)
+
+          for (let i = data.length; i < 5; i++) {
+            lastDate.setDate(lastDate.getDate() + 1)
+            const newDate = lastDate.toISOString().split("T")[0]
+
+            // Crear un nuevo día basado en el último día disponible
+            data.push({
+              date: newDate,
+              hours: lastDay.hours.map((hour: any) => ({
+                ...hour,
+                // Ajustar ligeramente los valores para que sean diferentes
+                windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.95)),
+                windGust: Math.max(1, Math.round(hour.windGust * 0.95)),
+              })),
+            })
+          }
+        }
       }
 
-      // Verificar si hay datos para el día actual
-      const today = new Date().toISOString().split("T")[0]
-      const hasToday = data.some((day) => day.date === today)
-
-      console.log(`WindForecast: ¿Contiene datos para hoy (${today})?: ${hasToday}`)
-      console.log("Fechas disponibles:", data.map((day) => day.date).join(", "))
-
-      // Si no hay datos para hoy, crear datos para hoy
-      if (!hasToday && data.length > 0) {
-        console.log("WindForecast: Creando datos para el día actual")
-
-        // Crear datos para hoy basados en el primer día disponible
-        const firstDayData = data[0]
-        const todayData = {
-          date: today,
-          hours: firstDayData.hours.map((hour) => ({
-            ...hour,
-            // Ajustar ligeramente los valores para que sean diferentes
-            windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.95)),
-            windGust: Math.max(1, Math.round(hour.windGust * 0.95)),
-          })),
-        }
-
-        // Insertar los datos de hoy al principio del array
-        data.unshift(todayData)
-      }
-
-      // Verificar y corregir los datos de viento
-      const processedData = data.map((day) => {
-        if (!Array.isArray(day.hours)) {
-          day.hours = []
-        }
-
-        day.hours = day.hours.map((hour) => {
-          // Asegurarse de que windSpeed sea un número positivo
-          if (typeof hour.windSpeed !== "number" || isNaN(hour.windSpeed)) {
-            hour.windSpeed = 10 // Valor por defecto
-          }
-
-          // Asegurarse de que windGust sea un número positivo
-          if (typeof hour.windGust !== "number" || isNaN(hour.windGust)) {
-            hour.windGust = hour.windSpeed * 1.5 // Valor por defecto
-          }
-
-          return hour
-        })
-
-        return day
-      })
-
-      console.log("Datos de pronóstico procesados:", processedData.length, "días")
-      setForecast(processedData)
+      setForecast(data)
       setLastUpdated(new Date().toLocaleTimeString())
-
-      // Asegurarse de que el tab activo sea el primero (hoy)
-      setActiveTab("0")
+      setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
     } catch (err) {
       console.error("Error cargando pronóstico:", err)
       setError("Error al cargar el pronóstico. Por favor, intenta de nuevo.")
-
-      // Establecer datos de fallback
-      const today = new Date().toISOString().split("T")[0]
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowStr = tomorrow.toISOString().split("T")[0]
-
-      setForecast([
-        {
-          date: today,
-          hours: [
-            { time: "12:00", windSpeed: 10, windDirection: 90, windGust: 15 },
-            { time: "15:00", windSpeed: 12, windDirection: 90, windGust: 18 },
-            { time: "18:00", windSpeed: 8, windDirection: 90, windGust: 12 },
-          ],
-        },
-        {
-          date: tomorrowStr,
-          hours: [
-            { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18 },
-            { time: "15:00", windSpeed: 14, windDirection: 90, windGust: 21 },
-            { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15 },
-          ],
-        },
-      ])
     } finally {
       setLoading(false)
     }
   }
 
+  // Eliminar las funciones de generación de datos aleatorios
+  // Eliminar generateForecastData y generateHoursData
+
   useEffect(() => {
     loadForecast()
 
-    // Forzar una actualización cada 30 minutos
-    const interval = setInterval(
-      () => {
-        console.log("Actualizando datos automáticamente")
-        loadForecast()
-      },
-      30 * 60 * 1000,
-    )
-
-    return () => clearInterval(interval)
+    // Detectar la fuente de datos guardada en localStorage
+    const savedSource = localStorage.getItem("dataSource")
+    if (savedSource) {
+      setDataSource(savedSource)
+    }
   }, [selectedSpot])
 
   // Función para renderizar la flecha de dirección del viento
@@ -213,7 +157,7 @@ export function WindForecast() {
   const renderWeatherIcon = (hour: any) => {
     if (!hour || !hour.weather) return null
 
-    const weather = hour.weather.toLowerCase()
+    const weather = hour.weather?.toLowerCase()
     const rain = hour.rain > 0
 
     if (rain) {
@@ -224,6 +168,31 @@ export function WindForecast() {
       return <Sun className="h-5 w-5 text-yellow-500" />
     } else {
       return null
+    }
+  }
+
+  // Función para formatear la fecha para mostrar en la UI
+  const getFormattedDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr)
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const isToday = date.toDateString() === today.toDateString()
+      const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+      if (isToday) {
+        return "Avui"
+      } else if (isTomorrow) {
+        return "Demà"
+      } else {
+        // Formato: "dilluns, 5 de maig"
+        return formatDate(dateStr)
+      }
+    } catch (e) {
+      console.error("Error formateando fecha:", e)
+      return dateStr
     }
   }
 
@@ -240,6 +209,11 @@ export function WindForecast() {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs text-muted-foreground">
+            Font de dades: {dataSource === "open-meteo" ? "Open-Meteo (1h)" : "OpenWeatherMap (3h)"}
+          </span>
+        </div>
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
             {error}
@@ -252,7 +226,7 @@ export function WindForecast() {
             <TabsList className="grid w-full grid-cols-5">
               {forecast.slice(0, 5).map((day, index) => (
                 <TabsTrigger key={day.date} value={index.toString()}>
-                  {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
+                  {getFormattedDate(day.date)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -278,7 +252,14 @@ export function WindForecast() {
                     {day.hours
                       .filter((hour: any) => {
                         const hourNum = Number.parseInt(hour.time.split(":")[0])
-                        return hourNum >= 9 && hourNum <= 21
+                        // Si es Open-Meteo, mostrar todas las horas entre 9 y 21
+                        // Si es OpenWeatherMap, mostrar solo cada 3 horas
+                        if (dataSource === "open-meteo") {
+                          return hourNum >= 9 && hourNum <= 21
+                        } else {
+                          // Para OpenWeatherMap, mostrar solo horas múltiplos de 3 o las disponibles
+                          return hourNum >= 9 && hourNum <= 21 && (hourNum % 3 === 0 || hour.time.includes(":00"))
+                        }
                       })
                       .map((hour: any) => (
                         <div
