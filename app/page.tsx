@@ -19,29 +19,8 @@ import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { DataSourceIndicator } from "@/components/data-source-indicator"
 import { Button } from "@/components/ui/button"
 import { ForceRefresh } from "@/components/force-refresh"
-import { useEffect } from "react"
 
 export default function Home() {
-  // Registrar el tiempo de carga de la página
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Si no hay un timestamp de actualización, establecerlo ahora
-      if (!localStorage.getItem("lastDataRefresh")) {
-        localStorage.setItem("lastDataRefresh", new Date().getTime().toString())
-      }
-
-      // Limpiar caché del navegador
-      if ("caches" in window) {
-        caches.keys().then((cacheNames) => {
-          cacheNames.forEach((cacheName) => {
-            console.log("Limpiando caché:", cacheName)
-            caches.delete(cacheName)
-          })
-        })
-      }
-    }
-  }, [])
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4 md:p-8">
       <div className="mx-auto max-w-5xl">

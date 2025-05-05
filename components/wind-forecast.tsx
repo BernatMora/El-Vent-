@@ -24,9 +24,12 @@ export function WindForecast() {
       setError(null)
       console.log("Cargando pronóstico para spot:", selectedSpot)
 
-      // Añadir un timestamp para evitar el caché
+      // Obtener la fuente de datos seleccionada
+      const dataSource = localStorage.getItem("dataSource") || "openweathermap"
+
+      // Añadir un timestamp para evitar caché
       const timestamp = new Date().getTime()
-      const data = await getForecastData(selectedSpot)
+      const data = await getForecastData(selectedSpot, dataSource)
 
       // Verificar que los datos sean válidos
       if (!Array.isArray(data) || data.length === 0) {
@@ -199,15 +202,15 @@ export function WindForecast() {
           </div>
         ) : (
           <Tabs defaultValue="0">
-            <TabsList className="grid w-full grid-cols-3">
-              {forecast.map((day, index) => (
+            <TabsList className="grid w-full grid-cols-5">
+              {forecast.slice(0, 5).map((day, index) => (
                 <TabsTrigger key={day.date} value={index.toString()}>
                   {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            {forecast.map((day, dayIndex) => (
+            {forecast.slice(0, 5).map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 {loading ? (
                   <div className="space-y-2">

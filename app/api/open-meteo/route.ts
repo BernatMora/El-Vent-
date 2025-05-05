@@ -2,8 +2,8 @@ import type { NextRequest } from "next/server"
 
 // Coordenadas precisas de los spots de kitesurf
 const SPOT_COORDINATES: Record<string, { lat: number; lon: number }> = {
-  aquarius: { lat: 42.177, lon: 3.107 }, // Aquarius - coordenadas convertidas de 4210.62n, 306.420e
-  "la-gaviota": { lat: 42.226, lon: 3.119 }, // La Gaviota - coordenadas convertidas de 4213.579n, 307.146e
+  aquarius: { lat: 42.177, lon: 3.107 }, // Aquarius
+  "la-gaviota": { lat: 42.226, lon: 3.119 }, // La Gaviota
 }
 
 export async function GET(request: NextRequest) {
@@ -29,17 +29,10 @@ export async function GET(request: NextRequest) {
     // Obtener las coordenadas del spot
     const { lat, lon } = SPOT_COORDINATES[spot]
 
-    // Obtener la clave API de OpenWeatherMap
-    const apiKey = process.env.OPENWEATHERMAP_API_KEY
+    // Construir la URL de la API de Open-Meteo
+    const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relativehumidity_2m,precipitation,weathercode,windspeed_10m,winddirection_10m,windgusts_10m&windspeed_unit=kn&timezone=auto`
 
-    if (!apiKey) {
-      throw new Error("API key de OpenWeatherMap no configurada")
-    }
-
-    // Construir la URL de la API de OpenWeatherMap para pronóstico de 5 días
-    const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`
-
-    console.log("Llamando a OpenWeatherMap API para", spot)
+    console.log("Llamando a Open-Meteo API para", spot)
 
     // Realizar la solicitud a la API
     const response = await fetch(apiUrl, {
@@ -52,20 +45,20 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      throw new Error(`Error en la respuesta de OpenWeatherMap: ${response.status} ${response.statusText}`)
+      throw new Error(`Error en la respuesta de Open-Meteo: ${response.status} ${response.statusText}`)
     }
 
     // Obtener los datos de la API
     const weatherData = await response.json()
 
     // Transformar los datos al formato que espera nuestra aplicación
-    const formattedData = transformWeatherData(weatherData)
+    const formattedData = transformOpenMeteoData(weatherData)
 
     return new Response(JSON.stringify(formattedData), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "X-Data-Source": "openweathermap",
+        "X-Data-Source": "open-meteo",
         "X-Timestamp": timestamp,
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         Pragma: "no-cache",
@@ -73,7 +66,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Error procesando solicitud:", error)
+    console.error("Error procesando solicitud de Open-Meteo:", error)
 
     // En caso de error, usar datos de fallback
     const fallbackData = getFallbackData(spot)
@@ -92,14 +85,27 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Función para transformar los datos de OpenWeatherMap al formato que espera nuestra aplicación
-function transformWeatherData(weatherData: any) {
+// Función para transformar los datos de Open-Meteo al formato que espera nuestra aplicación
+function transformOpenMeteoData(weatherData: any) {
   // Agrupar los datos por día
   const groupedByDay: Record<string, any[]> = {}
 
-  weatherData.list.forEach((item: any) => {
+  // Obtener los arrays de datos
+  const {
+    time,
+    temperature_2m,
+    relativehumidity_2m,
+    precipitation,
+    weathercode,
+    windspeed_10m,
+    winddirection_10m,
+    windgusts_10m,
+  } = weatherData.hourly
+
+  // Procesar cada punto de tiempo
+  for (let i = 0; i < time.length; i++) {
     // Convertir timestamp a fecha
-    const date = new Date(item.dt * 1000)
+    const date = new Date(time[i])
     const dateStr = date.toISOString().split("T")[0]
 
     // Inicializar el array para este día si no existe
@@ -112,24 +118,23 @@ function transformWeatherData(weatherData: any) {
     const minutes = date.getMinutes().toString().padStart(2, "0")
     const timeStr = `${hours}:${minutes}`
 
-    // Convertir velocidad del viento de m/s a nudos (1 m/s = 1.94384 nudos)
-    const windSpeedKnots = Math.round(item.wind.speed * 1.94384)
-    const windGustKnots = item.wind.gust ? Math.round(item.wind.gust * 1.94384) : Math.round(windSpeedKnots * 1.5)
+    // Mapear el código de clima de Open-Meteo a un formato más amigable
+    const weather = getWeatherFromCode(weathercode[i])
 
     // Añadir los datos formateados
     groupedByDay[dateStr].push({
       time: timeStr,
-      windSpeed: windSpeedKnots,
-      windDirection: item.wind.deg,
-      windGust: windGustKnots,
-      temperature: Math.round(item.main.temp * 10) / 10,
-      humidity: item.main.humidity,
-      weather: item.weather[0].main,
-      weatherDescription: item.weather[0].description,
-      clouds: item.clouds.all,
-      rain: item.rain ? item.rain["3h"] : 0,
+      windSpeed: Math.round(windspeed_10m[i]), // Ya viene en nudos según la API
+      windDirection: winddirection_10m[i],
+      windGust: Math.round(windgusts_10m[i]), // Ya viene en nudos según la API
+      temperature: Math.round(temperature_2m[i] * 10) / 10,
+      humidity: relativehumidity_2m[i],
+      weather: weather.main,
+      weatherDescription: weather.description,
+      rain: precipitation[i],
+      clouds: 0, // Open-Meteo no proporciona cobertura de nubes directamente
     })
-  })
+  }
 
   // Convertir el objeto agrupado a un array de días
   const result = Object.keys(groupedByDay).map((dateStr) => ({
@@ -137,12 +142,66 @@ function transformWeatherData(weatherData: any) {
     hours: groupedByDay[dateStr],
   }))
 
-  // Devolver todos los días disponibles (hasta 5)
-  return result
+  // Limitar a 7 días (Open-Meteo puede proporcionar hasta 7 días)
+  return result.slice(0, 7)
+}
+
+// Función para mapear códigos de clima de Open-Meteo a descripciones
+function getWeatherFromCode(code: number) {
+  // Códigos de clima según la documentación de Open-Meteo
+  // https://open-meteo.com/en/docs
+  switch (code) {
+    case 0:
+      return { main: "Clear", description: "Cielo despejado" }
+    case 1:
+      return { main: "Clear", description: "Mayormente despejado" }
+    case 2:
+      return { main: "Clouds", description: "Parcialmente nublado" }
+    case 3:
+      return { main: "Clouds", description: "Nublado" }
+    case 45:
+    case 48:
+      return { main: "Fog", description: "Niebla" }
+    case 51:
+    case 53:
+    case 55:
+      return { main: "Rain", description: "Llovizna" }
+    case 56:
+    case 57:
+      return { main: "Rain", description: "Llovizna helada" }
+    case 61:
+    case 63:
+    case 65:
+      return { main: "Rain", description: "Lluvia" }
+    case 66:
+    case 67:
+      return { main: "Rain", description: "Lluvia helada" }
+    case 71:
+    case 73:
+    case 75:
+      return { main: "Snow", description: "Nieve" }
+    case 77:
+      return { main: "Snow", description: "Copos de nieve" }
+    case 80:
+    case 81:
+    case 82:
+      return { main: "Rain", description: "Chubascos" }
+    case 85:
+    case 86:
+      return { main: "Snow", description: "Chubascos de nieve" }
+    case 95:
+      return { main: "Thunderstorm", description: "Tormenta" }
+    case 96:
+    case 99:
+      return { main: "Thunderstorm", description: "Tormenta con granizo" }
+    default:
+      return { main: "Unknown", description: "Desconocido" }
+  }
 }
 
 // Función de fallback con datos simulados (mantener como respaldo)
 function getFallbackData(spot: string) {
+  // Usar la misma función de fallback que en wind-data/route.ts
   // Datos base - Valores simulados con viento real
   const baseData = [
     {
