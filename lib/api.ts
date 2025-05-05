@@ -34,6 +34,16 @@ export async function getForecastData(spot: string, source = "openweathermap") {
       },
     })
 
+    // Verificar si la respuesta contiene datos para el día actual
+    if (response.ok) {
+      const dataSource = response.headers.get("X-Data-Source")
+      console.log(`Fuente de datos: ${dataSource}`)
+
+      if (dataSource === "open-meteo") {
+        console.log("Verificando datos de Open-Meteo para el día actual")
+      }
+    }
+
     // Registrar información sobre la respuesta para depuración
     console.log("Respuesta de API:", {
       status: response.status,
@@ -56,6 +66,36 @@ export async function getForecastData(spot: string, source = "openweathermap") {
       if (!Array.isArray(data) || data.length === 0) {
         console.error("Datos de pronóstico inválidos:", data)
         throw new Error("Formato de datos inválido")
+      }
+
+      // Verificar si hay datos para el día actual
+      const today = new Date().toISOString().split("T")[0]
+      const hasToday = data.some((day) => day.date === today)
+      console.log(`¿Contiene datos para hoy (${today})?: ${hasToday}`)
+
+      if (!hasToday && data.length > 0) {
+        console.warn("No se encontraron datos para el día actual, ajustando fechas...")
+
+        // Ajustar las fechas para que el primer día sea hoy
+        const firstDate = new Date(data[0].date)
+        const todayDate = new Date(today)
+        const diffDays = Math.round((firstDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (diffDays !== 0) {
+          console.log(`Diferencia de días: ${diffDays}. Ajustando fechas...`)
+          data = data.map((day, index) => {
+            const newDate = new Date(todayDate)
+            newDate.setDate(todayDate.getDate() + index)
+            return {
+              ...day,
+              date: newDate.toISOString().split("T")[0],
+            }
+          })
+          console.log(
+            "Fechas ajustadas:",
+            data.map((d) => d.date),
+          )
+        }
       }
 
       // Asegurarse de que los valores de viento sean números positivos

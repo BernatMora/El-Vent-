@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react"
 export function ForceRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [dataSource, setDataSource] = useState("openweathermap")
+  const [lastRefresh, setLastRefresh] = useState<string | null>(null)
 
   useEffect(() => {
     // Obtener la fuente de datos guardada
@@ -14,14 +15,42 @@ export function ForceRefresh() {
     if (savedSource) {
       setDataSource(savedSource)
     }
+
+    // Verificar si necesitamos una actualización automática al cargar
+    const lastRefreshTime = localStorage.getItem("lastForceRefresh")
+    setLastRefresh(lastRefreshTime)
+
+    const now = new Date().getTime()
+    // Si han pasado más de 30 minutos desde la última actualización forzada, hacerlo automáticamente
+    if (!lastRefreshTime || now - Number.parseInt(lastRefreshTime) > 30 * 60 * 1000) {
+      console.log("Realizando actualización automática al cargar la página")
+      setTimeout(() => {
+        handleForceRefresh()
+      }, 1000) // Pequeño retraso para permitir que la página se cargue primero
+    }
   }, [])
 
   const handleForceRefresh = () => {
     setIsRefreshing(true)
 
-    // Añadir un parámetro de timestamp a la URL para evitar caché
+    // Limpiar cualquier caché de localStorage
+    localStorage.removeItem("lastDataRefresh")
+
+    // Registrar el momento de esta actualización forzada
     const timestamp = new Date().getTime()
-    window.location.href = window.location.pathname + `?source=${dataSource}&refresh=${timestamp}`
+    localStorage.setItem("lastForceRefresh", timestamp.toString())
+
+    // Limpiar caché del navegador para esta página
+    if ("caches" in window) {
+      caches.keys().then((names) => {
+        for (const name of names) {
+          caches.delete(name)
+        }
+      })
+    }
+
+    // Recargar la página con parámetros para evitar caché
+    window.location.href = window.location.pathname + `?source=${dataSource}&refresh=${timestamp}&force=true`
   }
 
   return (

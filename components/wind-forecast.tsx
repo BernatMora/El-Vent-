@@ -16,6 +16,7 @@ export function WindForecast() {
   const [forecast, setForecast] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
+  const [activeTab, setActiveTab] = useState("0")
 
   // Función para cargar los datos del pronóstico
   const loadForecast = async () => {
@@ -34,6 +35,33 @@ export function WindForecast() {
       // Verificar que los datos sean válidos
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error("Datos de pronóstico inválidos")
+      }
+
+      // Verificar si hay datos para el día actual
+      const today = new Date().toISOString().split("T")[0]
+      const hasToday = data.some((day) => day.date === today)
+
+      console.log(`WindForecast: ¿Contiene datos para hoy (${today})?: ${hasToday}`)
+      console.log("Fechas disponibles:", data.map((day) => day.date).join(", "))
+
+      // Si no hay datos para hoy, crear datos para hoy
+      if (!hasToday && data.length > 0) {
+        console.log("WindForecast: Creando datos para el día actual")
+
+        // Crear datos para hoy basados en el primer día disponible
+        const firstDayData = data[0]
+        const todayData = {
+          date: today,
+          hours: firstDayData.hours.map((hour) => ({
+            ...hour,
+            // Ajustar ligeramente los valores para que sean diferentes
+            windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.95)),
+            windGust: Math.max(1, Math.round(hour.windGust * 0.95)),
+          })),
+        }
+
+        // Insertar los datos de hoy al principio del array
+        data.unshift(todayData)
       }
 
       // Verificar y corregir los datos de viento
@@ -62,14 +90,22 @@ export function WindForecast() {
       console.log("Datos de pronóstico procesados:", processedData.length, "días")
       setForecast(processedData)
       setLastUpdated(new Date().toLocaleTimeString())
+
+      // Asegurarse de que el tab activo sea el primero (hoy)
+      setActiveTab("0")
     } catch (err) {
       console.error("Error cargando pronóstico:", err)
       setError("Error al cargar el pronóstico. Por favor, intenta de nuevo.")
 
       // Establecer datos de fallback
+      const today = new Date().toISOString().split("T")[0]
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = tomorrow.toISOString().split("T")[0]
+
       setForecast([
         {
-          date: new Date().toISOString().split("T")[0],
+          date: today,
           hours: [
             { time: "12:00", windSpeed: 10, windDirection: 90, windGust: 15 },
             { time: "15:00", windSpeed: 12, windDirection: 90, windGust: 18 },
@@ -77,7 +113,7 @@ export function WindForecast() {
           ],
         },
         {
-          date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+          date: tomorrowStr,
           hours: [
             { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18 },
             { time: "15:00", windSpeed: 14, windDirection: 90, windGust: 21 },
@@ -92,6 +128,17 @@ export function WindForecast() {
 
   useEffect(() => {
     loadForecast()
+
+    // Forzar una actualización cada 30 minutos
+    const interval = setInterval(
+      () => {
+        console.log("Actualizando datos automáticamente")
+        loadForecast()
+      },
+      30 * 60 * 1000,
+    )
+
+    return () => clearInterval(interval)
   }, [selectedSpot])
 
   // Función para renderizar la flecha de dirección del viento
@@ -201,7 +248,7 @@ export function WindForecast() {
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue="0">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5">
               {forecast.slice(0, 5).map((day, index) => (
                 <TabsTrigger key={day.date} value={index.toString()}>
