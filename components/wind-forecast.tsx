@@ -8,80 +8,86 @@ import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Cloud, CloudRain, Sun } from "lucide-react"
+import { Cloud, CloudRain, RefreshCw, Sun } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
 
-  useEffect(() => {
-    async function loadForecast() {
-      try {
-        setLoading(true)
-        setError(null)
-        console.log("Cargando pronóstico para spot:", selectedSpot)
-        const data = await getForecastData(selectedSpot)
+  // Función para cargar los datos del pronóstico
+  const loadForecast = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      console.log("Cargando pronóstico para spot:", selectedSpot)
 
-        // Verificar que los datos sean válidos
-        if (!Array.isArray(data) || data.length === 0) {
-          throw new Error("Datos de pronóstico inválidos")
+      // Añadir un timestamp para evitar el caché
+      const timestamp = new Date().getTime()
+      const data = await getForecastData(selectedSpot)
+
+      // Verificar que los datos sean válidos
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("Datos de pronóstico inválidos")
+      }
+
+      // Verificar y corregir los datos de viento
+      const processedData = data.map((day) => {
+        if (!Array.isArray(day.hours)) {
+          day.hours = []
         }
 
-        // Verificar y corregir los datos de viento
-        const processedData = data.map((day) => {
-          if (!Array.isArray(day.hours)) {
-            day.hours = []
+        day.hours = day.hours.map((hour) => {
+          // Asegurarse de que windSpeed sea un número positivo
+          if (typeof hour.windSpeed !== "number" || isNaN(hour.windSpeed)) {
+            hour.windSpeed = 10 // Valor por defecto
           }
 
-          day.hours = day.hours.map((hour) => {
-            // Asegurarse de que windSpeed sea un número positivo
-            if (typeof hour.windSpeed !== "number" || isNaN(hour.windSpeed)) {
-              hour.windSpeed = 10 // Valor por defecto
-            }
+          // Asegurarse de que windGust sea un número positivo
+          if (typeof hour.windGust !== "number" || isNaN(hour.windGust)) {
+            hour.windGust = hour.windSpeed * 1.5 // Valor por defecto
+          }
 
-            // Asegurarse de que windGust sea un número positivo
-            if (typeof hour.windGust !== "number" || isNaN(hour.windGust)) {
-              hour.windGust = hour.windSpeed * 1.5 // Valor por defecto
-            }
-
-            return hour
-          })
-
-          return day
+          return hour
         })
 
-        console.log("Datos de pronóstico procesados:", processedData.length, "días")
-        setForecast(processedData)
-      } catch (err) {
-        console.error("Error cargando pronóstico:", err)
-        setError("Error al cargar el pronóstico. Por favor, intenta de nuevo.")
+        return day
+      })
 
-        // Establecer datos de fallback
-        setForecast([
-          {
-            date: new Date().toISOString().split("T")[0],
-            hours: [
-              { time: "12:00", windSpeed: 10, windDirection: 90, windGust: 15 },
-              { time: "15:00", windSpeed: 12, windDirection: 90, windGust: 18 },
-              { time: "18:00", windSpeed: 8, windDirection: 90, windGust: 12 },
-            ],
-          },
-          {
-            date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-            hours: [
-              { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18 },
-              { time: "15:00", windSpeed: 14, windDirection: 90, windGust: 21 },
-              { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15 },
-            ],
-          },
-        ])
-      } finally {
-        setLoading(false)
-      }
+      console.log("Datos de pronóstico procesados:", processedData.length, "días")
+      setForecast(processedData)
+      setLastUpdated(new Date().toLocaleTimeString())
+    } catch (err) {
+      console.error("Error cargando pronóstico:", err)
+      setError("Error al cargar el pronóstico. Por favor, intenta de nuevo.")
+
+      // Establecer datos de fallback
+      setForecast([
+        {
+          date: new Date().toISOString().split("T")[0],
+          hours: [
+            { time: "12:00", windSpeed: 10, windDirection: 90, windGust: 15 },
+            { time: "15:00", windSpeed: 12, windDirection: 90, windGust: 18 },
+            { time: "18:00", windSpeed: 8, windDirection: 90, windGust: 12 },
+          ],
+        },
+        {
+          date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+          hours: [
+            { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18 },
+            { time: "15:00", windSpeed: 14, windDirection: 90, windGust: 21 },
+            { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15 },
+          ],
+        },
+      ])
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadForecast()
   }, [selectedSpot])
 
@@ -173,15 +179,22 @@ export function WindForecast() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Previsió del Vent</CardTitle>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Actualitzat: {lastUpdated}</span>
+          <Button variant="outline" size="sm" onClick={loadForecast} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="sr-only">Actualitzar</span>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
             {error}
-            <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
-              Recargar página
+            <Button variant="outline" className="mt-2" onClick={loadForecast}>
+              Recargar datos
             </Button>
           </div>
         ) : (

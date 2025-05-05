@@ -6,6 +6,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { RefreshCw } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 type SpotData = {
   name: string
@@ -23,6 +27,7 @@ export function SpotComparison() {
   const [loading, setLoading] = useState(true)
   const [spotsData, setSpotsData] = useState<SpotData[]>([])
   const [selectedDay, setSelectedDay] = useState(0) // 0 = hoy, 1 = mañana, 2 = pasado mañana
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
 
   // Lista de spots a comparar
   const spots = [
@@ -30,84 +35,86 @@ export function SpotComparison() {
     { id: "la-gaviota", name: "La Gaviota" },
   ]
 
-  useEffect(() => {
-    async function loadSpotsData() {
-      setLoading(true)
-      try {
-        const spotsPromises = spots.map(async (spot) => {
-          const data = await getForecastData(spot.id)
+  const loadSpotsData = async () => {
+    setLoading(true)
+    try {
+      const timestamp = new Date().getTime() // Para evitar caché
+      const spotsPromises = spots.map(async (spot) => {
+        const data = await getForecastData(spot.id + "?_t=" + timestamp)
 
-          if (!data || data.length === 0 || !data[selectedDay] || !data[selectedDay].hours) {
-            return {
-              name: spot.name,
-              id: spot.id,
-              currentWind: 0,
-              maxWind: 0,
-              direction: 0,
-              directionName: "-",
-              temperature: 0,
-              optimalHours: 0,
-              bestTime: "N/A",
-            }
-          }
-
-          const dayData = data[selectedDay]
-          const hours = dayData.hours
-
-          // Encontrar viento actual o primera hora disponible
-          const now = new Date()
-          const currentHour = now.getHours()
-          const currentHourData =
-            hours.find((h: any) => Number.parseInt(h.time.split(":")[0]) === currentHour) || hours[0]
-
-          // Calcular viento máximo del día
-          const maxWind = Math.max(...hours.map((h: any) => h.windSpeed))
-
-          // Contar horas óptimas (viento entre 10-25 nudos)
-          const optimalHours = hours.filter((h: any) => h.windSpeed >= 10 && h.windSpeed <= 25).length
-
-          // Encontrar mejor hora (mayor viento dentro del rango óptimo)
-          const optimalHoursData = hours.filter((h: any) => h.windSpeed >= 10 && h.windSpeed <= 25)
-
-          const bestHour =
-            optimalHoursData.length > 0
-              ? optimalHoursData.reduce(
-                  (best: any, current: any) => (current.windSpeed > best.windSpeed ? current : best),
-                  optimalHoursData[0],
-                )
-              : null
-
-          const bestTime = bestHour ? bestHour.time : "N/A"
-
-          // Obtener nombre de dirección
-          const directionName = getWindDirectionName(currentHourData.windDirection)
-
+        if (!data || data.length === 0 || !data[selectedDay] || !data[selectedDay].hours) {
           return {
             name: spot.name,
             id: spot.id,
-            currentWind: Math.round(currentHourData.windSpeed),
-            maxWind: Math.round(maxWind),
-            direction: currentHourData.windDirection,
-            directionName,
-            temperature: Math.round(currentHourData.temperature || 20),
-            optimalHours,
-            bestTime,
+            currentWind: 0,
+            maxWind: 0,
+            direction: 0,
+            directionName: "-",
+            temperature: 0,
+            optimalHours: 0,
+            bestTime: "N/A",
           }
-        })
+        }
 
-        const results = await Promise.all(spotsPromises)
+        const dayData = data[selectedDay]
+        const hours = dayData.hours
 
-        // Ordenar spots por viento actual (de mayor a menor)
-        results.sort((a, b) => b.currentWind - a.currentWind)
+        // Encontrar viento actual o primera hora disponible
+        const now = new Date()
+        const currentHour = now.getHours()
+        const currentHourData =
+          hours.find((h: any) => Number.parseInt(h.time.split(":")[0]) === currentHour) || hours[0]
 
-        setSpotsData(results)
-      } catch (error) {
-        console.error("Error cargando datos de spots:", error)
-      } finally {
-        setLoading(false)
-      }
+        // Calcular viento máximo del día
+        const maxWind = Math.max(...hours.map((h: any) => h.windSpeed))
+
+        // Contar horas óptimas (viento entre 10-25 nudos)
+        const optimalHours = hours.filter((h: any) => h.windSpeed >= 10 && h.windSpeed <= 25).length
+
+        // Encontrar mejor hora (mayor viento dentro del rango óptimo)
+        const optimalHoursData = hours.filter((h: any) => h.windSpeed >= 10 && h.windSpeed <= 25)
+
+        const bestHour =
+          optimalHoursData.length > 0
+            ? optimalHoursData.reduce(
+                (best: any, current: any) => (current.windSpeed > best.windSpeed ? current : best),
+                optimalHoursData[0],
+              )
+            : null
+
+        const bestTime = bestHour ? bestHour.time : "N/A"
+
+        // Obtener nombre de dirección
+        const directionName = getWindDirectionName(currentHourData.windDirection)
+
+        return {
+          name: spot.name,
+          id: spot.id,
+          currentWind: Math.round(currentHourData.windSpeed),
+          maxWind: Math.round(maxWind),
+          direction: currentHourData.windDirection,
+          directionName,
+          temperature: Math.round(currentHourData.temperature || 20),
+          optimalHours,
+          bestTime,
+        }
+      })
+
+      const results = await Promise.all(spotsPromises)
+
+      // Ordenar spots por viento actual (de mayor a menor)
+      results.sort((a, b) => b.currentWind - a.currentWind)
+
+      setSpotsData(results)
+      setLastUpdated(new Date().toLocaleTimeString())
+    } catch (error) {
+      console.error("Error cargando datos de spots:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadSpotsData()
   }, [selectedDay])
 
@@ -205,10 +212,25 @@ export function SpotComparison() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl">Comparació de Spots</CardTitle>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Actualitzat: {lastUpdated}</span>
+          <Button variant="outline" size="sm" onClick={loadSpotsData} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="sr-only">Actualitzar</span>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <Link href="/" passHref>
+            <Button variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tornar a l'inici
+            </Button>
+          </Link>
+        </div>
         <Tabs defaultValue="0" onValueChange={(value) => setSelectedDay(Number(value))}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="0">{getDayLabel(0)}</TabsTrigger>

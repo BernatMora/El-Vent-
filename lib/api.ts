@@ -1,11 +1,15 @@
 // Función para obtener datos de pronóstico
 export async function getForecastData(spot: string) {
   try {
+    // Extraer el nombre del spot sin parámetros de consulta
+    const cleanSpot = spot.split("?")[0]
     // Validar que el spot sea una cadena válida
-    if (!spot || typeof spot !== "string" || !["aquarius", "la-gaviota"].includes(spot)) {
+    if (!cleanSpot || typeof cleanSpot !== "string" || !["aquarius", "la-gaviota"].includes(cleanSpot)) {
       console.error("Spot inválido:", spot)
       // Fallback a un spot por defecto
       spot = "aquarius"
+    } else {
+      spot = cleanSpot // Usar el spot limpio
     }
 
     // Construir la URL con encodeURIComponent para asegurar que sea válida

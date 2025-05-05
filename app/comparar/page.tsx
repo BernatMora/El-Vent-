@@ -1,10 +1,22 @@
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { SpotComparison } from "@/components/spot-comparison"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 export default function CompararPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4 md:p-8">
       <div className="mx-auto max-w-5xl">
+        <div className="mb-4">
+          <Link href="/" passHref>
+            <Button variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tornar a l'inici
+            </Button>
+          </Link>
+        </div>
+
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-4xl font-bold text-blue-900 md:text-5xl">Comparació de Spots</h1>
           <p className="text-lg text-blue-700">Descobreix quin spot té les millors condicions per kitesurf</p>

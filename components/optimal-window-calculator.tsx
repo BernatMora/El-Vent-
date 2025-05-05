@@ -9,7 +9,7 @@ import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Settings } from "lucide-react"
+import { RefreshCw, Settings } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ export function OptimalWindowCalculator() {
   const [forecast, setForecast] = useState<any[]>([])
   const [optimalWindows, setOptimalWindows] = useState<any[]>([])
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
   const [preferences, setPreferences] = useState({
     windSpeed: {
       min: userPreferences.windSpeed?.min || 10,
@@ -42,20 +43,23 @@ export function OptimalWindowCalculator() {
     maxWaveHeight: userPreferences.maxWaveHeight || 1.5,
   })
 
-  useEffect(() => {
-    async function loadForecast() {
-      try {
-        setLoading(true)
-        const data = await getForecastData(selectedSpot)
-        setForecast(data)
-        calculateOptimalWindows(data, preferences)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+  // Función para cargar los datos del pronóstico
+  const loadForecast = async () => {
+    try {
+      setLoading(true)
+      // Añadir un timestamp para evitar el caché
+      const data = await getForecastData(selectedSpot)
+      setForecast(data)
+      calculateOptimalWindows(data, preferences)
+      setLastUpdated(new Date().toLocaleTimeString())
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadForecast()
   }, [selectedSpot, preferences])
 
@@ -237,154 +241,160 @@ export function OptimalWindowCalculator() {
           <CardTitle className="text-xl">Calculadora de Finestra Òptima</CardTitle>
           <CardDescription>Troba les millors hores per navegar segons les teves preferències</CardDescription>
         </div>
-        <Dialog open={preferencesDialogOpen} onOpenChange={setPreferencesDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Preferències de navegació</DialogTitle>
-              <DialogDescription>
-                Configura les teves condicions ideals per obtenir recomanacions personalitzades
-              </DialogDescription>
-            </DialogHeader>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Actualitzat: {lastUpdated}</span>
+          <Button variant="outline" size="icon" onClick={loadForecast} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <Dialog open={preferencesDialogOpen} onOpenChange={setPreferencesDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Preferències de navegació</DialogTitle>
+                <DialogDescription>
+                  Configura les teves condicions ideals per obtenir recomanacions personalitzades
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>Velocitat del vent (nusos)</Label>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Mínim: {preferences.windSpeed.min} kn</span>
-                  <span className="text-sm text-muted-foreground">Màxim: {preferences.windSpeed.max} kn</span>
-                </div>
-                <div className="px-1">
-                  <Slider
-                    defaultValue={[preferences.windSpeed.min, preferences.windSpeed.max]}
-                    min={5}
-                    max={40}
-                    step={1}
-                    onValueChange={(value) =>
-                      setPreferences({
-                        ...preferences,
-                        windSpeed: { min: value[0], max: value[1] },
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Direccions de vent preferides</Label>
-                <RadioGroup
-                  className="grid grid-cols-4 gap-2"
-                  value={preferences.windDirection.join(",")}
-                  onValueChange={(value) =>
-                    setPreferences({
-                      ...preferences,
-                      windDirection: value.split(","),
-                    })
-                  }
-                >
-                  {["N", "NE", "E", "SE", "S", "SW", "W", "NW"].map((dir) => (
-                    <div key={dir} className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={dir}
-                        id={`dir-${dir}`}
-                        checked={preferences.windDirection.includes(dir)}
-                        onClick={() => {
-                          let newDirs = [...preferences.windDirection]
-                          if (newDirs.includes(dir)) {
-                            newDirs = newDirs.filter((d) => d !== dir)
-                          } else {
-                            newDirs.push(dir)
-                          }
-                          setPreferences({
-                            ...preferences,
-                            windDirection: newDirs,
-                          })
-                        }}
-                      />
-                      <Label htmlFor={`dir-${dir}`}>{dir}</Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="consider-temp">Considerar temperatura</Label>
-                  <Switch
-                    id="consider-temp"
-                    checked={preferences.considerTemperature}
-                    onCheckedChange={(checked) =>
-                      setPreferences({
-                        ...preferences,
-                        considerTemperature: checked,
-                      })
-                    }
-                  />
-                </div>
-
-                {preferences.considerTemperature && (
-                  <div className="space-y-2">
-                    <Label>Temperatura mínima: {preferences.minTemperature}°C</Label>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Velocitat del vent (nusos)</Label>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Mínim: {preferences.windSpeed.min} kn</span>
+                    <span className="text-sm text-muted-foreground">Màxim: {preferences.windSpeed.max} kn</span>
+                  </div>
+                  <div className="px-1">
                     <Slider
-                      defaultValue={[preferences.minTemperature]}
-                      min={10}
-                      max={30}
+                      defaultValue={[preferences.windSpeed.min, preferences.windSpeed.max]}
+                      min={5}
+                      max={40}
                       step={1}
                       onValueChange={(value) =>
                         setPreferences({
                           ...preferences,
-                          minTemperature: value[0],
+                          windSpeed: { min: value[0], max: value[1] },
                         })
                       }
                     />
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="consider-waves">Considerar onades</Label>
-                  <Switch
-                    id="consider-waves"
-                    checked={preferences.considerWaves}
-                    onCheckedChange={(checked) =>
-                      setPreferences({
-                        ...preferences,
-                        considerWaves: checked,
-                      })
-                    }
-                  />
                 </div>
 
-                {preferences.considerWaves && (
-                  <div className="space-y-2">
-                    <Label>Alçada màxima d'onades: {preferences.maxWaveHeight} m</Label>
-                    <Slider
-                      defaultValue={[preferences.maxWaveHeight]}
-                      min={0.5}
-                      max={3}
-                      step={0.1}
-                      onValueChange={(value) =>
+                <div className="space-y-2">
+                  <Label>Direccions de vent preferides</Label>
+                  <RadioGroup
+                    className="grid grid-cols-4 gap-2"
+                    value={preferences.windDirection.join(",")}
+                    onValueChange={(value) =>
+                      setPreferences({
+                        ...preferences,
+                        windDirection: value.split(","),
+                      })
+                    }
+                  >
+                    {["N", "NE", "E", "SE", "S", "SW", "W", "NW"].map((dir) => (
+                      <div key={dir} className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value={dir}
+                          id={`dir-${dir}`}
+                          checked={preferences.windDirection.includes(dir)}
+                          onClick={() => {
+                            let newDirs = [...preferences.windDirection]
+                            if (newDirs.includes(dir)) {
+                              newDirs = newDirs.filter((d) => d !== dir)
+                            } else {
+                              newDirs.push(dir)
+                            }
+                            setPreferences({
+                              ...preferences,
+                              windDirection: newDirs,
+                            })
+                          }}
+                        />
+                        <Label htmlFor={`dir-${dir}`}>{dir}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="consider-temp">Considerar temperatura</Label>
+                    <Switch
+                      id="consider-temp"
+                      checked={preferences.considerTemperature}
+                      onCheckedChange={(checked) =>
                         setPreferences({
                           ...preferences,
-                          maxWaveHeight: value[0],
+                          considerTemperature: checked,
                         })
                       }
                     />
                   </div>
-                )}
-              </div>
-            </div>
 
-            <DialogFooter>
-              <Button onClick={handleSavePreferences}>Guardar preferències</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  {preferences.considerTemperature && (
+                    <div className="space-y-2">
+                      <Label>Temperatura mínima: {preferences.minTemperature}°C</Label>
+                      <Slider
+                        defaultValue={[preferences.minTemperature]}
+                        min={10}
+                        max={30}
+                        step={1}
+                        onValueChange={(value) =>
+                          setPreferences({
+                            ...preferences,
+                            minTemperature: value[0],
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="consider-waves">Considerar onades</Label>
+                    <Switch
+                      id="consider-waves"
+                      checked={preferences.considerWaves}
+                      onCheckedChange={(checked) =>
+                        setPreferences({
+                          ...preferences,
+                          considerWaves: checked,
+                        })
+                      }
+                    />
+                  </div>
+
+                  {preferences.considerWaves && (
+                    <div className="space-y-2">
+                      <Label>Alçada màxima d'onades: {preferences.maxWaveHeight} m</Label>
+                      <Slider
+                        defaultValue={[preferences.maxWaveHeight]}
+                        min={0.5}
+                        max={3}
+                        step={0.1}
+                        onValueChange={(value) =>
+                          setPreferences({
+                            ...preferences,
+                            maxWaveHeight: value[0],
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button onClick={handleSavePreferences}>Guardar preferències</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
 
       <CardContent>
