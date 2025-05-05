@@ -36,31 +36,6 @@ export function WindForecast() {
       // Obtener datos reales de la API con el parámetro de timestamp
       const data = await getForecastData(selectedSpot + `?_t=${timestamp}`, currentSource)
 
-      // Asegurar que tenemos 5 días de datos
-      if (data && data.length > 0) {
-        // Si tenemos menos de 5 días, completar con datos simulados
-        if (data.length < 5) {
-          const lastDay = data[data.length - 1]
-          const lastDate = new Date(lastDay.date)
-
-          for (let i = data.length; i < 5; i++) {
-            lastDate.setDate(lastDate.getDate() + 1)
-            const newDate = lastDate.toISOString().split("T")[0]
-
-            // Crear un nuevo día basado en el último día disponible
-            data.push({
-              date: newDate,
-              hours: lastDay.hours.map((hour: any) => ({
-                ...hour,
-                // Ajustar ligeramente los valores para que sean diferentes
-                windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.95)),
-                windGust: Math.max(1, Math.round(hour.windGust * 0.95)),
-              })),
-            })
-          }
-        }
-      }
-
       setForecast(data)
       setLastUpdated(new Date().toLocaleTimeString())
       setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
@@ -71,9 +46,6 @@ export function WindForecast() {
       setLoading(false)
     }
   }
-
-  // Eliminar las funciones de generación de datos aleatorios
-  // Eliminar generateForecastData y generateHoursData
 
   useEffect(() => {
     loadForecast()

@@ -56,9 +56,15 @@ export function DataSourceIndicator() {
       if (source) {
         setDataSource(source)
         setLastUpdated(new Date().toLocaleTimeString())
+      } else {
+        // Si no hay fuente de datos, asumir fallback
+        setDataSource("fallback")
+        setLastUpdated(new Date().toLocaleTimeString())
       }
     } catch (error) {
       console.error("Error al verificar la fuente de datos:", error)
+      // En caso de error, establecer fallback
+      setDataSource("fallback")
     } finally {
       setLoading(false)
     }
