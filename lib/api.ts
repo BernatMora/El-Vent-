@@ -14,17 +14,20 @@ export async function getForecastData(spot: string) {
 
     // Construir la URL con encodeURIComponent para asegurar que sea válida
     const timestamp = new Date().getTime() // Añadir timestamp para evitar caché
-    const apiUrl = `/api/wind-data?spot=${encodeURIComponent(spot)}&_t=${timestamp}`
+    const apiUrl = `/api/wind-data?spot=${encodeURIComponent(spot)}&_t=${timestamp}&nocache=true`
     console.log("Llamando a API:", apiUrl)
 
     // Intentar obtener datos del backend con más información de depuración
     const response = await fetch(apiUrl, {
+      method: "GET",
       cache: "no-store",
       headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         Pragma: "no-cache",
         Expires: "0",
+        "X-Requested-With": "XMLHttpRequest",
       },
+      next: { revalidate: 0 },
     })
 
     // Registrar información sobre la respuesta para depuración

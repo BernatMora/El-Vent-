@@ -17,8 +17,20 @@ import { TideInformation } from "@/components/tide-information"
 import { OptimalWindowCalculator } from "@/components/optimal-window-calculator"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { DataSourceIndicator } from "@/components/data-source-indicator"
+import { Button } from "@/components/ui/button"
+import { RefreshCw } from "lucide-react"
+import { useState } from "react"
 
 export default function Home() {
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefreshAll = () => {
+    setIsRefreshing(true)
+
+    // Forzar recarga completa sin caché
+    window.location.href = window.location.href.split("?")[0] + "?refresh=" + new Date().getTime()
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4 md:p-8">
       <div className="mx-auto max-w-5xl">
@@ -29,32 +41,17 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <button
-            className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200"
-            onClick={() => {
-              // Forzar recarga completa sin caché
-              window.location.href = window.location.href.split("?")[0] + "?refresh=" + new Date().getTime()
-            }}
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:justify-center">
+          <Button
+            className="flex items-center justify-center gap-2 bg-blue-600 px-6 py-3 text-white transition hover:bg-blue-700"
+            onClick={handleRefreshAll}
+            disabled={isRefreshing}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-2 h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-              <path d="M16 21h5v-5" />
-            </svg>
-            Actualitza dades en temps real
-          </button>
-          <button
+            <RefreshCw className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Actualitzant..." : "Actualitza totes les dades"}
+          </Button>
+
+          <Button
             className="flex items-center justify-center rounded-md bg-green-100 px-6 py-3 text-green-700 transition hover:bg-green-200"
             onClick={() => document.getElementById("wind-guide")?.scrollIntoView({ behavior: "smooth" })}
           >
@@ -73,7 +70,8 @@ export default function Home() {
               <path d="M12 8h.01" />
             </svg>
             Mostra guia de vents
-          </button>
+          </Button>
+
           <a
             href="/comparar"
             className="flex items-center justify-center rounded-md bg-amber-100 px-6 py-3 text-amber-700 transition hover:bg-amber-200"

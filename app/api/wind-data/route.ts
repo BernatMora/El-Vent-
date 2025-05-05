@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
       status: 400,
       headers: {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     })
   }
@@ -26,7 +29,10 @@ export async function GET(request: NextRequest) {
     // Probar la conexión a Redis
     const redisConnected = await testRedisConnection()
 
-    if (redisConnected) {
+    // Verificar si debemos omitir la caché
+    const noCache = searchParams.get("nocache") === "true"
+
+    if (redisConnected && !noCache) {
       // Intentar obtener datos de caché
       const cacheKey = `wind_data_${spot}`
       try {
@@ -39,6 +45,9 @@ export async function GET(request: NextRequest) {
             headers: {
               "Content-Type": "application/json",
               "X-Data-Source": "cache",
+              "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+              Pragma: "no-cache",
+              Expires: "0",
             },
           })
         }
@@ -46,7 +55,7 @@ export async function GET(request: NextRequest) {
         console.error("Error al obtener datos de caché:", cacheError)
       }
     } else {
-      console.log("Redis no está disponible")
+      console.log("Redis no está disponible o se solicitó omitir caché")
     }
 
     // Si no hay datos en caché o hay un error, obtener datos de OpenWeatherMap
@@ -59,7 +68,7 @@ export async function GET(request: NextRequest) {
       if (redisConnected) {
         try {
           const cacheKey = `wind_data_${spot}`
-          await redis.set(cacheKey, weatherData, { ex: 1800 }) // Caché de 30 minutos
+          await redis.set(cacheKey, weatherData, { ex: 300 }) // Caché de 5 minutos
           console.log("Datos guardados en caché para", spot)
         } catch (cacheError) {
           console.error("Error al guardar datos en caché:", cacheError)
@@ -71,7 +80,7 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "X-Data-Source": "openweathermap",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -88,6 +97,9 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "X-Data-Source": "fallback",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       })
     }
@@ -102,6 +114,9 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "X-Data-Source": "fallback",
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     })
   }
