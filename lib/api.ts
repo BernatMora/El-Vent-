@@ -66,6 +66,7 @@ export async function getForecastData(spot: string, source = "openweathermap") {
     }
   } catch (error) {
     console.error("Error obteniendo datos de pronóstico:", error)
-    throw error // Propagar el error para que sea visible en la UI
+    // No propagar el error, sino devolverlo para que la UI pueda manejarlo
+    return { error: error instanceof Error ? error.message : "Error desconocido" }
   }
 }

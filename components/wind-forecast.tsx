@@ -36,6 +36,12 @@ export function WindForecast() {
       // Obtener datos reales de la API con el parámetro de timestamp
       const data = await getForecastData(selectedSpot + `?_t=${timestamp}`, currentSource)
 
+      // Verificar si hay un error en la respuesta
+      if (data && data.error) {
+        setError(`Error: ${data.error}`)
+        return
+      }
+
       setForecast(data)
       setLastUpdated(new Date().toLocaleTimeString())
       setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
@@ -184,6 +190,7 @@ export function WindForecast() {
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-muted-foreground">
             Font de dades: {dataSource === "open-meteo" ? "Open-Meteo (1h)" : "OpenWeatherMap (3h)"}
+            {dataSource === "fallback" && " (Dades locals)"}
           </span>
         </div>
         {error ? (

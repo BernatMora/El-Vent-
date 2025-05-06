@@ -12,6 +12,7 @@ export function DataSourceIndicator() {
   const [selectedSource, setSelectedSource] = useState<string>("openweathermap")
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [apiStatus, setApiStatus] = useState<"ok" | "error" | "loading">("loading")
 
   useEffect(() => {
     // Intentar obtener la fuente de datos guardada
@@ -32,6 +33,7 @@ export function DataSourceIndicator() {
   const checkDataSource = async () => {
     try {
       setLoading(true)
+      setApiStatus("loading")
       // Añadir un timestamp para evitar caché
       const timestamp = new Date().getTime()
 
@@ -56,15 +58,18 @@ export function DataSourceIndicator() {
       if (source) {
         setDataSource(source)
         setLastUpdated(new Date().toLocaleTimeString())
+        setApiStatus("ok")
       } else {
         // Si no hay fuente de datos, asumir fallback
         setDataSource("fallback")
         setLastUpdated(new Date().toLocaleTimeString())
+        setApiStatus("ok") // Aún consideramos esto como "ok" ya que tenemos datos de fallback
       }
     } catch (error) {
       console.error("Error al verificar la fuente de datos:", error)
       // En caso de error, establecer fallback
       setDataSource("fallback")
+      setApiStatus("error")
     } finally {
       setLoading(false)
     }
@@ -88,7 +93,10 @@ export function DataSourceIndicator() {
 
   return (
     <div className="mb-4">
-      <Alert variant="info" className="bg-blue-50 border-blue-200">
+      <Alert
+        variant={apiStatus === "error" ? "destructive" : "info"}
+        className={apiStatus === "ok" ? "bg-blue-50 border-blue-200" : ""}
+      >
         <AlertDescription className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
             <span>Font de dades:</span>

@@ -19,6 +19,8 @@ import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { DataSourceIndicator } from "@/components/data-source-indicator"
 import { Button } from "@/components/ui/button"
 import { ForceRefresh } from "@/components/force-refresh"
+import { KitesurfGallery } from "@/components/kitesurf-gallery"
+import { KitesurfEducation } from "@/components/kitesurf-education"
 
 export default function Home() {
   return (
@@ -115,6 +117,15 @@ export default function Home() {
 
         <div className="mb-8">
           <TideInformation />
+        </div>
+
+        {/* Nuevos componentes educativos */}
+        <div className="mb-8">
+          <KitesurfEducation />
+        </div>
+
+        <div className="mb-8">
+          <KitesurfGallery />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
