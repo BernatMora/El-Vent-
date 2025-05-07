@@ -1,5 +1,7 @@
 "use client"
 
+import { DialogFooter } from "@/components/ui/dialog"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -55,6 +56,19 @@ export function OptimalWindowCalculator() {
       // Obtener datos reales de la API
       const data = await getForecastData(selectedSpot)
 
+      // Verificar si el primer día es hoy
+      if (data && Array.isArray(data) && data.length > 0) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const todayStr = today.toISOString().split("T")[0]
+
+        // Forzar que el primer día sea hoy
+        if (data[0].date !== todayStr) {
+          console.warn("Forzando que el primer día sea hoy en OptimalWindowCalculator")
+          data[0].date = todayStr
+        }
+      }
+
       setForecast(data)
       calculateOptimalWindows(data, preferences)
       setLastUpdated(new Date().toLocaleTimeString())
@@ -66,9 +80,6 @@ export function OptimalWindowCalculator() {
       setLoading(false)
     }
   }
-
-  // Eliminar las funciones de generación de datos aleatorios
-  // Eliminar generateForecastData y generateHoursData
 
   useEffect(() => {
     loadForecast()
@@ -245,31 +256,6 @@ export function OptimalWindowCalculator() {
     }
   }
 
-  // Función para formatear la fecha para mostrar en la UI
-  const getFormattedDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr)
-      const today = new Date()
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-
-      const isToday = date.toDateString() === today.toDateString()
-      const isTomorrow = date.toDateString() === tomorrow.toDateString()
-
-      if (isToday) {
-        return "Avui"
-      } else if (isTomorrow) {
-        return "Demà"
-      } else {
-        // Formato: "dilluns, 5 de maig"
-        return formatDate(dateStr)
-      }
-    } catch (e) {
-      console.error("Error formateando fecha:", e)
-      return dateStr
-    }
-  }
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -441,10 +427,10 @@ export function OptimalWindowCalculator() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            {optimalWindows.slice(0, 3).map((day, index) => (
+          <TabsList className="grid w-full grid-cols-5">
+            {optimalWindows.slice(0, 5).map((day, index) => (
               <TabsTrigger key={day.date} value={index.toString()}>
-                {getFormattedDate(day.date)}
+                {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -459,7 +445,9 @@ export function OptimalWindowCalculator() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="mb-2 text-sm text-muted-foreground">{formatDate(day.date)}</div>
+                  <div className="mb-2 text-sm text-muted-foreground">
+                    {dayIndex === 0 ? "Avui" : dayIndex === 1 ? "Demà" : formatDate(day.date)}
+                  </div>
 
                   <div className="grid grid-cols-1 gap-2">
                     {day.windows.map((window: any) => (

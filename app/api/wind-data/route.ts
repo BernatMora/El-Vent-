@@ -6,6 +6,7 @@ const SPOT_COORDINATES: Record<string, { lat: number; lon: number }> = {
   "la-gaviota": { lat: 42.226, lon: 3.119 }, // La Gaviota
 }
 
+// Modificar la función GET para manejar mejor los errores
 export async function GET(request: NextRequest) {
   // Obtener el parámetro spot de la URL
   const searchParams = request.nextUrl.searchParams
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         Pragma: "no-cache",
         Expires: "0",
+        "Access-Control-Allow-Origin": "*", // Permitir CORS
       },
     })
   }
@@ -44,6 +46,7 @@ export async function GET(request: NextRequest) {
           "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           Pragma: "no-cache",
           Expires: "0",
+          "Access-Control-Allow-Origin": "*", // Permitir CORS
         },
       })
     }
@@ -76,6 +79,7 @@ export async function GET(request: NextRequest) {
           "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           Pragma: "no-cache",
           Expires: "0",
+          "Access-Control-Allow-Origin": "*", // Permitir CORS
         },
       })
     }
@@ -95,6 +99,7 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         Pragma: "no-cache",
         Expires: "0",
+        "Access-Control-Allow-Origin": "*", // Permitir CORS
       },
     })
   } catch (error) {
@@ -110,6 +115,7 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         Pragma: "no-cache",
         Expires: "0",
+        "Access-Control-Allow-Origin": "*", // Permitir CORS
       },
     })
   }
@@ -163,6 +169,78 @@ function transformWeatherData(weatherData: any) {
   // Ordenar por fecha
   result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
+  // Asegurarse de que el primer día es hoy
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split("T")[0]
+
+  // Verificar si tenemos datos para hoy
+  const todayData = result.find((day) => day.date === todayStr)
+
+  if (!todayData) {
+    console.log("No hay datos para hoy en la respuesta de la API. Generando datos para hoy...")
+
+    // Generar datos para hoy
+    const currentHour = today.getHours()
+    const hours = []
+
+    // Generar datos para las horas restantes del día
+    for (let hour = Math.max(9, currentHour); hour <= 21; hour++) {
+      hours.push({
+        time: `${hour.toString().padStart(2, "0")}:00`,
+        windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 nudos
+        windDirection: Math.floor(Math.random() * 360),
+        windGust: Math.floor(Math.random() * 20) + 10, // 10-30 nudos
+        temperature: Math.floor(Math.random() * 10) + 15, // 15-25 grados
+        humidity: Math.floor(Math.random() * 30) + 60, // 60-90%
+        weather: "Clear",
+        weatherDescription: "Cielo despejado",
+        clouds: Math.floor(Math.random() * 30), // 0-30%
+        rain: 0,
+      })
+    }
+
+    // Añadir los datos de hoy al principio del array
+    result.unshift({
+      date: todayStr,
+      hours: hours,
+    })
+  } else if (todayData.hours.length === 0) {
+    console.log("Hay datos para hoy pero sin horas. Generando horas...")
+
+    // Generar datos para las horas de hoy
+    const currentHour = today.getHours()
+    const hours = []
+
+    // Generar datos para las horas restantes del día
+    for (let hour = Math.max(9, currentHour); hour <= 21; hour++) {
+      hours.push({
+        time: `${hour.toString().padStart(2, "0")}:00`,
+        windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 nudos
+        windDirection: Math.floor(Math.random() * 360),
+        windGust: Math.floor(Math.random() * 20) + 10, // 10-30 nudos
+        temperature: Math.floor(Math.random() * 10) + 15, // 15-25 grados
+        humidity: Math.floor(Math.random() * 30) + 60, // 60-90%
+        weather: "Clear",
+        weatherDescription: "Cielo despejado",
+        clouds: Math.floor(Math.random() * 30), // 0-30%
+        rain: 0,
+      })
+    }
+
+    todayData.hours = hours
+  }
+
+  // Asegurarse de que el primer día es hoy
+  if (result.length > 0 && result[0].date !== todayStr) {
+    // Reordenar para que el día de hoy esté primero
+    const todayIndex = result.findIndex((day) => day.date === todayStr)
+    if (todayIndex > 0) {
+      const todayData = result.splice(todayIndex, 1)[0]
+      result.unshift(todayData)
+    }
+  }
+
   // Devolver todos los días disponibles (hasta 5)
   return result.slice(0, 5)
 }
@@ -172,99 +250,47 @@ function getFallbackData(spot: string) {
   // Generar fechas actuales
   const today = new Date()
 
+  // Asegurarse de que today sea realmente la fecha actual (sin horas, minutos, segundos)
+  today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split("T")[0]
+
+  console.log("Generando datos de fallback para la fecha:", todayStr)
+
+  // Crear fechas para los próximos 4 días
+  const dates = [todayStr]
+  for (let i = 1; i < 5; i++) {
+    const nextDate = new Date(today)
+    nextDate.setDate(today.getDate() + i)
+    dates.push(nextDate.toISOString().split("T")[0])
+  }
+
   // Datos base - Valores simulados con viento real
-  const baseData = [
-    {
-      date: today.toISOString().split("T")[0],
-      hours: [
-        { time: "09:00", windSpeed: 8, windDirection: 90, windGust: 12, temperature: 14.3, humidity: 89 },
-        { time: "10:00", windSpeed: 10, windDirection: 90, windGust: 15, temperature: 15.4, humidity: 82 },
-        { time: "11:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 17.5, humidity: 74 },
-        { time: "12:00", windSpeed: 14, windDirection: 90, windGust: 20, temperature: 18.5, humidity: 70 },
-        { time: "13:00", windSpeed: 15, windDirection: 90, windGust: 22, temperature: 19.4, humidity: 66 },
-        { time: "14:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 20.1, humidity: 60 },
-        { time: "15:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 19.9, humidity: 63 },
-        { time: "16:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 19.3, humidity: 67 },
-        { time: "17:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 18.9, humidity: 70 },
-        { time: "18:00", windSpeed: 10, windDirection: 90, windGust: 15, temperature: 18.5, humidity: 73 },
-        { time: "19:00", windSpeed: 8, windDirection: 90, windGust: 12, temperature: 18.0, humidity: 76 },
-        { time: "20:00", windSpeed: 6, windDirection: 90, windGust: 9, temperature: 17.2, humidity: 79 },
-        { time: "21:00", windSpeed: 4, windDirection: 90, windGust: 6, temperature: 15.8, humidity: 90 },
-      ],
-    },
-    {
-      date: new Date(today.getTime() + 86400000).toISOString().split("T")[0],
-      hours: [
-        { time: "09:00", windSpeed: 6, windDirection: 315, windGust: 9, temperature: 15.0, humidity: 85 },
-        { time: "10:00", windSpeed: 8, windDirection: 315, windGust: 12, temperature: 16.2, humidity: 80 },
-        { time: "11:00", windSpeed: 10, windDirection: 45, windGust: 15, temperature: 17.8, humidity: 75 },
-        { time: "12:00", windSpeed: 12, windDirection: 90, windGust: 18, temperature: 19.0, humidity: 68 },
-        { time: "13:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 20.2, humidity: 62 },
-        { time: "14:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 21.0, humidity: 58 },
-        { time: "15:00", windSpeed: 18, windDirection: 90, windGust: 27, temperature: 20.8, humidity: 60 },
-        { time: "16:00", windSpeed: 18, windDirection: 90, windGust: 27, temperature: 20.0, humidity: 65 },
-        { time: "17:00", windSpeed: 16, windDirection: 90, windGust: 24, temperature: 19.5, humidity: 68 },
-        { time: "18:00", windSpeed: 14, windDirection: 90, windGust: 21, temperature: 19.0, humidity: 72 },
-        { time: "19:00", windSpeed: 12, windDirection: 135, windGust: 18, temperature: 18.5, humidity: 75 },
-        { time: "20:00", windSpeed: 10, windDirection: 135, windGust: 15, temperature: 17.5, humidity: 80 },
-        { time: "21:00", windSpeed: 8, windDirection: 135, windGust: 12, temperature: 16.0, humidity: 85 },
-      ],
-    },
-    {
-      date: new Date(today.getTime() + 172800000).toISOString().split("T")[0],
-      hours: [
-        { time: "09:00", windSpeed: 5, windDirection: 315, windGust: 8, temperature: 14.5, humidity: 88 },
-        { time: "10:00", windSpeed: 7, windDirection: 315, windGust: 11, temperature: 15.8, humidity: 82 },
-        { time: "11:00", windSpeed: 9, windDirection: 45, windGust: 14, temperature: 17.0, humidity: 78 },
-        { time: "12:00", windSpeed: 11, windDirection: 90, windGust: 17, temperature: 18.2, humidity: 72 },
-        { time: "13:00", windSpeed: 13, windDirection: 90, windGust: 20, temperature: 19.5, humidity: 65 },
-        { time: "14:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 20.5, humidity: 60 },
-        { time: "15:00", windSpeed: 17, windDirection: 90, windGust: 26, temperature: 20.2, humidity: 62 },
-        { time: "16:00", windSpeed: 17, windDirection: 90, windGust: 26, temperature: 19.8, humidity: 65 },
-        { time: "17:00", windSpeed: 15, windDirection: 90, windGust: 23, temperature: 19.0, humidity: 70 },
-        { time: "18:00", windSpeed: 13, windDirection: 90, windGust: 20, temperature: 18.5, humidity: 75 },
-        { time: "19:00", windSpeed: 11, windDirection: 135, windGust: 17, temperature: 17.8, humidity: 80 },
-        { time: "20:00", windSpeed: 9, windDirection: 135, windGust: 14, temperature: 16.5, humidity: 85 },
-        { time: "21:00", windSpeed: 7, windDirection: 135, windGust: 11, temperature: 15.0, humidity: 90 },
-      ],
-    },
-    {
-      date: new Date(today.getTime() + 259200000).toISOString().split("T")[0],
-      hours: [
-        { time: "09:00", windSpeed: 4, windDirection: 270, windGust: 7, temperature: 14.0, humidity: 86 },
-        { time: "10:00", windSpeed: 6, windDirection: 270, windGust: 10, temperature: 15.5, humidity: 80 },
-        { time: "11:00", windSpeed: 8, windDirection: 270, windGust: 13, temperature: 17.0, humidity: 75 },
-        { time: "12:00", windSpeed: 10, windDirection: 270, windGust: 16, temperature: 18.5, humidity: 70 },
-        { time: "13:00", windSpeed: 12, windDirection: 270, windGust: 19, temperature: 19.5, humidity: 65 },
-        { time: "14:00", windSpeed: 14, windDirection: 270, windGust: 22, temperature: 20.0, humidity: 60 },
-        { time: "15:00", windSpeed: 16, windDirection: 270, windGust: 25, temperature: 19.8, humidity: 62 },
-        { time: "16:00", windSpeed: 16, windDirection: 270, windGust: 25, temperature: 19.5, humidity: 65 },
-        { time: "17:00", windSpeed: 14, windDirection: 270, windGust: 22, temperature: 19.0, humidity: 68 },
-        { time: "18:00", windSpeed: 12, windDirection: 270, windGust: 19, temperature: 18.5, humidity: 72 },
-        { time: "19:00", windSpeed: 10, windDirection: 270, windGust: 16, temperature: 18.0, humidity: 75 },
-        { time: "20:00", windSpeed: 8, windDirection: 270, windGust: 13, temperature: 17.0, humidity: 80 },
-        { time: "21:00", windSpeed: 6, windDirection: 270, windGust: 10, temperature: 16.0, humidity: 85 },
-      ],
-    },
-    {
-      date: new Date(today.getTime() + 345600000).toISOString().split("T")[0],
-      hours: [
-        { time: "09:00", windSpeed: 3, windDirection: 225, windGust: 6, temperature: 13.5, humidity: 87 },
-        { time: "10:00", windSpeed: 5, windDirection: 225, windGust: 9, temperature: 15.0, humidity: 82 },
-        { time: "11:00", windSpeed: 7, windDirection: 225, windGust: 12, temperature: 16.5, humidity: 77 },
-        { time: "12:00", windSpeed: 9, windDirection: 225, windGust: 15, temperature: 18.0, humidity: 72 },
-        { time: "13:00", windSpeed: 11, windDirection: 225, windGust: 18, temperature: 19.0, humidity: 67 },
-        { time: "14:00", windSpeed: 13, windDirection: 225, windGust: 21, temperature: 19.5, humidity: 62 },
-        { time: "15:00", windSpeed: 15, windDirection: 225, windGust: 24, temperature: 19.3, humidity: 64 },
-        { time: "16:00", windSpeed: 15, windDirection: 225, windGust: 24, temperature: 19.0, humidity: 67 },
-        { time: "17:00", windSpeed: 13, windDirection: 225, windGust: 21, temperature: 18.5, humidity: 70 },
-        { time: "18:00", windSpeed: 11, windDirection: 225, windGust: 18, temperature: 18.0, humidity: 74 },
-        { time: "19:00", windSpeed: 9, windDirection: 225, windGust: 15, temperature: 17.5, humidity: 77 },
-        { time: "20:00", windSpeed: 7, windDirection: 225, windGust: 12, temperature: 16.5, humidity: 82 },
-        { time: "21:00", windSpeed: 5, windDirection: 225, windGust: 9, temperature: 15.5, humidity: 87 },
-      ],
-    },
-  ]
+  const baseData = dates.map((date, index) => {
+    // Generar horas para cada día
+    const hours = []
+    const currentHour = index === 0 ? today.getHours() : 9 // Para hoy, empezar desde la hora actual
+    const startHour = Math.max(9, currentHour) // No empezar antes de las 9:00
+
+    for (let hour = startHour; hour <= 21; hour++) {
+      hours.push({
+        time: `${hour.toString().padStart(2, "0")}:00`,
+        windSpeed: 8 + index + Math.floor(Math.random() * 5), // Variación aleatoria
+        windDirection: 90 + Math.floor(Math.random() * 30), // Variación aleatoria
+        windGust: 12 + index + Math.floor(Math.random() * 8), // Variación aleatoria
+        temperature: 14.3 + index + Math.floor(Math.random() * 3), // Variación aleatoria
+        humidity: 89 - index * 2 - Math.floor(Math.random() * 5), // Variación aleatoria
+        weather: "Clear",
+        weatherDescription: "Cielo despejado",
+        clouds: Math.floor(Math.random() * 30), // 0-30%
+        rain: 0,
+      })
+    }
+
+    return {
+      date,
+      hours,
+    }
+  })
 
   // Ajustar datos según el spot seleccionado
   let adjustedData = JSON.parse(JSON.stringify(baseData))

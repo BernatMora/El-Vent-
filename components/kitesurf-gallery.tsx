@@ -200,7 +200,7 @@ export function KitesurfGallery() {
     setCurrentImageIndex(0)
   }
 
-  const currentImage = filteredImages[currentImageIndex]
+  const currentImage = filteredImages.length > 0 ? filteredImages[currentImageIndex] : null
 
   return (
     <Card className="w-full">
@@ -238,19 +238,20 @@ export function KitesurfGallery() {
             <div className="space-y-4">
               <div className="relative aspect-video overflow-hidden rounded-lg">
                 <img
-                  src={currentImage.imageUrl || "/placeholder.svg"}
-                  alt={currentImage.title}
+                  src={currentImage?.imageUrl || "/placeholder.svg"}
+                  alt={currentImage?.title || "No hay imagen disponible"}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
-                  <h3 className="text-xl font-bold">{currentImage.title}</h3>
-                  <p>{currentImage.description}</p>
+                  <h3 className="text-xl font-bold">{currentImage?.title || "Sin título"}</h3>
+                  <p>{currentImage?.description || "Sin descripción"}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 text-white hover:bg-black/50"
                   onClick={goToPrevious}
+                  disabled={filteredImages.length <= 1}
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
@@ -259,6 +260,7 @@ export function KitesurfGallery() {
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 text-white hover:bg-black/50"
                   onClick={goToNext}
+                  disabled={filteredImages.length <= 1}
                 >
                   <ChevronRight className="h-6 w-6" />
                 </Button>
@@ -268,44 +270,49 @@ export function KitesurfGallery() {
                       variant="ghost"
                       size="icon"
                       className="absolute right-2 top-2 rounded-full bg-black/30 text-white hover:bg-black/50"
+                      disabled={!currentImage}
                     >
                       <Info className="h-5 w-5" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
                     <DialogHeader>
-                      <DialogTitle>{currentImage.title}</DialogTitle>
-                      <DialogDescription>{currentImage.description}</DialogDescription>
+                      <DialogTitle>{currentImage?.title || "Sin título"}</DialogTitle>
+                      <DialogDescription>{currentImage?.description || "Sin descripción"}</DialogDescription>
                     </DialogHeader>
                     <div className="mt-4">
                       <img
-                        src={currentImage.imageUrl || "/placeholder.svg"}
-                        alt={currentImage.title}
+                        src={currentImage?.imageUrl || "/placeholder.svg"}
+                        alt={currentImage?.title || "No hay imagen disponible"}
                         className="mb-4 aspect-video w-full rounded-md object-cover"
                       />
                       <div className="space-y-4 text-sm">
-                        {currentImage.longDescription.split("\n\n").map((paragraph, index) => (
-                          <div key={index}>
-                            {paragraph.includes("• ") ? (
-                              <ul className="ml-5 list-disc space-y-1">
-                                {paragraph.split("\n").map((line, lineIndex) => (
-                                  <li key={lineIndex}>{line.replace("• ", "")}</li>
-                                ))}
-                              </ul>
-                            ) : paragraph.includes(". ") && /^\d+\./.test(paragraph) ? (
-                              <ol className="ml-5 list-decimal space-y-1">
-                                {paragraph.split("\n").map((line, lineIndex) => {
-                                  const match = line.match(/^\d+\.\s(.+)/)
-                                  return match ? <li key={lineIndex}>{match[1]}</li> : <p key={lineIndex}>{line}</p>
-                                })}
-                              </ol>
-                            ) : (
-                              <p>{paragraph}</p>
-                            )}
-                          </div>
-                        ))}
+                        {currentImage?.longDescription ? (
+                          currentImage.longDescription.split("\n\n").map((paragraph, index) => (
+                            <div key={index}>
+                              {paragraph.includes("• ") ? (
+                                <ul className="ml-5 list-disc space-y-1">
+                                  {paragraph.split("\n").map((line, lineIndex) => (
+                                    <li key={lineIndex}>{line.replace("• ", "")}</li>
+                                  ))}
+                                </ul>
+                              ) : paragraph.includes(". ") && /^\d+\./.test(paragraph) ? (
+                                <ol className="ml-5 list-decimal space-y-1">
+                                  {paragraph.split("\n").map((line, lineIndex) => {
+                                    const match = line.match(/^\d+\.\s(.+)/)
+                                    return match ? <li key={lineIndex}>{match[1]}</li> : <p key={lineIndex}>{line}</p>
+                                  })}
+                                </ol>
+                              ) : (
+                                <p>{paragraph}</p>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <p>No hay descripción disponible</p>
+                        )}
                       </div>
-                      {currentImage.credit && (
+                      {currentImage?.credit && (
                         <p className="mt-4 text-xs text-muted-foreground">Crèdit: {currentImage.credit}</p>
                       )}
                     </div>

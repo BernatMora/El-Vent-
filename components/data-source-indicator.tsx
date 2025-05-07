@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export function DataSourceIndicator() {
   const [dataSource, setDataSource] = useState<string | null>(null)
-  const [selectedSource, setSelectedSource] = useState<string>("openweathermap")
+  const [selectedSource, setSelectedSource] = useState<string>("open-meteo")
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [apiStatus, setApiStatus] = useState<"ok" | "error" | "loading">("loading")
@@ -19,6 +19,9 @@ export function DataSourceIndicator() {
     const savedSource = localStorage.getItem("dataSource")
     if (savedSource) {
       setSelectedSource(savedSource)
+    } else {
+      // Si no hay fuente guardada, establecer Open-Meteo como predeterminada
+      localStorage.setItem("dataSource", "open-meteo")
     }
 
     // Intentar obtener la fuente de datos de la última respuesta
@@ -39,9 +42,9 @@ export function DataSourceIndicator() {
 
       // Usar la API seleccionada
       const apiUrl =
-        selectedSource === "open-meteo"
-          ? `/api/open-meteo?spot=aquarius&_t=${timestamp}&check=true`
-          : `/api/wind-data?spot=aquarius&_t=${timestamp}&check=true`
+        selectedSource === "openweathermap"
+          ? `/api/wind-data?spot=aquarius&_t=${timestamp}&check=true`
+          : `/api/open-meteo?spot=aquarius&_t=${timestamp}&check=true`
 
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -123,8 +126,8 @@ export function DataSourceIndicator() {
                 <SelectValue placeholder="Seleccionar font" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openweathermap">OpenWeatherMap (3h)</SelectItem>
                 <SelectItem value="open-meteo">Open-Meteo (1h)</SelectItem>
+                <SelectItem value="openweathermap">OpenWeatherMap (3h)</SelectItem>
               </SelectContent>
             </Select>
 

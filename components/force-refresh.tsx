@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function ForceRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [dataSource, setDataSource] = useState("openweathermap")
+  const [dataSource, setDataSource] = useState("open-meteo")
   const [showAlert, setShowAlert] = useState(false)
 
   useEffect(() => {
@@ -15,6 +15,9 @@ export function ForceRefresh() {
     const savedSource = localStorage.getItem("dataSource")
     if (savedSource) {
       setDataSource(savedSource)
+    } else {
+      // Si no hay fuente guardada, establecer Open-Meteo como predeterminada
+      localStorage.setItem("dataSource", "open-meteo")
     }
 
     // Verificar si venimos de una actualización forzada
