@@ -1,20 +1,20 @@
 "use client"
 
-import { DialogFooter } from "@/components/ui/dialog"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { useSpotStore } from "@/lib/store"
+import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCw, Settings } from "lucide-react"
+import { Settings } from "lucide-react"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,8 +23,6 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getForecastData } from "@/lib/api"
 
 export function OptimalWindowCalculator() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
@@ -32,9 +30,6 @@ export function OptimalWindowCalculator() {
   const [forecast, setForecast] = useState<any[]>([])
   const [optimalWindows, setOptimalWindows] = useState<any[]>([])
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
-  const [dataError, setDataError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("0") // Asegurarnos de que el tab activo sea "0" (Avui)
   const [preferences, setPreferences] = useState({
     windSpeed: {
       min: userPreferences.windSpeed?.min || 10,
@@ -47,41 +42,20 @@ export function OptimalWindowCalculator() {
     maxWaveHeight: userPreferences.maxWaveHeight || 1.5,
   })
 
-  // Reemplazar la función loadForecast con la versión que usa la API real
-  const loadForecast = async () => {
-    try {
-      setLoading(true)
-      setDataError(null)
-
-      // Obtener datos reales de la API
-      const data = await getForecastData(selectedSpot)
-
-      // Verificar si el primer día es hoy
-      if (data && Array.isArray(data) && data.length > 0) {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const todayStr = today.toISOString().split("T")[0]
-
-        // Forzar que el primer día sea hoy
-        if (data[0].date !== todayStr) {
-          console.warn("Forzando que el primer día sea hoy en OptimalWindowCalculator")
-          data[0].date = todayStr
-        }
-      }
-
-      setForecast(data)
-      calculateOptimalWindows(data, preferences)
-      setLastUpdated(new Date().toLocaleTimeString())
-      setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
-    } catch (err) {
-      console.error("Error cargando datos:", err)
-      setDataError("Error al cargar los datos. Por favor, intenta de nuevo.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    async function loadForecast() {
+      try {
+        setLoading(true)
+        const data = await getForecastData(selectedSpot)
+        setForecast(data)
+        calculateOptimalWindows(data, preferences)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadForecast()
   }, [selectedSpot, preferences])
 
@@ -95,26 +69,6 @@ export function OptimalWindowCalculator() {
           return hourNum >= 9 && hourNum <= 21 // Solo horas de luz
         })
         .map((hour: any) => {
-          // Si no hay viento, puntuación baja
-          if (hour.windSpeed === 0) {
-            return {
-              time: hour.time,
-              windSpeed: 0,
-              windDirection: 0,
-              directionName: "-",
-              temperature: hour.temperature || 22,
-              waveHeight: "0.0",
-              score: 0,
-              optimalLevel: "low",
-              details: {
-                windSpeedScore: 0,
-                windDirectionScore: 0,
-                temperatureScore: 100,
-                wavesScore: 100,
-              },
-            }
-          }
-
           // Calcular puntuación para cada factor
           let windSpeedScore = 0
           if (hour.windSpeed >= prefs.windSpeed.min && hour.windSpeed <= prefs.windSpeed.max) {
@@ -196,7 +150,6 @@ export function OptimalWindowCalculator() {
   }
 
   const getWindDirectionName = (direction: number) => {
-    if (direction === 0) return "-" // No wind direction
     if (direction >= 337.5 || direction < 22.5) return "N"
     if (direction >= 22.5 && direction < 67.5) return "NE"
     if (direction >= 67.5 && direction < 112.5) return "E"
@@ -263,172 +216,160 @@ export function OptimalWindowCalculator() {
           <CardTitle className="text-xl">Calculadora de Finestra Òptima</CardTitle>
           <CardDescription>Troba les millors hores per navegar segons les teves preferències</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Actualitzat: {lastUpdated}</span>
-          <Button variant="outline" size="icon" onClick={loadForecast} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          <Dialog open={preferencesDialogOpen} onOpenChange={setPreferencesDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Preferències de navegació</DialogTitle>
-                <DialogDescription>
-                  Configura les teves condicions ideals per obtenir recomanacions personalitzades
-                </DialogDescription>
-              </DialogHeader>
+        <Dialog open={preferencesDialogOpen} onOpenChange={setPreferencesDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Preferències de navegació</DialogTitle>
+              <DialogDescription>
+                Configura les teves condicions ideals per obtenir recomanacions personalitzades
+              </DialogDescription>
+            </DialogHeader>
 
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Velocitat del vent (nusos)</Label>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Mínim: {preferences.windSpeed.min} kn</span>
-                    <span className="text-sm text-muted-foreground">Màxim: {preferences.windSpeed.max} kn</span>
-                  </div>
-                  <div className="px-1">
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Velocitat del vent (nusos)</Label>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Mínim: {preferences.windSpeed.min} kn</span>
+                  <span className="text-sm text-muted-foreground">Màxim: {preferences.windSpeed.max} kn</span>
+                </div>
+                <div className="px-1">
+                  <Slider
+                    defaultValue={[preferences.windSpeed.min, preferences.windSpeed.max]}
+                    min={5}
+                    max={40}
+                    step={1}
+                    onValueChange={(value) =>
+                      setPreferences({
+                        ...preferences,
+                        windSpeed: { min: value[0], max: value[1] },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Direccions de vent preferides</Label>
+                <RadioGroup
+                  className="grid grid-cols-4 gap-2"
+                  value={preferences.windDirection.join(",")}
+                  onValueChange={(value) =>
+                    setPreferences({
+                      ...preferences,
+                      windDirection: value.split(","),
+                    })
+                  }
+                >
+                  {["N", "NE", "E", "SE", "S", "SW", "W", "NW"].map((dir) => (
+                    <div key={dir} className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={dir}
+                        id={`dir-${dir}`}
+                        checked={preferences.windDirection.includes(dir)}
+                        onClick={() => {
+                          let newDirs = [...preferences.windDirection]
+                          if (newDirs.includes(dir)) {
+                            newDirs = newDirs.filter((d) => d !== dir)
+                          } else {
+                            newDirs.push(dir)
+                          }
+                          setPreferences({
+                            ...preferences,
+                            windDirection: newDirs,
+                          })
+                        }}
+                      />
+                      <Label htmlFor={`dir-${dir}`}>{dir}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="consider-temp">Considerar temperatura</Label>
+                  <Switch
+                    id="consider-temp"
+                    checked={preferences.considerTemperature}
+                    onCheckedChange={(checked) =>
+                      setPreferences({
+                        ...preferences,
+                        considerTemperature: checked,
+                      })
+                    }
+                  />
+                </div>
+
+                {preferences.considerTemperature && (
+                  <div className="space-y-2">
+                    <Label>Temperatura mínima: {preferences.minTemperature}°C</Label>
                     <Slider
-                      defaultValue={[preferences.windSpeed.min, preferences.windSpeed.max]}
-                      min={5}
-                      max={40}
+                      defaultValue={[preferences.minTemperature]}
+                      min={10}
+                      max={30}
                       step={1}
                       onValueChange={(value) =>
                         setPreferences({
                           ...preferences,
-                          windSpeed: { min: value[0], max: value[1] },
+                          minTemperature: value[0],
                         })
                       }
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Direccions de vent preferides</Label>
-                  <RadioGroup
-                    className="grid grid-cols-4 gap-2"
-                    value={preferences.windDirection.join(",")}
-                    onValueChange={(value) =>
-                      setPreferences({
-                        ...preferences,
-                        windDirection: value.split(","),
-                      })
-                    }
-                  >
-                    {["N", "NE", "E", "SE", "S", "SW", "W", "NW"].map((dir) => (
-                      <div key={dir} className="flex items-center space-x-2">
-                        <RadioGroupItem
-                          value={dir}
-                          id={`dir-${dir}`}
-                          checked={preferences.windDirection.includes(dir)}
-                          onClick={() => {
-                            let newDirs = [...preferences.windDirection]
-                            if (newDirs.includes(dir)) {
-                              newDirs = newDirs.filter((d) => d !== dir)
-                            } else {
-                              newDirs.push(dir)
-                            }
-                            setPreferences({
-                              ...preferences,
-                              windDirection: newDirs,
-                            })
-                          }}
-                        />
-                        <Label htmlFor={`dir-${dir}`}>{dir}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="consider-temp">Considerar temperatura</Label>
-                    <Switch
-                      id="consider-temp"
-                      checked={preferences.considerTemperature}
-                      onCheckedChange={(checked) =>
-                        setPreferences({
-                          ...preferences,
-                          considerTemperature: checked,
-                        })
-                      }
-                    />
-                  </div>
-
-                  {preferences.considerTemperature && (
-                    <div className="space-y-2">
-                      <Label>Temperatura mínima: {preferences.minTemperature}°C</Label>
-                      <Slider
-                        defaultValue={[preferences.minTemperature]}
-                        min={10}
-                        max={30}
-                        step={1}
-                        onValueChange={(value) =>
-                          setPreferences({
-                            ...preferences,
-                            minTemperature: value[0],
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="consider-waves">Considerar onades</Label>
-                    <Switch
-                      id="consider-waves"
-                      checked={preferences.considerWaves}
-                      onCheckedChange={(checked) =>
-                        setPreferences({
-                          ...preferences,
-                          considerWaves: checked,
-                        })
-                      }
-                    />
-                  </div>
-
-                  {preferences.considerWaves && (
-                    <div className="space-y-2">
-                      <Label>Alçada màxima d'onades: {preferences.maxWaveHeight} m</Label>
-                      <Slider
-                        defaultValue={[preferences.maxWaveHeight]}
-                        min={0.5}
-                        max={3}
-                        step={0.1}
-                        onValueChange={(value) =>
-                          setPreferences({
-                            ...preferences,
-                            maxWaveHeight: value[0],
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
 
-              <DialogFooter>
-                <Button onClick={handleSavePreferences}>Guardar preferències</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="consider-waves">Considerar onades</Label>
+                  <Switch
+                    id="consider-waves"
+                    checked={preferences.considerWaves}
+                    onCheckedChange={(checked) =>
+                      setPreferences({
+                        ...preferences,
+                        considerWaves: checked,
+                      })
+                    }
+                  />
+                </div>
+
+                {preferences.considerWaves && (
+                  <div className="space-y-2">
+                    <Label>Alçada màxima d'onades: {preferences.maxWaveHeight} m</Label>
+                    <Slider
+                      defaultValue={[preferences.maxWaveHeight]}
+                      min={0.5}
+                      max={3}
+                      step={0.1}
+                      onValueChange={(value) =>
+                        setPreferences({
+                          ...preferences,
+                          maxWaveHeight: value[0],
+                        })
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleSavePreferences}>Guardar preferències</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
 
       <CardContent>
-        {dataError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{dataError}</AlertDescription>
-          </Alert>
-        )}
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            {optimalWindows.slice(0, 5).map((day, index) => (
+        <Tabs defaultValue="0">
+          <TabsList className="grid w-full grid-cols-3">
+            {optimalWindows.map((day, index) => (
               <TabsTrigger key={day.date} value={index.toString()}>
                 {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
               </TabsTrigger>
@@ -445,9 +386,7 @@ export function OptimalWindowCalculator() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="mb-2 text-sm text-muted-foreground">
-                    {dayIndex === 0 ? "Avui" : dayIndex === 1 ? "Demà" : formatDate(day.date)}
-                  </div>
+                  <div className="mb-2 text-sm text-muted-foreground">{formatDate(day.date)}</div>
 
                   <div className="grid grid-cols-1 gap-2">
                     {day.windows.map((window: any) => (

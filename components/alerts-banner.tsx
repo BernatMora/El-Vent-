@@ -49,17 +49,17 @@ export function AlertsBanner() {
           }
 
           // Alerta de spot específico
-          if (selectedSpot === "la-gaviota") {
+          if (selectedSpot === "kitesurf-point") {
             newAlerts.push({
               type: "info",
-              title: "Informació de La Gaviota",
+              title: "Informació de Kitesurf Point",
               description:
                 "Recorda que aquesta zona és més adequada per a principiants. Respecta les zones de navegació.",
             })
-          } else if (selectedSpot === "aquarius") {
+          } else if (selectedSpot === "can-martinet") {
             newAlerts.push({
               type: "info",
-              title: "Informació d'Aquarius",
+              title: "Informació de Can Martinet",
               description: "Aquesta zona pot tenir corrents més forts. Recomanat per a riders amb experiència.",
             })
           }

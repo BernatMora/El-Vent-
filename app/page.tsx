@@ -16,11 +16,8 @@ import { WindChart } from "@/components/wind-chart"
 import { TideInformation } from "@/components/tide-information"
 import { OptimalWindowCalculator } from "@/components/optimal-window-calculator"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
-import { DataSourceIndicator } from "@/components/data-source-indicator"
-import { Button } from "@/components/ui/button"
-import { ForceRefresh } from "@/components/force-refresh"
-import { KitesurfGallery } from "@/components/kitesurf-gallery"
-import { KitesurfEducation } from "@/components/kitesurf-education"
+import { ApiStatus } from "@/components/api-status"
+import { WindyApiTest } from "@/components/windy-api-test"
 
 export default function Home() {
   return (
@@ -33,12 +30,29 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mb-6">
-          <ForceRefresh />
-        </div>
+        <ApiStatus />
+        <WindyApiTest />
 
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:justify-center">
-          <Button
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <button className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-2 h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+              <path d="M16 21h5v-5" />
+            </svg>
+            Actualitza dades en temps real
+          </button>
+          <button
             className="flex items-center justify-center rounded-md bg-green-100 px-6 py-3 text-green-700 transition hover:bg-green-200"
             onClick={() => document.getElementById("wind-guide")?.scrollIntoView({ behavior: "smooth" })}
           >
@@ -57,34 +71,12 @@ export default function Home() {
               <path d="M12 8h.01" />
             </svg>
             Mostra guia de vents
-          </Button>
-
-          <a
-            href="/comparar"
-            className="flex items-center justify-center rounded-md bg-amber-100 px-6 py-3 text-amber-700 transition hover:bg-amber-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-2 h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 3v18h18" />
-              <path d="m19 9-5 5-4-4-3 3" />
-            </svg>
-            Comparar spots
-          </a>
+          </button>
         </div>
 
         <div className="mb-8">
           <SpotSelector />
         </div>
-
-        <DataSourceIndicator />
 
         <AlertsBanner />
 
@@ -117,15 +109,6 @@ export default function Home() {
 
         <div className="mb-8">
           <TideInformation />
-        </div>
-
-        {/* Nuevos componentes educativos */}
-        <div className="mb-8">
-          <KitesurfEducation />
-        </div>
-
-        <div className="mb-8">
-          <KitesurfGallery />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">

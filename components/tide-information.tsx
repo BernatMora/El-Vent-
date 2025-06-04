@@ -40,7 +40,7 @@ export function TideInformation() {
 
         // Datos simulados basados en la ubicación
         const data: TideData = {
-          location: selectedSpot === "la-gaviota" ? "La Gaviota" : "Aquarius",
+          location: selectedSpot === "roses" ? "Roses" : selectedSpot === "lescala" ? "L'Escala" : "Sant Pere Pescador",
           updatedAt: new Date().toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" }),
           currentHeight: 0.13,
           nextHigh: {
@@ -58,12 +58,15 @@ export function TideInformation() {
         }
 
         // Ajustar datos según el spot
-        if (selectedSpot === "la-gaviota") {
+        if (selectedSpot === "kitesurf-point") {
           data.waveHeight = 0.9
           data.wavePeriod = 5
-        } else if (selectedSpot === "aquarius") {
+        } else if (selectedSpot === "la-ballena") {
           data.waveHeight = 0.8
           data.wavePeriod = 4
+        } else if (selectedSpot === "can-martinet") {
+          data.waveHeight = 0.6
+          data.wavePeriod = 3
         }
 
         setTideData(data)

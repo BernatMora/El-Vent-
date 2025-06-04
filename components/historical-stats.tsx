@@ -8,21 +8,27 @@ export function HistoricalStats() {
 
   // Estadísticas históricas para cada spot
   const spotStats: Record<string, { avgWind: number; maxWind: number; windyDays: number; bestMonth: string }> = {
-    aquarius: {
+    "la-ballena": {
       avgWind: 16,
       maxWind: 28,
       windyDays: 210,
       bestMonth: "Julio",
     },
-    "la-gaviota": {
+    "kitesurf-point": {
       avgWind: 15,
       maxWind: 26,
       windyDays: 200,
       bestMonth: "Agosto",
     },
+    "can-martinet": {
+      avgWind: 17,
+      maxWind: 30,
+      windyDays: 220,
+      bestMonth: "Junio",
+    },
   }
 
-  const stats = spotStats[selectedSpot] || spotStats["aquarius"]
+  const stats = spotStats[selectedSpot] || spotStats["la-ballena"]
 
   return (
     <Card>

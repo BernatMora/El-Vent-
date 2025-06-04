@@ -1,230 +1,47 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSpotStore } from "@/lib/store"
-import { formatDate, debugDate } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Cloud, CloudRain, RefreshCw, Sun } from "lucide-react"
 import { getForecastData } from "@/lib/api"
-// Añadir la importación del nuevo componente
-import { OfflineModeBanner } from "@/components/offline-mode-banner"
+import { formatDate } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString())
-  const [activeTab, setActiveTab] = useState("0") // Asegurarnos de que el tab activo sea "0" (Avui)
-  // Primero, añadir un estado para rastrear la fuente de datos
-  const [dataSource, setDataSource] = useState<string>("openweathermap")
-  // Añadir un estado para rastrear si estamos en modo offline
-  const [isOfflineMode, setIsOfflineMode] = useState(false)
-
-  // Modificar la función loadForecast para manejar mejor los errores
-  const loadForecast = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      setIsOfflineMode(false)
-
-      // Obtener la fuente de datos actual
-      const currentSource = localStorage.getItem("dataSource") || "openweathermap"
-      setDataSource(currentSource)
-
-      // Añadir un timestamp para evitar caché
-      const timestamp = new Date().getTime()
-
-      // Obtener datos reales de la API con el parámetro de timestamp
-      const data = await getForecastData(selectedSpot + `?_t=${timestamp}`, currentSource)
-
-      // Verificar si hay un error en la respuesta
-      if (data && data.error) {
-        console.error(`Error en la respuesta: ${data.error}`)
-        setError(`Error: ${data.error}`)
-        setIsOfflineMode(true)
-        return
-      }
-
-      // Verificar si tenemos datos válidos
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        console.error("No se recibieron datos válidos")
-        setError("No se recibieron datos válidos. Por favor, intenta de nuevo.")
-        setIsOfflineMode(true)
-        return
-      }
-
-      // Depurar las fechas recibidas
-      console.log(
-        "Fechas recibidas:",
-        data.map((day) => day.date),
-      )
-
-      // Verificar si el primer día es hoy
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayStr = today.toISOString().split("T")[0]
-
-      console.log("Fecha de hoy:", todayStr)
-      console.log("Primera fecha recibida:", data[0].date)
-      console.log("¿Es hoy?", data[0].date === todayStr)
-      console.log("Número de horas para el primer día:", data[0].hours?.length || 0)
-
-      // Verificar si hay datos para hoy
-      if (data[0].date !== todayStr) {
-        console.warn("El primer día no es hoy. Ajustando datos...")
-
-        // Buscar si hay datos para hoy en el array
-        const todayIndex = data.findIndex((day) => day.date === todayStr)
-
-        if (todayIndex > 0) {
-          // Si hay datos para hoy pero no están en la primera posición, moverlos
-          const todayData = data.splice(todayIndex, 1)[0]
-          data.unshift(todayData)
-        } else {
-          // Si no hay datos para hoy, generarlos
-          const currentHour = today.getHours()
-          const hours = []
-
-          // Generar datos para las horas restantes del día
-          for (let hour = Math.max(9, currentHour); hour <= 21; hour++) {
-            hours.push({
-              time: `${hour.toString().padStart(2, "0")}:00`,
-              windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 nudos
-              windDirection: Math.floor(Math.random() * 360),
-              windGust: Math.floor(Math.random() * 20) + 10, // 10-30 nudos
-              temperature: Math.floor(Math.random() * 10) + 15, // 15-25 grados
-              humidity: Math.floor(Math.random() * 30) + 60, // 60-90%
-              weather: "Clear",
-              weatherDescription: "Cielo despejado",
-              rain: 0,
-              clouds: Math.floor(Math.random() * 30), // 0-30%
-            })
-          }
-
-          // Añadir los datos de hoy al principio del array
-          data.unshift({
-            date: todayStr,
-            hours: hours,
-          })
-        }
-      } else if (!data[0].hours || data[0].hours.length === 0) {
-        // Si el primer día es hoy pero no tiene horas, añadir horas
-        console.warn("El día actual no tiene datos de horas. Generando datos...")
-
-        const currentHour = today.getHours()
-        const hours = []
-
-        // Generar datos para las horas restantes del día
-        for (let hour = Math.max(9, currentHour); hour <= 21; hour++) {
-          hours.push({
-            time: `${hour.toString().padStart(2, "0")}:00`,
-            windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 nudos
-            windDirection: Math.floor(Math.random() * 360),
-            windGust: Math.floor(Math.random() * 20) + 10, // 10-30 nudos
-            temperature: Math.floor(Math.random() * 10) + 15, // 15-25 grados
-            humidity: Math.floor(Math.random() * 30) + 60, // 60-90%
-            weather: "Clear",
-            weatherDescription: "Cielo despejado",
-            rain: 0,
-            clouds: Math.floor(Math.random() * 30), // 0-30%
-          })
-        }
-
-        data[0].hours = hours
-      }
-
-      setForecast(data)
-      setLastUpdated(new Date().toLocaleTimeString())
-      setActiveTab("0") // Asegurarse de que el tab activo sea el primero (hoy)
-    } catch (err) {
-      console.error("Error cargando pronóstico:", err)
-      setError("Error al cargar el pronóstico. Usando datos locales.")
-      setIsOfflineMode(true)
-
-      // Generar datos de fallback en caso de error
-      const fallbackData = generateFallbackData(selectedSpot)
-      if (fallbackData && Array.isArray(fallbackData)) {
-        setForecast(fallbackData)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Función para generar datos de fallback
-  function generateFallbackData(spot: string) {
-    console.log("Generando datos de fallback para", spot)
-
-    // Generar fechas actuales
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = today.toISOString().split("T")[0]
-
-    // Crear fechas para los próximos 4 días
-    const dates = [todayStr]
-    for (let i = 1; i < 5; i++) {
-      const nextDate = new Date(today)
-      nextDate.setDate(today.getDate() + i)
-      dates.push(nextDate.toISOString().split("T")[0])
-    }
-
-    // Crear datos para cada día
-    return dates.map((date, index) => {
-      // Generar horas para cada día
-      const hours = []
-      const currentHour = index === 0 ? today.getHours() : 9 // Para hoy, empezar desde la hora actual
-      const startHour = Math.max(9, currentHour) // No empezar antes de las 9:00
-
-      for (let hour = startHour; hour <= 21; hour++) {
-        hours.push({
-          time: `${hour.toString().padStart(2, "0")}:00`,
-          windSpeed: 8 + index + Math.floor(Math.random() * 5), // Variación aleatoria
-          windDirection: 90 + Math.floor(Math.random() * 30), // Variación aleatoria
-          windGust: 12 + index + Math.floor(Math.random() * 8), // Variación aleatoria
-          temperature: 14.3 + index + Math.floor(Math.random() * 3), // Variación aleatoria
-          humidity: 89 - index * 2 - Math.floor(Math.random() * 5), // Variación aleatoria
-          weather: "Clear",
-          weatherDescription: "Cielo despejado",
-          clouds: Math.floor(Math.random() * 30), // 0-30%
-          rain: 0,
-        })
-      }
-
-      return {
-        date,
-        hours,
-      }
-    })
-  }
 
   useEffect(() => {
-    loadForecast()
+    async function loadForecast() {
+      try {
+        setLoading(true)
+        setError(null)
+        console.log("Cargando previsión para:", selectedSpot)
+        const data = await getForecastData(selectedSpot)
+        console.log("Datos recibidos:", data)
 
-    // Detectar la fuente de datos guardada en localStorage
-    const savedSource = localStorage.getItem("dataSource")
-    if (savedSource) {
-      setDataSource(savedSource)
+        if (!data || data.length === 0) {
+          setError("No s'han pogut carregar les dades de previsió")
+          return
+        }
+
+        setForecast(data)
+      } catch (err) {
+        console.error("Error loading forecast:", err)
+        setError("Error carregant les dades")
+      } finally {
+        setLoading(false)
+      }
     }
+
+    loadForecast()
   }, [selectedSpot])
 
   // Función para renderizar la flecha de dirección del viento
-  const renderWindArrow = (direction: number, windSpeed: number) => {
-    // Si no hay viento, mostrar un icono diferente
-    if (windSpeed === 0) {
-      return (
-        <div className="flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="#9CA3AF" strokeWidth="2" />
-            <line x1="8" y1="12" x2="16" y2="12" stroke="#9CA3AF" strokeWidth="2" />
-          </svg>
-        </div>
-      )
-    }
-
+  const renderWindArrow = (direction: number) => {
     // La flecha debe apuntar HACIA DONDE va el viento
     // Necesitamos rotar 180 grados porque en meteorología la dirección indica de donde viene
     const rotationDegree = (direction + 180) % 360
@@ -255,7 +72,6 @@ export function WindForecast() {
 
   // Obtener el nombre del viento según su dirección
   const getWindDirectionName = (direction: number) => {
-    if (direction === 0) return "-" // No wind direction
     if (direction >= 337.5 || direction < 22.5) return "N"
     if (direction >= 22.5 && direction < 67.5) return "NE"
     if (direction >= 67.5 && direction < 112.5) return "E"
@@ -273,108 +89,55 @@ export function WindForecast() {
 
   // Determinar si el flujo es "Molt fluix", "Fluix" o normal basado en la velocidad del viento
   const getFlowDescription = (windSpeed: number) => {
-    if (windSpeed === 0) return "Sense vent"
     if (windSpeed <= 3) return "Molt fluix"
     if (windSpeed <= 7) return "Fluix"
     return "Flux"
   }
 
-  // Función para renderizar el icono del clima
-  const renderWeatherIcon = (hour: any) => {
-    if (!hour || !hour.weather) return null
-
-    const weather = hour.weather?.toLowerCase()
-    const rain = hour.rain > 0
-
-    if (rain) {
-      return <CloudRain className="h-5 w-5 text-blue-500" />
-    } else if (weather === "clouds" || hour.clouds > 70) {
-      return <Cloud className="h-5 w-5 text-gray-500" />
-    } else if (weather === "clear") {
-      return <Sun className="h-5 w-5 text-yellow-500" />
-    } else {
-      return null
-    }
-  }
-
-  // Añadir el banner de modo offline en el JSX
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle>Previsió del Vent</CardTitle>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Actualitzat: {lastUpdated}</span>
-          <Button variant="outline" size="sm" onClick={loadForecast} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            <span className="sr-only">Actualitzar</span>
-          </Button>
-        </div>
       </CardHeader>
       <CardContent>
-        {isOfflineMode && <OfflineModeBanner onRetry={loadForecast} />}
-
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-muted-foreground">
-            Font de dades: {dataSource === "open-meteo" ? "Open-Meteo (1h)" : "OpenWeatherMap (3h)"}
-            {dataSource === "fallback" && " (Dades locals)"}
-          </span>
-        </div>
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
-            {error}
-            <Button variant="outline" className="mt-2" onClick={loadForecast}>
-              Recargar datos
-            </Button>
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
           </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              {forecast.slice(0, 5).map((day, index) => {
-                // Depurar cada fecha
-                debugDate(day.date)
-
-                return (
-                  <TabsTrigger key={day.date} value={index.toString()}>
-                    {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
-                  </TabsTrigger>
-                )
-              })}
+        ) : error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">{error}</div>
+        ) : forecast && forecast.length > 0 ? (
+          <Tabs defaultValue="0">
+            <TabsList className="grid w-full grid-cols-3">
+              {forecast.map((day, index) => (
+                <TabsTrigger key={day.date} value={index.toString()}>
+                  {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
-            {forecast.slice(0, 5).map((day, dayIndex) => (
+            {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
-                {loading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-5 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
+                    <div>Hora</div>
+                    <div>Vent</div>
+                    <div>Direcció</div>
+                    <div>Ràfegues</div>
+                    <div>Flux</div>
                   </div>
-                ) : day.hours && day.hours.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-6 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
-                      <div>Hora</div>
-                      <div>Vent</div>
-                      <div>Direcció</div>
-                      <div>Ràfegues</div>
-                      <div>Flux</div>
-                      <div>Clima</div>
-                    </div>
-                    {day.hours
+                  {day.hours && day.hours.length > 0 ? (
+                    day.hours
                       .filter((hour: any) => {
                         const hourNum = Number.parseInt(hour.time.split(":")[0])
-                        // Si es Open-Meteo, mostrar todas las horas entre 9 y 21
-                        // Si es OpenWeatherMap, mostrar solo cada 3 horas
-                        if (dataSource === "open-meteo") {
-                          return hourNum >= 9 && hourNum <= 21
-                        } else {
-                          // Para OpenWeatherMap, mostrar solo horas múltiplos de 3 o las disponibles
-                          return hourNum >= 9 && hourNum <= 21 && (hourNum % 3 === 0 || hour.time.includes(":00"))
-                        }
+                        return hourNum >= 9 && hourNum <= 21
                       })
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-6 items-center gap-2 rounded-md border p-2 text-center"
+                          className="grid grid-cols-5 items-center gap-2 rounded-md border p-2 text-center"
                         >
                           <div className="font-medium">{hour.time}</div>
                           <div className="font-semibold text-blue-700">
@@ -382,36 +145,27 @@ export function WindForecast() {
                             <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windSpeed)} km/h)</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            {renderWindArrow(hour.windDirection, hour.windSpeed)}
-                            <span className="mt-1 text-xs">
-                              {hour.windSpeed === 0 ? "-" : getWindDirectionName(hour.windDirection)}
-                            </span>
+                            {renderWindArrow(hour.windDirection)}
+                            <span className="mt-1 text-xs">{getWindDirectionName(hour.windDirection)}</span>
                           </div>
                           <div className="font-medium text-amber-600">
                             {Math.round(hour.windGust)} kn
                             <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
                           </div>
                           <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
-                          <div className="flex items-center justify-center">
-                            {renderWeatherIcon(hour)}
-                            {hour.rain > 0 && (
-                              <span className="ml-1 text-xs text-blue-600">{hour.rain.toFixed(1)} mm</span>
-                            )}
-                          </div>
                         </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center text-amber-800">
-                    No hay datos disponibles para este día. Por favor, intenta actualizar los datos.
-                    <Button variant="outline" className="mt-2" onClick={loadForecast}>
-                      Actualizar datos
-                    </Button>
-                  </div>
-                )}
+                      ))
+                  ) : (
+                    <div className="rounded-lg border p-4 text-center text-gray-500">
+                      No hi ha dades disponibles per aquest dia
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             ))}
           </Tabs>
+        ) : (
+          <div className="rounded-lg border p-4 text-center text-gray-500">No hi ha dades de previsió disponibles</div>
         )}
       </CardContent>
     </Card>

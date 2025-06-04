@@ -10,14 +10,19 @@ import { useSpotStore } from "@/lib/store"
 
 const spots = [
   {
-    value: "aquarius",
-    label: "Aquarius",
+    value: "la-ballena",
+    label: "La Ballena",
     description: "Zona principal, acceso desde el parking principal",
   },
   {
-    value: "la-gaviota",
-    label: "La Gaviota",
+    value: "kitesurf-point",
+    label: "Kitesurf Point (Zona Norte)",
     description: "Zona norte, con mejores condiciones para principiantes",
+  },
+  {
+    value: "can-martinet",
+    label: "Can Martinet (Zona Sur)",
+    description: "Zona sur, con vientos más constantes",
   },
 ]
 
