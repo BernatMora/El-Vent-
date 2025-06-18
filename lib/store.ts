@@ -22,7 +22,7 @@ type SpotStore = {
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
-  selectedSpot: "la-ballena",
+  selectedSpot: "kitesurf-point", // Canviat de "la-ballena" a "kitesurf-point"
   userPreferences: {
     weight: 75,
     level: "intermediate",

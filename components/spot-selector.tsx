@@ -10,19 +10,19 @@ import { useSpotStore } from "@/lib/store"
 
 const spots = [
   {
-    value: "la-ballena",
-    label: "La Ballena",
-    description: "Zona principal, acceso desde el parking principal",
+    value: "kitesurf-point",
+    label: "Kitesurf Point (Zona Nord)",
+    description: "Zona nord, amb millors condicions per principiants - PER DEFECTE",
   },
   {
-    value: "kitesurf-point",
-    label: "Kitesurf Point (Zona Norte)",
-    description: "Zona norte, con mejores condiciones para principiantes",
+    value: "la-ballena",
+    label: "La Ballena",
+    description: "Zona principal, accés des del parking principal",
   },
   {
     value: "can-martinet",
-    label: "Can Martinet (Zona Sur)",
-    description: "Zona sur, con vientos más constantes",
+    label: "Can Martinet (Zona Sud)",
+    description: "Zona sud, amb vents més constants",
   },
 ]
 
@@ -41,7 +41,7 @@ export function SpotSelector() {
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between bg-white py-6 text-lg"
+            className="w-full justify-between bg-white py-4 sm:py-6 text-sm sm:text-lg"
           >
             {selectedSpotLabel}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -64,7 +64,7 @@ export function SpotSelector() {
                   >
                     <Check className={cn("mr-2 h-4 w-4", selectedSpot === spot.value ? "opacity-100" : "opacity-0")} />
                     <div>
-                      <p>{spot.label}</p>
+                      <p className={spot.value === "kitesurf-point" ? "font-semibold text-blue-700" : ""}>{spot.label}</p>
                       <p className="text-sm text-muted-foreground">{spot.description}</p>
                     </div>
                   </CommandItem>
