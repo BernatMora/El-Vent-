@@ -19,7 +19,7 @@ import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { ApiStatus } from "@/components/api-status"
 
-export default function Home({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4 md:p-8">
       <div className="mx-auto max-w-5xl">
