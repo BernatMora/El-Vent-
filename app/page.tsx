@@ -17,7 +17,6 @@ import { TideInformation } from "@/components/tide-information"
 import { OptimalWindowCalculator } from "@/components/optimal-window-calculator"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { ApiStatus } from "@/components/api-status"
-import { WindyApiTest } from "@/components/windy-api-test"
 
 export default function Home() {
   return (
@@ -31,7 +30,6 @@ export default function Home() {
         </div>
 
         <ApiStatus />
-        <WindyApiTest />
 
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           <button className="flex items-center justify-center rounded-md bg-blue-100 px-6 py-3 text-blue-700 transition hover:bg-blue-200">
@@ -50,7 +48,7 @@ export default function Home() {
               <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
               <path d="M16 21h5v-5" />
             </svg>
-            Actualitza dades en temps real
+            Actualitza dades simulades
           </button>
           <button
             className="flex items-center justify-center rounded-md bg-green-100 px-6 py-3 text-green-700 transition hover:bg-green-200"
