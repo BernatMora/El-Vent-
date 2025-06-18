@@ -101,15 +101,16 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Wind className="mr-2 h-4 w-4" />
-          Reportar vent actual
+        <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-4 py-2">
+          <Wind className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Reportar vent actual</span>
+          <span className="sm:hidden">Reportar</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Reportar condicions actuals</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg">Reportar condicions actuals</DialogTitle>
+          <DialogDescription className="text-sm">
             Comparteix les condicions reals de vent per ajudar a calibrar les previsions
           </DialogDescription>
         </DialogHeader>
@@ -128,7 +129,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
           <>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="windSpeed" className="text-right">
+                <Label htmlFor="windSpeed" className="text-right text-sm">
                   Vent (kn)
                 </Label>
                 <Input
@@ -138,20 +139,20 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
                   type="number"
                   min="0"
                   max="50"
-                  className="col-span-3"
+                  className="col-span-3 text-sm"
                   placeholder="Ex: 12"
                 />
               </div>
               
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="windDirection" className="text-right">
+                <Label htmlFor="windDirection" className="text-right text-sm">
                   Direcció
                 </Label>
                 <Select
                   value={report.windDirection}
                   onValueChange={(value) => setReport({ ...report, windDirection: value })}
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="col-span-3 text-sm">
                     <SelectValue placeholder="Selecciona direcció" />
                   </SelectTrigger>
                   <SelectContent>
@@ -168,34 +169,34 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
               </div>
 
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="confidence" className="text-right">
+                <Label htmlFor="confidence" className="text-right text-sm">
                   Confiança
                 </Label>
                 <Select
                   value={report.confidence}
                   onValueChange={(value) => setReport({ ...report, confidence: value })}
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="col-span-3 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="high">Alta - Mesurat amb instrument</SelectItem>
-                    <SelectItem value="medium">Mitjana - Observació visual</SelectItem>
-                    <SelectItem value="low">Baixa - Estimació aproximada</SelectItem>
+                    <SelectItem value="high">Alta - Mesurat</SelectItem>
+                    <SelectItem value="medium">Mitjana - Visual</SelectItem>
+                    <SelectItem value="low">Baixa - Estimació</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="comment" className="text-right">
+                <Label htmlFor="comment" className="text-right text-sm">
                   Comentari
                 </Label>
                 <Textarea
                   id="comment"
                   value={report.comment}
                   onChange={(e) => setReport({ ...report, comment: e.target.value })}
-                  className="col-span-3"
-                  placeholder="Condicions adicionals, ràfegues, etc. (opcional)"
+                  className="col-span-3 text-sm"
+                  placeholder="Condicions adicionals (opcional)"
                   rows={2}
                 />
               </div>
@@ -215,6 +216,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
                 type="submit" 
                 onClick={handleSubmit}
                 disabled={loading || !report.windSpeed}
+                className="text-sm"
               >
                 {loading ? "Enviant..." : "Enviar reporte"}
               </Button>

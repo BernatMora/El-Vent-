@@ -49,8 +49,9 @@ export function WindForecast() {
     return (
       <div className="flex items-center justify-center">
         <svg
-          width="24"
-          height="24"
+          width="20"
+          height="20"
+          className="sm:w-6 sm:h-6"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -96,38 +97,41 @@ export function WindForecast() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Previsió del Vent</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">Previsió del Vent</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+              <Skeleton key={i} className="h-12 sm:h-16 w-full" />
             ))}
           </div>
         ) : error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">{error}</div>
         ) : forecast && forecast.length > 0 ? (
           <Tabs defaultValue="0">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
               {forecast.map((day, index) => (
-                <TabsTrigger key={day.date} value={index.toString()}>
-                  {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date)}
+                <TabsTrigger key={day.date} value={index.toString()} className="text-xs sm:text-sm px-2 py-2">
+                  {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date).split(',')[0]}
                 </TabsTrigger>
               ))}
             </TabsList>
 
             {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="grid grid-cols-6 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
+                <div className="space-y-2">
+                  {/* Header per mòbil - més compacte */}
+                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-blue-900">
                     <div>Hora</div>
                     <div>Vent</div>
-                    <div>Direcció</div>
-                    <div>Ràfegues</div>
-                    <div>Flux</div>
-                    <div>Estat</div>
+                    <div>Dir.</div>
+                    <div>Ràf.</div>
+                    <div className="hidden sm:block">Flux</div>
+                    <div className="sm:hidden">Est.</div>
+                    <div className="hidden sm:block">Estat</div>
                   </div>
+                  
                   {day.hours && day.hours.length > 0 ? (
                     day.hours
                       .filter((hour: any) => {
@@ -137,31 +141,44 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-6 items-center gap-2 rounded-md border p-2 text-center"
+                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm"
                         >
                           <div className="font-medium">{hour.time}</div>
+                          
                           <div className="font-semibold text-blue-700">
                             {Math.round(hour.windSpeed)} kn
-                            <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windSpeed)} km/h)</span>
+                            <div className="text-xs text-gray-500 hidden sm:block">
+                              ({knotsToKmh(hour.windSpeed)} km/h)
+                            </div>
                           </div>
+                          
                           <div className="flex flex-col items-center">
                             {renderWindArrow(hour.windDirection)}
-                            <span className="mt-1 text-xs">{getWindDirectionName(hour.windDirection)}</span>
+                            <span className="text-xs mt-1">{getWindDirectionName(hour.windDirection)}</span>
                           </div>
+                          
                           <div className="font-medium text-amber-600">
                             {Math.round(hour.windGust)} kn
-                            <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
+                            <div className="text-xs text-gray-500 hidden sm:block">
+                              ({knotsToKmh(hour.windGust)} km/h)
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
+                          
+                          <div className="text-xs sm:text-sm text-gray-600">
+                            {getFlowDescription(hour.windSpeed)}
+                          </div>
+                          
                           <div className="flex justify-center">
                             {hour.isCalibrated ? (
-                              <Badge variant="outline" className="text-xs">
-                                <Info className="mr-1 h-3 w-3" />
-                                Calibrat
+                              <Badge variant="outline" className="text-xs px-1 py-0">
+                                <Info className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
+                                <span className="hidden sm:inline">Calibrat</span>
+                                <span className="sm:hidden">Cal</span>
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-xs">
-                                Model
+                              <Badge variant="secondary" className="text-xs px-1 py-0">
+                                <span className="hidden sm:inline">Model</span>
+                                <span className="sm:hidden">Mod</span>
                               </Badge>
                             )}
                           </div>
@@ -182,7 +199,7 @@ export function WindForecast() {
         
         {forecast.length > 0 && forecast[0].hours.some((h: any) => h.isCalibrated) && (
           <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <div className="text-sm text-blue-800">
+            <div className="text-xs sm:text-sm text-blue-800">
               <strong>Dades calibrades:</strong> Alguns valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
             </div>
           </div>
