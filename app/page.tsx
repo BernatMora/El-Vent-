@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic';
+
 import { SpotSelector } from "@/components/spot-selector"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
