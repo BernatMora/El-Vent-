@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 
 export function OptimalWindowCalculator() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<any[]>([])
   const [optimalWindows, setOptimalWindows] = useState<any[]>([])
@@ -42,7 +43,15 @@ export function OptimalWindowCalculator() {
     maxWaveHeight: userPreferences.maxWaveHeight || 1.5,
   })
 
+  // Set mounted state on client-side mount
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    // Only execute client-side logic after component has mounted
+    if (!mounted) return
+
     async function loadForecast() {
       try {
         setLoading(true)
@@ -57,7 +66,7 @@ export function OptimalWindowCalculator() {
     }
 
     loadForecast()
-  }, [selectedSpot, preferences])
+  }, [selectedSpot, preferences, mounted])
 
   const calculateOptimalWindows = (forecastData: any[], prefs: any) => {
     if (!forecastData || forecastData.length === 0) return
@@ -207,6 +216,30 @@ export function OptimalWindowCalculator() {
       default:
         return "Desconegut"
     }
+  }
+
+  // Show loading skeleton during SSR and initial client mount
+  if (!mounted) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle className="text-xl">Calculadora de Finestra Òptima</CardTitle>
+            <CardDescription>Troba les millors hores per navegar segons les teves preferències</CardDescription>
+          </div>
+          <Button variant="outline" size="icon" disabled>
+            <Settings className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
