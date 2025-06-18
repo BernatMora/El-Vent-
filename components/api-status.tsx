@@ -3,47 +3,105 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Database, CheckCircle } from "lucide-react"
+import { Wifi, Database, CheckCircle, AlertCircle } from "lucide-react"
 
 export function ApiStatus() {
+  const [apiStatus, setApiStatus] = useState<"loading" | "real" | "fallback" | "error">("loading")
   const [lastUpdate, setLastUpdate] = useState<string>("")
+  const [dataSource, setDataSource] = useState<string>("")
 
   useEffect(() => {
-    setLastUpdate(
-      new Date().toLocaleTimeString("ca-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    )
+    const checkApiStatus = async () => {
+      try {
+        // Probar conexión con Open-Meteo
+        const response = await fetch(
+          "https://api.open-meteo.com/v1/forecast?latitude=42.1833&longitude=3.0833&hourly=wind_speed_10m&forecast_days=1"
+        )
+        
+        if (response.ok) {
+          setApiStatus("real")
+          setDataSource("Open-Meteo (Gratuït)")
+        } else {
+          setApiStatus("fallback")
+          setDataSource("Dades simulades")
+        }
+      } catch (error) {
+        setApiStatus("fallback")
+        setDataSource("Dades simulades")
+      }
 
-    // Actualizar cada 5 minutos
-    const interval = setInterval(() => {
       setLastUpdate(
         new Date().toLocaleTimeString("ca-ES", {
           hour: "2-digit",
           minute: "2-digit",
         }),
       )
-    }, 5 * 60 * 1000)
+    }
+
+    checkApiStatus()
+
+    // Verificar cada 5 minutos
+    const interval = setInterval(checkApiStatus, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
   }, [])
+
+  const getStatusInfo = () => {
+    switch (apiStatus) {
+      case "real":
+        return {
+          icon: <Wifi className="h-4 w-4" />,
+          text: "Dades meteorològiques reals",
+          variant: "default" as const,
+          color: "text-green-600",
+          badgeText: "En línia",
+          badgeClass: "bg-green-600",
+        }
+      case "fallback":
+        return {
+          icon: <Database className="h-4 w-4" />,
+          text: "Dades simulades",
+          variant: "secondary" as const,
+          color: "text-amber-600",
+          badgeText: "Simulat",
+          badgeClass: "",
+        }
+      case "error":
+        return {
+          icon: <AlertCircle className="h-4 w-4" />,
+          text: "Error de connexió",
+          variant: "destructive" as const,
+          color: "text-red-600",
+          badgeText: "Error",
+          badgeClass: "",
+        }
+      default:
+        return {
+          icon: <Wifi className="h-4 w-4" />,
+          text: "Carregant...",
+          variant: "outline" as const,
+          color: "text-gray-600",
+          badgeText: "...",
+          badgeClass: "",
+        }
+    }
+  }
+
+  const statusInfo = getStatusInfo()
 
   return (
     <Card className="mb-4">
       <CardContent className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
-          <div className="text-green-600">
-            <CheckCircle className="h-4 w-4" />
-          </div>
+          <div className={statusInfo.color}>{statusInfo.icon}</div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium">Dades simulades locals</span>
-            <span className="text-xs text-muted-foreground">Patrons meteorològics realistes</span>
+            <span className="text-sm font-medium">{statusInfo.text}</span>
+            {dataSource && <span className="text-xs text-muted-foreground">{dataSource}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="default" className="bg-green-600">
-            Actiu
+          <Badge variant={statusInfo.variant} className={statusInfo.badgeClass}>
+            {statusInfo.badgeText}
           </Badge>
           {lastUpdate && <span className="text-xs text-muted-foreground">{lastUpdate}</span>}
         </div>

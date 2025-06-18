@@ -48,7 +48,7 @@ export default function Home() {
               <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
               <path d="M16 21h5v-5" />
             </svg>
-            Actualitza dades simulades
+            Actualitza dades meteorològiques
           </button>
           <button
             className="flex items-center justify-center rounded-md bg-green-100 px-6 py-3 text-green-700 transition hover:bg-green-200"

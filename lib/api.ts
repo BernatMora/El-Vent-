@@ -1,58 +1,70 @@
-// API simplificada sin Windy - solo datos simulados locales
+import { getOpenMeteoForecast } from "./open-meteo-api"
 
 export async function getForecastData(spot: string) {
-  console.log("getForecastData llamado para spot:", spot)
+  try {
+    console.log("getForecastData llamado para spot:", spot)
 
-  // Generar datos simulados basados en el spot
-  let baseData = generateSimulatedData()
+    // Intentar obtener datos reales de Open-Meteo
+    let baseData
+    try {
+      baseData = await getOpenMeteoForecast()
+      console.log("Datos reales obtenidos de Open-Meteo")
+    } catch (error) {
+      console.warn("Error obteniendo datos de Open-Meteo, usando simulados:", error)
+      baseData = generateSimulatedData()
+    }
 
-  // Ajustar datos según el spot seleccionado
-  let adjustedData = JSON.parse(JSON.stringify(baseData))
+    // Ajustar datos según el spot seleccionado
+    let adjustedData = JSON.parse(JSON.stringify(baseData))
 
-  if (spot === "kitesurf-point") {
-    // Kitesurf Point tiene vientos ligeramente más fuertes
-    adjustedData = adjustedData.map((day: any) => {
-      day.hours = day.hours.map((hour: any) => {
+    if (spot === "kitesurf-point") {
+      // Kitesurf Point tiene vientos ligeramente más fuertes
+      adjustedData = adjustedData.map((day: any) => {
+        day.hours = day.hours.map((hour: any) => {
+          return {
+            ...hour,
+            windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.15)),
+            windGust: Math.round(hour.windGust * 1.1),
+            windDirection: (hour.windDirection + 15) % 360,
+          }
+        })
+        return day
+      })
+    } else if (spot === "can-martinet") {
+      // Can Martinet tiene vientos más constantes pero más débiles
+      adjustedData = adjustedData.map((day: any) => {
+        day.hours = day.hours.map((hour: any) => {
+          return {
+            ...hour,
+            windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.9)),
+            windGust: Math.round(hour.windGust * 0.85),
+            windDirection: (hour.windDirection - 10 + 360) % 360,
+          }
+        })
+        return day
+      })
+    } else if (spot === "la-ballena") {
+      // La Ballena tiene condiciones intermedias
+      adjustedData[0].hours = adjustedData[0].hours.map((hour: any) => {
         return {
           ...hour,
-          windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.15)),
-          windGust: Math.round(hour.windGust * 1.1),
-          windDirection: (hour.windDirection + 15) % 360,
+          windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.05)),
+          windGust: Math.round(hour.windGust * 1.02),
         }
       })
-      return day
-    })
-  } else if (spot === "can-martinet") {
-    // Can Martinet tiene vientos más constantes pero más débiles
-    adjustedData = adjustedData.map((day: any) => {
-      day.hours = day.hours.map((hour: any) => {
-        return {
-          ...hour,
-          windSpeed: Math.max(1, Math.round(hour.windSpeed * 0.9)),
-          windGust: Math.round(hour.windGust * 0.85),
-          windDirection: (hour.windDirection - 10 + 360) % 360,
-        }
-      })
-      return day
-    })
-  } else if (spot === "la-ballena") {
-    // La Ballena tiene condiciones intermedias
-    adjustedData[0].hours = adjustedData[0].hours.map((hour: any) => {
-      return {
-        ...hour,
-        windSpeed: Math.max(1, Math.round(hour.windSpeed * 1.05)),
-        windGust: Math.round(hour.windGust * 1.02),
-      }
-    })
+    }
+
+    console.log("Datos ajustados:", adjustedData.length, "días")
+    return adjustedData
+  } catch (error) {
+    console.error("Error in getForecastData:", error)
+    return generateSimulatedData()
   }
-
-  console.log("Datos ajustados:", adjustedData.length, "días")
-  return adjustedData
 }
 
-// Generar datos simulados realistas
+// Generar datos simulados como fallback
 function generateSimulatedData() {
-  console.log("Generando datos simulados")
+  console.log("Generando datos simulados como fallback")
   const now = new Date()
   const days = []
 
