@@ -1,6 +1,5 @@
 "use client"
 
-import dynamic from 'next/dynamic'
 import { SpotSelector } from "@/components/spot-selector"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,8 +16,6 @@ import { WindChart } from "@/components/wind-chart"
 import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { ApiStatus } from "@/components/api-status"
-
-const OptimalWindowCalculator = dynamic(() => import("@/components/optimal-window-calculator").then((mod) => mod.OptimalWindowCalculator), { ssr: false })
 
 export default function Home() {
   return (
@@ -82,10 +79,6 @@ export default function Home() {
 
         <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
           <CurrentConditions />
-        </div>
-
-        <div className="mb-8">
-          <OptimalWindowCalculator />
         </div>
 
         <WindDirectionLegend />
