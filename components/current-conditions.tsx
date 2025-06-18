@@ -9,7 +9,7 @@ import { WindReportDialog } from "@/components/wind-report-dialog"
 import { UserReportsPanel } from "@/components/user-reports-panel"
 import { Badge } from "@/components/ui/badge"
 import { windCalibration } from "@/lib/calibration"
-import { Info, RefreshCw } from "lucide-react"
+import { Info, RefreshCw, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function CurrentConditions() {
@@ -17,6 +17,7 @@ export function CurrentConditions() {
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState<any>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [justUpdated, setJustUpdated] = useState(false)
 
   const loadCurrentData = async () => {
     try {
@@ -61,10 +62,18 @@ export function CurrentConditions() {
   }, [selectedSpot, refreshKey])
 
   const handleReportSubmitted = () => {
+    // Mostrar indicador visual de actualización
+    setJustUpdated(true)
+    
     // Forzar recarga de datos después de enviar un reporte
     setTimeout(() => {
       setRefreshKey(prev => prev + 1)
     }, 500)
+
+    // Ocultar indicador después de 3 segundos
+    setTimeout(() => {
+      setJustUpdated(false)
+    }, 3000)
   }
 
   const handleRefresh = () => {
@@ -89,7 +98,9 @@ export function CurrentConditions() {
     const rotationDegree = (direction + 180) % 360
 
     return (
-      <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-100">
+      <div className={`flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full transition-all duration-500 ${
+        justUpdated ? 'bg-green-100 ring-2 ring-green-300' : 'bg-blue-100'
+      }`}>
         <svg
           width="32"
           height="32"
@@ -101,8 +112,8 @@ export function CurrentConditions() {
         >
           <path
             d="M12 4L4 20L12 17L20 20L12 4Z"
-            fill="#1d4ed8"
-            stroke="#1d4ed8"
+            fill={justUpdated ? "#059669" : "#1d4ed8"}
+            stroke={justUpdated ? "#059669" : "#1d4ed8"}
             strokeWidth="1"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -120,17 +131,29 @@ export function CurrentConditions() {
   return (
     <div>
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className="col-span-1 xl:col-span-2">
+        <Card className={`col-span-1 xl:col-span-2 transition-all duration-500 ${
+          justUpdated ? 'ring-2 ring-green-300 bg-green-50/30' : ''
+        }`}>
           <CardContent className="p-3 sm:p-6">
             <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
               <div className="flex flex-col items-center md:items-start">
-                <h2 className="mb-1 text-lg sm:text-xl font-bold">Condicions Actuals</h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
+                  {justUpdated && (
+                    <div className="flex items-center gap-1 animate-pulse">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-xs text-green-600 font-medium">Actualitzat!</span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     {loading ? "Carregant..." : `Previsió per les ${currentData?.time || "00:00"}`}
                   </p>
                   {currentData?.isCalibrated && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className={`text-xs transition-colors duration-300 ${
+                      justUpdated ? 'bg-green-100 border-green-300 text-green-700' : ''
+                    }`}>
                       <Info className="mr-1 h-3 w-3" />
                       Calibrat
                     </Badge>
@@ -182,7 +205,9 @@ export function CurrentConditions() {
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className="text-3xl sm:text-5xl font-bold text-blue-600">
+                  <div className={`text-3xl sm:text-5xl font-bold transition-colors duration-500 ${
+                    justUpdated ? 'text-green-600' : 'text-blue-600'
+                  }`}>
                     {Math.round(currentData?.windSpeed || 0)}
                     <span className="text-lg sm:text-2xl">kn</span>
                   </div>
@@ -200,7 +225,9 @@ export function CurrentConditions() {
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-amber-500">
+                  <div className={`text-2xl sm:text-3xl font-bold transition-colors duration-500 ${
+                    justUpdated ? 'text-green-500' : 'text-amber-500'
+                  }`}>
                     {Math.round(currentData?.windGust || 0)}
                     <span className="text-lg sm:text-xl">kn</span>
                   </div>
@@ -215,9 +242,20 @@ export function CurrentConditions() {
             )}
 
             {currentData?.isCalibrated && (
-              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <div className="text-xs sm:text-sm text-blue-800">
+              <div className={`mt-4 rounded-lg border p-3 transition-colors duration-500 ${
+                justUpdated 
+                  ? 'border-green-200 bg-green-50' 
+                  : 'border-blue-200 bg-blue-50'
+              }`}>
+                <div className={`text-xs sm:text-sm ${
+                  justUpdated ? 'text-green-800' : 'text-blue-800'
+                }`}>
                   <strong>Dades calibrades:</strong> Aquests valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
+                  {justUpdated && (
+                    <span className="block mt-1 font-medium">
+                      ✓ Acabat d'actualitzar amb el teu reporte!
+                    </span>
+                  )}
                 </div>
               </div>
             )}
