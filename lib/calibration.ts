@@ -22,10 +22,22 @@ export interface CalibrationFactor {
 class WindCalibrationService {
   private observations: WindObservation[] = []
   private calibrationFactors: Map<string, CalibrationFactor> = new Map()
+  private listeners: Set<() => void> = new Set()
 
   constructor() {
     this.loadFromStorage()
     this.initializeDefaultFactors()
+  }
+
+  // Método para suscribirse a cambios
+  subscribe(listener: () => void) {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
+  // Notificar a los listeners
+  private notifyListeners() {
+    this.listeners.forEach(listener => listener())
   }
 
   private loadFromStorage() {
@@ -104,6 +116,7 @@ class WindCalibrationService {
 
     this.updateCalibrationFactor(observation.spot)
     this.saveToStorage()
+    this.notifyListeners()
 
     return newObservation
   }
@@ -116,14 +129,35 @@ class WindCalibrationService {
         return hoursSince <= 24 // Solo últimas 24 horas
       })
 
-    if (recentObservations.length < 3) return // Necesitamos al menos 3 observaciones
+    if (recentObservations.length === 0) return
 
-    // Calcular factor de velocidad promedio
+    // Para la primera observación, usar directamente la diferencia
+    if (recentObservations.length === 1) {
+      const obs = recentObservations[0]
+      if (obs.modelWindSpeed > 0) {
+        const speedMultiplier = obs.reportedWindSpeed / obs.modelWindSpeed
+        let directionOffset = obs.reportedDirection - obs.modelDirection
+        
+        // Normalizar diferencia de ángulos
+        if (directionOffset > 180) directionOffset -= 360
+        if (directionOffset < -180) directionOffset += 360
+
+        this.calibrationFactors.set(spot, {
+          spot,
+          speedMultiplier: Math.max(0.5, Math.min(2.0, speedMultiplier)), // Limitar entre 0.5x y 2x
+          directionOffset: Math.max(-45, Math.min(45, directionOffset)), // Limitar a ±45°
+          lastUpdated: new Date(),
+          observationCount: 1
+        })
+      }
+      return
+    }
+
+    // Para múltiples observaciones, calcular promedio ponderado
     const speedRatios = recentObservations
       .filter(obs => obs.modelWindSpeed > 0)
       .map(obs => obs.reportedWindSpeed / obs.modelWindSpeed)
 
-    // Calcular offset de dirección promedio
     const directionOffsets = recentObservations.map(obs => {
       let diff = obs.reportedDirection - obs.modelDirection
       // Normalizar diferencia de ángulos
@@ -136,14 +170,18 @@ class WindCalibrationService {
       const avgSpeedMultiplier = speedRatios.reduce((a, b) => a + b, 0) / speedRatios.length
       const avgDirectionOffset = directionOffsets.reduce((a, b) => a + b, 0) / directionOffsets.length
 
-      // Aplicar suavizado para evitar cambios bruscos
+      // Aplicar suavizado más agresivo para cambios inmediatos
       const currentFactor = this.calibrationFactors.get(spot)!
-      const smoothingFactor = 0.3 // 30% nuevo, 70% anterior
+      const smoothingFactor = recentObservations.length === 1 ? 0.8 : 0.4 // Más agresivo para primera observación
 
       this.calibrationFactors.set(spot, {
         spot,
-        speedMultiplier: currentFactor.speedMultiplier * (1 - smoothingFactor) + avgSpeedMultiplier * smoothingFactor,
-        directionOffset: currentFactor.directionOffset * (1 - smoothingFactor) + avgDirectionOffset * smoothingFactor,
+        speedMultiplier: Math.max(0.5, Math.min(2.0, 
+          currentFactor.speedMultiplier * (1 - smoothingFactor) + avgSpeedMultiplier * smoothingFactor
+        )),
+        directionOffset: Math.max(-45, Math.min(45,
+          currentFactor.directionOffset * (1 - smoothingFactor) + avgDirectionOffset * smoothingFactor
+        )),
         lastUpdated: new Date(),
         observationCount: recentObservations.length
       })
@@ -152,7 +190,9 @@ class WindCalibrationService {
 
   applyCalibration(spot: string, windSpeed: number, windDirection: number) {
     const factor = this.calibrationFactors.get(spot)
-    if (!factor) return { windSpeed, windDirection }
+    if (!factor || factor.observationCount === 0) {
+      return { windSpeed, windDirection }
+    }
 
     const calibratedSpeed = Math.max(0, Math.round(windSpeed * factor.speedMultiplier))
     let calibratedDirection = windDirection + factor.directionOffset
@@ -183,6 +223,13 @@ class WindCalibrationService {
     return this.observations
       .filter(obs => obs.timestamp.getTime() > cutoff)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  }
+
+  // Método para forzar recalibración
+  forceRecalibration(spot: string) {
+    this.updateCalibrationFactor(spot)
+    this.saveToStorage()
+    this.notifyListeners()
   }
 }
 

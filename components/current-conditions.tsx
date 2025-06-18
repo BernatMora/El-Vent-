@@ -8,46 +8,68 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { WindReportDialog } from "@/components/wind-report-dialog"
 import { UserReportsPanel } from "@/components/user-reports-panel"
 import { Badge } from "@/components/ui/badge"
-import { Info } from "lucide-react"
+import { windCalibration } from "@/lib/calibration"
+import { Info, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export function CurrentConditions() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState<any>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const loadCurrentData = async () => {
+    try {
+      setLoading(true)
+      const data = await getForecastData(selectedSpot)
+
+      if (data && data.length > 0) {
+        const now = new Date()
+        const hour = now.getHours()
+
+        // Encontrar la hora más cercana en los datos
+        let closestHour = data[0].hours[0]
+        data[0].hours.forEach((h: any) => {
+          const hourNum = Number.parseInt(h.time.split(":")[0])
+          if (Math.abs(hourNum - hour) < Math.abs(Number.parseInt(closestHour.time.split(":")[0]) - hour)) {
+            closestHour = h
+          }
+        })
+
+        setCurrentData({
+          ...closestHour,
+          date: data[0].date,
+        })
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadCurrentData() {
-      try {
-        setLoading(true)
-        const data = await getForecastData(selectedSpot)
-
-        if (data && data.length > 0) {
-          const now = new Date()
-          const hour = now.getHours()
-
-          // Encontrar la hora más cercana en los datos
-          let closestHour = data[0].hours[0]
-          data[0].hours.forEach((h: any) => {
-            const hourNum = Number.parseInt(h.time.split(":")[0])
-            if (Math.abs(hourNum - hour) < Math.abs(Number.parseInt(closestHour.time.split(":")[0]) - hour)) {
-              closestHour = h
-            }
-          })
-
-          setCurrentData({
-            ...closestHour,
-            date: data[0].date,
-          })
-        }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadCurrentData()
-  }, [selectedSpot])
+
+    // Suscribirse a cambios en el sistema de calibración
+    const unsubscribe = windCalibration.subscribe(() => {
+      console.log("Calibración actualizada, recargando datos...")
+      loadCurrentData()
+    })
+
+    return unsubscribe
+  }, [selectedSpot, refreshKey])
+
+  const handleReportSubmitted = () => {
+    // Forzar recarga de datos después de enviar un reporte
+    setTimeout(() => {
+      setRefreshKey(prev => prev + 1)
+    }, 500)
+  }
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1)
+  }
 
   // Función para obtener el nombre del viento según su dirección
   const getWindName = (direction: number) => {
@@ -115,12 +137,23 @@ export function CurrentConditions() {
                 </div>
               </div>
 
-              <WindReportDialog 
-                currentModelData={currentData ? {
-                  windSpeed: currentData.originalWindSpeed || currentData.windSpeed,
-                  windDirection: currentData.originalWindDirection || currentData.windDirection
-                } : undefined}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+                <WindReportDialog 
+                  currentModelData={currentData ? {
+                    windSpeed: currentData.originalWindSpeed || currentData.windSpeed,
+                    windDirection: currentData.originalWindDirection || currentData.windDirection
+                  } : undefined}
+                  onReportSubmitted={handleReportSubmitted}
+                />
+              </div>
             </div>
 
             {loading ? (
@@ -155,7 +188,7 @@ export function CurrentConditions() {
                   </div>
                   {currentData?.isCalibrated && currentData?.originalWindSpeed && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Model: {currentData.originalWindSpeed} kn
+                      Model original: {currentData.originalWindSpeed} kn
                     </div>
                   )}
                 </div>
@@ -182,7 +215,7 @@ export function CurrentConditions() {
           </CardContent>
         </Card>
 
-        <UserReportsPanel />
+        <UserReportsPanel key={refreshKey} />
       </div>
     </div>
   )

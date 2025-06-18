@@ -17,19 +17,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useSpotStore } from "@/lib/store"
 import { windCalibration } from "@/lib/calibration"
-import { MessageSquare, Wind } from "lucide-react"
+import { Wind, CheckCircle } from "lucide-react"
 
 interface WindReportDialogProps {
   currentModelData?: {
     windSpeed: number
     windDirection: number
   }
+  onReportSubmitted?: () => void
 }
 
-export function WindReportDialog({ currentModelData }: WindReportDialogProps) {
+export function WindReportDialog({ currentModelData, onReportSubmitted }: WindReportDialogProps) {
   const { selectedSpot } = useSpotStore()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [report, setReport] = useState({
     windSpeed: "",
     windDirection: "E",
@@ -57,27 +59,36 @@ export function WindReportDialog({ currentModelData }: WindReportDialogProps) {
       const directionDegrees = directionMap[report.windDirection] || 90
 
       // Añadir observación al sistema de calibración
-      windCalibration.addObservation({
+      const observation = windCalibration.addObservation({
         spot: selectedSpot,
         reportedWindSpeed: windSpeedNum,
         reportedDirection: directionDegrees,
         modelWindSpeed: currentModelData?.windSpeed || 0,
         modelDirection: currentModelData?.windDirection || 0,
-        userId: `user-${Date.now()}` // En una app real, usarías el ID del usuario
+        userId: `user-${Date.now()}`
       })
 
-      // Resetear formulario
-      setReport({
-        windSpeed: "",
-        windDirection: "E",
-        comment: "",
-        confidence: "high"
-      })
+      console.log("Observación añadida:", observation)
 
-      setOpen(false)
+      // Mostrar éxito
+      setSuccess(true)
       
-      // Mostrar confirmación
-      alert("Gràcies pel teu reporte! Ajudarà a millorar la precisió de les previsions.")
+      // Notificar al componente padre
+      if (onReportSubmitted) {
+        onReportSubmitted()
+      }
+
+      // Resetear formulario después de un momento
+      setTimeout(() => {
+        setReport({
+          windSpeed: "",
+          windDirection: "E",
+          comment: "",
+          confidence: "high"
+        })
+        setSuccess(false)
+        setOpen(false)
+      }, 2000)
       
     } catch (error) {
       console.error("Error enviando reporte:", error)
@@ -103,99 +114,113 @@ export function WindReportDialog({ currentModelData }: WindReportDialogProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="windSpeed" className="text-right">
-              Vent (kn)
-            </Label>
-            <Input
-              id="windSpeed"
-              value={report.windSpeed}
-              onChange={(e) => setReport({ ...report, windSpeed: e.target.value })}
-              type="number"
-              min="0"
-              max="50"
-              className="col-span-3"
-              placeholder="Ex: 12"
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="windDirection" className="text-right">
-              Direcció
-            </Label>
-            <Select
-              value={report.windDirection}
-              onValueChange={(value) => setReport({ ...report, windDirection: value })}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Selecciona direcció" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="N">Tramuntana (N)</SelectItem>
-                <SelectItem value="NE">Gregal (NE)</SelectItem>
-                <SelectItem value="E">Llevant (E)</SelectItem>
-                <SelectItem value="SE">Xaloc (SE)</SelectItem>
-                <SelectItem value="S">Migjorn (S)</SelectItem>
-                <SelectItem value="SW">Llebeig (SW)</SelectItem>
-                <SelectItem value="W">Ponent (W)</SelectItem>
-                <SelectItem value="NW">Mestral (NW)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="confidence" className="text-right">
-              Confiança
-            </Label>
-            <Select
-              value={report.confidence}
-              onValueChange={(value) => setReport({ ...report, confidence: value })}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">Alta - Mesurat amb instrument</SelectItem>
-                <SelectItem value="medium">Mitjana - Observació visual</SelectItem>
-                <SelectItem value="low">Baixa - Estimació aproximada</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="comment" className="text-right">
-              Comentari
-            </Label>
-            <Textarea
-              id="comment"
-              value={report.comment}
-              onChange={(e) => setReport({ ...report, comment: e.target.value })}
-              className="col-span-3"
-              placeholder="Condicions adicionals, ràfegues, etc. (opcional)"
-              rows={2}
-            />
-          </div>
-        </div>
-
-        {currentModelData && (
-          <div className="rounded-lg border bg-muted/50 p-3">
-            <div className="text-sm font-medium mb-1">Previsió del model:</div>
-            <div className="text-sm text-muted-foreground">
-              {currentModelData.windSpeed} kn, {currentModelData.windDirection}°
+        {success ? (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <CheckCircle className="h-12 w-12 text-green-600" />
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-green-800">Reporte enviat!</h3>
+              <p className="text-sm text-green-600 mt-1">
+                Gràcies per ajudar a millorar la precisió de les previsions
+              </p>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="windSpeed" className="text-right">
+                  Vent (kn)
+                </Label>
+                <Input
+                  id="windSpeed"
+                  value={report.windSpeed}
+                  onChange={(e) => setReport({ ...report, windSpeed: e.target.value })}
+                  type="number"
+                  min="0"
+                  max="50"
+                  className="col-span-3"
+                  placeholder="Ex: 12"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="windDirection" className="text-right">
+                  Direcció
+                </Label>
+                <Select
+                  value={report.windDirection}
+                  onValueChange={(value) => setReport({ ...report, windDirection: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona direcció" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="N">Tramuntana (N)</SelectItem>
+                    <SelectItem value="NE">Gregal (NE)</SelectItem>
+                    <SelectItem value="E">Llevant (E)</SelectItem>
+                    <SelectItem value="SE">Xaloc (SE)</SelectItem>
+                    <SelectItem value="S">Migjorn (S)</SelectItem>
+                    <SelectItem value="SW">Llebeig (SW)</SelectItem>
+                    <SelectItem value="W">Ponent (W)</SelectItem>
+                    <SelectItem value="NW">Mestral (NW)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="confidence" className="text-right">
+                  Confiança
+                </Label>
+                <Select
+                  value={report.confidence}
+                  onValueChange={(value) => setReport({ ...report, confidence: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Alta - Mesurat amb instrument</SelectItem>
+                    <SelectItem value="medium">Mitjana - Observació visual</SelectItem>
+                    <SelectItem value="low">Baixa - Estimació aproximada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="comment" className="text-right">
+                  Comentari
+                </Label>
+                <Textarea
+                  id="comment"
+                  value={report.comment}
+                  onChange={(e) => setReport({ ...report, comment: e.target.value })}
+                  className="col-span-3"
+                  placeholder="Condicions adicionals, ràfegues, etc. (opcional)"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {currentModelData && (
+              <div className="rounded-lg border bg-muted/50 p-3">
+                <div className="text-sm font-medium mb-1">Previsió del model:</div>
+                <div className="text-sm text-muted-foreground">
+                  {currentModelData.windSpeed} kn, {currentModelData.windDirection}°
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                onClick={handleSubmit}
+                disabled={loading || !report.windSpeed}
+              >
+                {loading ? "Enviant..." : "Enviar reporte"}
+              </Button>
+            </DialogFooter>
+          </>
         )}
-        
-        <DialogFooter>
-          <Button 
-            type="submit" 
-            onClick={handleSubmit}
-            disabled={loading || !report.windSpeed}
-          >
-            {loading ? "Enviant..." : "Enviar reporte"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
