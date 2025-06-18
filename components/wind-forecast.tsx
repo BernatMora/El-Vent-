@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Info } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -42,11 +44,8 @@ export function WindForecast() {
 
   // Función para renderizar la flecha de dirección del viento
   const renderWindArrow = (direction: number) => {
-    // La flecha debe apuntar HACIA DONDE va el viento
-    // Necesitamos rotar 180 grados porque en meteorología la dirección indica de donde viene
     const rotationDegree = (direction + 180) % 360
 
-    // Usamos un SVG más simple y claro para la flecha
     return (
       <div className="flex items-center justify-center">
         <svg
@@ -121,12 +120,13 @@ export function WindForecast() {
             {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="grid grid-cols-1 gap-2">
-                  <div className="grid grid-cols-5 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
+                  <div className="grid grid-cols-6 gap-2 rounded-md bg-blue-50 p-2 text-center text-sm font-medium text-blue-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Direcció</div>
                     <div>Ràfegues</div>
                     <div>Flux</div>
+                    <div>Estat</div>
                   </div>
                   {day.hours && day.hours.length > 0 ? (
                     day.hours
@@ -137,7 +137,7 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-5 items-center gap-2 rounded-md border p-2 text-center"
+                          className="grid grid-cols-6 items-center gap-2 rounded-md border p-2 text-center"
                         >
                           <div className="font-medium">{hour.time}</div>
                           <div className="font-semibold text-blue-700">
@@ -153,6 +153,18 @@ export function WindForecast() {
                             <span className="ml-1 text-xs text-gray-500">({knotsToKmh(hour.windGust)} km/h)</span>
                           </div>
                           <div className="text-sm text-gray-600">{getFlowDescription(hour.windSpeed)}</div>
+                          <div className="flex justify-center">
+                            {hour.isCalibrated ? (
+                              <Badge variant="outline" className="text-xs">
+                                <Info className="mr-1 h-3 w-3" />
+                                Calibrat
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                Model
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       ))
                   ) : (
@@ -166,6 +178,14 @@ export function WindForecast() {
           </Tabs>
         ) : (
           <div className="rounded-lg border p-4 text-center text-gray-500">No hi ha dades de previsió disponibles</div>
+        )}
+        
+        {forecast.length > 0 && forecast[0].hours.some((h: any) => h.isCalibrated) && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <div className="text-sm text-blue-800">
+              <strong>Dades calibrades:</strong> Alguns valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

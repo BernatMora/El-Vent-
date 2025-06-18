@@ -5,31 +5,15 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { WindReportDialog } from "@/components/wind-report-dialog"
+import { UserReportsPanel } from "@/components/user-reports-panel"
+import { Badge } from "@/components/ui/badge"
+import { Info } from "lucide-react"
 
 export function CurrentConditions() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState<any>(null)
-  const [userReports, setUserReports] = useState<any[]>([])
-  const [reportDialogOpen, setReportDialogOpen] = useState(false)
-  const [newReport, setNewReport] = useState({
-    windSpeed: "",
-    windDirection: "NE",
-    comment: "",
-  })
 
   useEffect(() => {
     async function loadCurrentData() {
@@ -63,55 +47,7 @@ export function CurrentConditions() {
     }
 
     loadCurrentData()
-
-    // Simular algunos reportes de usuarios
-    const demoReports = [
-      {
-        id: 1,
-        user: "Marc",
-        time: "Fa 30 min",
-        windSpeed: 8,
-        windDirection: "NE",
-        comment: "Vent constant, perfecte per a sessions llargues",
-      },
-      {
-        id: 2,
-        user: "Laura",
-        time: "Fa 1 hora",
-        windSpeed: 6,
-        windDirection: "E",
-        comment: "Algunes ràfegues, però en general bé",
-      },
-    ]
-
-    setUserReports(demoReports)
   }, [selectedSpot])
-
-  const handleReportSubmit = () => {
-    const windSpeedNum = Number.parseInt(newReport.windSpeed)
-
-    if (isNaN(windSpeedNum) || windSpeedNum <= 0) {
-      alert("Si us plau, introdueix una velocitat de vent vàlida")
-      return
-    }
-
-    const newUserReport = {
-      id: Date.now(),
-      user: "Tu",
-      time: "Ara mateix",
-      windSpeed: windSpeedNum,
-      windDirection: newReport.windDirection,
-      comment: newReport.comment,
-    }
-
-    setUserReports([newUserReport, ...userReports])
-    setReportDialogOpen(false)
-    setNewReport({
-      windSpeed: "",
-      windDirection: "NE",
-      comment: "",
-    })
-  }
 
   // Función para obtener el nombre del viento según su dirección
   const getWindName = (direction: number) => {
@@ -128,8 +64,6 @@ export function CurrentConditions() {
 
   // Función para renderizar la flecha de dirección del viento
   const renderWindArrow = (direction: number) => {
-    // La flecha debe apuntar HACIA DONDE va el viento
-    // Necesitamos rotar 180 grados porque en meteorología la dirección indica de donde viene
     const rotationDegree = (direction + 180) % 360
 
     return (
@@ -162,96 +96,31 @@ export function CurrentConditions() {
 
   return (
     <div>
-      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card className="col-span-1 md:col-span-2">
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="col-span-1 lg:col-span-2">
           <CardContent className="p-6">
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="flex flex-col items-center md:items-start">
                 <h2 className="mb-1 text-xl font-bold">Condicions Actuals</h2>
-                <p className="text-sm text-muted-foreground">
-                  {loading ? "Carregant..." : `Actualitzat a les ${currentData?.time || "00:00"}`}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    {loading ? "Carregant..." : `Previsió per les ${currentData?.time || "00:00"}`}
+                  </p>
+                  {currentData?.isCalibrated && (
+                    <Badge variant="outline" className="text-xs">
+                      <Info className="mr-1 h-3 w-3" />
+                      Calibrat
+                    </Badge>
+                  )}
+                </div>
               </div>
 
-              <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="mr-2 h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    Reportar vent actual
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Reportar condicions actuals</DialogTitle>
-                    <DialogDescription>Comparteix les condicions actuals de vent amb altres riders.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="windSpeed" className="text-right">
-                        Vent (kn)
-                      </Label>
-                      <Input
-                        id="windSpeed"
-                        value={newReport.windSpeed}
-                        onChange={(e) => setNewReport({ ...newReport, windSpeed: e.target.value })}
-                        type="number"
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="windDirection" className="text-right">
-                        Direcció
-                      </Label>
-                      <Select
-                        value={newReport.windDirection}
-                        onValueChange={(value) => setNewReport({ ...newReport, windDirection: value })}
-                      >
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Selecciona direcció" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="N">Tramuntana (N)</SelectItem>
-                          <SelectItem value="NE">Gregal (NE)</SelectItem>
-                          <SelectItem value="E">Llevant (E)</SelectItem>
-                          <SelectItem value="SE">Xaloc (SE)</SelectItem>
-                          <SelectItem value="S">Migjorn (S)</SelectItem>
-                          <SelectItem value="SW">Llebeig (SW)</SelectItem>
-                          <SelectItem value="W">Ponent (W)</SelectItem>
-                          <SelectItem value="NW">Mestral (NW)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="comment" className="text-right">
-                        Comentari
-                      </Label>
-                      <Input
-                        id="comment"
-                        value={newReport.comment}
-                        onChange={(e) => setNewReport({ ...newReport, comment: e.target.value })}
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" onClick={handleReportSubmit}>
-                      Enviar reporte
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <WindReportDialog 
+                currentModelData={currentData ? {
+                  windSpeed: currentData.originalWindSpeed || currentData.windSpeed,
+                  windDirection: currentData.originalWindDirection || currentData.windDirection
+                } : undefined}
+              />
             </div>
 
             {loading ? (
@@ -284,6 +153,11 @@ export function CurrentConditions() {
                   <div className="text-sm text-muted-foreground">
                     Velocitat del vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
                   </div>
+                  {currentData?.isCalibrated && currentData?.originalWindSpeed && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Model: {currentData.originalWindSpeed} kn
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-center">
@@ -297,39 +171,18 @@ export function CurrentConditions() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="mb-4 text-lg font-medium">Últims reportes d'usuaris</h3>
-            {userReports.length > 0 ? (
-              <div className="space-y-4">
-                {userReports.map((report) => (
-                  <div key={report.id} className="rounded-lg border p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="font-medium">{report.user}</div>
-                      <div className="text-xs text-muted-foreground">{report.time}</div>
-                    </div>
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                        {report.windSpeed} kn
-                      </span>
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                        {report.windDirection}
-                      </span>
-                    </div>
-                    {report.comment && <p className="text-sm">{report.comment}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
-                No hi ha reportes recents
+            {currentData?.isCalibrated && (
+              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <div className="text-sm text-blue-800">
+                  <strong>Dades calibrades:</strong> Aquests valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
+
+        <UserReportsPanel />
       </div>
     </div>
   )

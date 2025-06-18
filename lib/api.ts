@@ -1,4 +1,5 @@
 import { getOpenMeteoForecast } from "./open-meteo-api"
+import { windCalibration } from "./calibration"
 
 export async function getForecastData(spot: string) {
   try {
@@ -14,7 +15,7 @@ export async function getForecastData(spot: string) {
       baseData = generateSimulatedData()
     }
 
-    // Ajustar datos según el spot seleccionado
+    // Ajustar datos según el spot seleccionado (efectos locales)
     let adjustedData = JSON.parse(JSON.stringify(baseData))
 
     if (spot === "kitesurf-point") {
@@ -54,7 +55,29 @@ export async function getForecastData(spot: string) {
       })
     }
 
-    console.log("Datos ajustados:", adjustedData.length, "días")
+    // Aplicar calibración basada en observaciones de usuarios
+    adjustedData = adjustedData.map((day: any) => {
+      day.hours = day.hours.map((hour: any) => {
+        const calibrated = windCalibration.applyCalibration(
+          spot, 
+          hour.windSpeed, 
+          hour.windDirection
+        )
+        
+        return {
+          ...hour,
+          windSpeed: calibrated.windSpeed,
+          windDirection: calibrated.windDirection,
+          // Mantener datos originales para comparación
+          originalWindSpeed: hour.windSpeed,
+          originalWindDirection: hour.windDirection,
+          isCalibrated: true
+        }
+      })
+      return day
+    })
+
+    console.log("Datos ajustados y calibrados:", adjustedData.length, "días")
     return adjustedData
   } catch (error) {
     console.error("Error in getForecastData:", error)
@@ -129,6 +152,7 @@ function generateSimulatedData() {
         windGust: Math.round(baseWindSpeed * (1.3 + Math.random() * 0.4)),
         temperature: Math.round(temperature),
         humidity: Math.round(humidity),
+        isCalibrated: false
       })
     }
 
