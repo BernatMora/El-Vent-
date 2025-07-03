@@ -24,7 +24,7 @@ export function AlertsBanner() {
         if (data && data.length > 0) {
           const today = data[0]
 
-          // Comprobar viento fuerte
+          // Comprobar viento fuerte (solo si realmente hay viento)
           const maxWind = Math.max(...today.hours.map((h: any) => h.windSpeed))
           if (maxWind > 25) {
             newAlerts.push({
@@ -34,33 +34,62 @@ export function AlertsBanner() {
             })
           }
 
-          // Comprobar viento offshore (dirección entre 225 y 315 grados)
+          // CORRECCIÓ: Comprobar viento offshore SOLO si hay viento significativo (>8 kn)
           const offshoreHours = today.hours.filter((h: any) => {
             const dir = h.windDirection
-            return dir >= 225 && dir <= 315
+            const speed = h.windSpeed
+            // Offshore: direcciones entre 225° y 315° (SW, W, NW) Y con viento > 8 kn
+            return speed > 8 && dir >= 225 && dir <= 315
           })
 
           if (offshoreHours.length > 0) {
+            const maxOffshoreWind = Math.max(...offshoreHours.map((h: any) => h.windSpeed))
             newAlerts.push({
               type: "danger",
               title: "Alerta de vent offshore",
-              description: "S'esperen vents de terra a mar en algunes hores. Navega amb precaució i mai sol.",
+              description: `S'esperen vents de terra a mar de ${Math.round(maxOffshoreWind)} kn en algunes hores. Navega amb precaució i mai sol.`,
             })
           }
 
-          // Alerta de spot específico
-          if (selectedSpot === "kitesurf-point") {
+          // Alerta de viento muy débil (nuevo)
+          const avgWind = today.hours.reduce((sum: number, h: any) => sum + h.windSpeed, 0) / today.hours.length
+          if (avgWind < 5) {
+            newAlerts.push({
+              type: "info",
+              title: "Condicions de poc vent",
+              description: `S'esperen vents febles avui (mitjana ${Math.round(avgWind)} kn). Ideal per a principiants o per practicar maniobres.`,
+            })
+          }
+
+          // Alerta de spot específico (solo si es relevante)
+          if (selectedSpot === "kitesurf-point" && maxWind > 12) {
             newAlerts.push({
               type: "info",
               title: "Informació de Kitesurf Point",
-              description:
-                "Recorda que aquesta zona és més adequada per a principiants. Respecta les zones de navegació.",
+              description: "Recorda que aquesta zona és més adequada per a principiants. Respecta les zones de navegació.",
             })
-          } else if (selectedSpot === "can-martinet") {
+          } else if (selectedSpot === "can-martinet" && maxWind > 15) {
             newAlerts.push({
               type: "info",
               title: "Informació de Can Martinet",
               description: "Aquesta zona pot tenir corrents més forts. Recomanat per a riders amb experiència.",
+            })
+          }
+
+          // Alerta de condiciones perfectas (nuevo)
+          const perfectHours = today.hours.filter((h: any) => {
+            const speed = h.windSpeed
+            const dir = h.windDirection
+            // Condiciones perfectas: 12-20 kn, viento del E/SE/NE (onshore/side-onshore)
+            return speed >= 12 && speed <= 20 && 
+                   ((dir >= 45 && dir <= 135) || (dir >= 315 || dir <= 45))
+          })
+
+          if (perfectHours.length >= 3) {
+            newAlerts.push({
+              type: "info",
+              title: "Condicions excel·lents per kitesurf",
+              description: `S'esperen ${perfectHours.length} hores amb condicions ideals (12-20 kn, vent favorable). Perfecte per navegar!`,
             })
           }
         }
@@ -83,7 +112,12 @@ export function AlertsBanner() {
       {alerts.map((alert, index) => (
         <Alert
           key={index}
-          variant={alert.type === "danger" ? "destructive" : alert.type === "warning" ? "default" : "info"}
+          variant={alert.type === "danger" ? "destructive" : alert.type === "warning" ? "default" : "default"}
+          className={
+            alert.type === "info" && alert.title.includes("excel·lents") 
+              ? "border-green-200 bg-green-50" 
+              : ""
+          }
         >
           {alert.type === "danger" ? (
             <AlertCircle className="h-4 w-4" />
