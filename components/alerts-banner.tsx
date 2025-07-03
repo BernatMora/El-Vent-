@@ -34,30 +34,62 @@ export function AlertsBanner() {
             })
           }
 
-          // CORRECCIÓ: Comprobar viento offshore SOLO si hay viento significativo (>8 kn)
+          // CORRECCIÓ: Vents offshore per Sant Pere Pescador
+          // Offshore = vents de terra cap a mar
+          // Per Sant Pere (costa orientada al sud-est):
+          // - Offshore: N, NW, W (315°-45° aprox) - PERILLOSOS
+          // - Onshore: E, SE, S (45°-225° aprox) - SEGURS
+          // - Side-shore: NE, SW - ACCEPTABLES
           const offshoreHours = today.hours.filter((h: any) => {
             const dir = h.windDirection
             const speed = h.windSpeed
-            // Offshore: direcciones entre 225° y 315° (SW, W, NW) Y con viento > 8 kn
-            return speed > 8 && dir >= 225 && dir <= 315
+            // Offshore: direccions entre 315° i 45° (N, NW, W) Y amb vent > 8 kn
+            return speed > 8 && (dir >= 315 || dir <= 45)
           })
 
           if (offshoreHours.length > 0) {
             const maxOffshoreWind = Math.max(...offshoreHours.map((h: any) => h.windSpeed))
+            const offshoreDirection = offshoreHours[0].windDirection
+            let directionName = "Nord"
+            if (offshoreDirection >= 315 || offshoreDirection <= 15) directionName = "Tramuntana (N)"
+            else if (offshoreDirection > 15 && offshoreDirection <= 45) directionName = "Gregal (NE)"
+            else if (offshoreDirection >= 270 && offshoreDirection < 315) directionName = "Mestral (NW)"
+            else if (offshoreDirection >= 225 && offshoreDirection < 270) directionName = "Ponent (W)"
+
             newAlerts.push({
               type: "danger",
               title: "Alerta de vent offshore",
-              description: `S'esperen vents de terra a mar de ${Math.round(maxOffshoreWind)} kn en algunes hores. Navega amb precaució i mai sol.`,
+              description: `S'esperen vents ${directionName} de ${Math.round(maxOffshoreWind)} kn (de terra a mar). Navega amb precaució i mai sol.`,
             })
           }
 
-          // Alerta de viento muy débil (nuevo)
+          // Alerta de viento muy débil
           const avgWind = today.hours.reduce((sum: number, h: any) => sum + h.windSpeed, 0) / today.hours.length
           if (avgWind < 5) {
             newAlerts.push({
               type: "info",
               title: "Condicions de poc vent",
               description: `S'esperen vents febles avui (mitjana ${Math.round(avgWind)} kn). Ideal per a principiants o per practicar maniobres.`,
+            })
+          }
+
+          // Alerta de condiciones perfectas para kitesurf
+          // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 12-20 kn
+          const perfectHours = today.hours.filter((h: any) => {
+            const speed = h.windSpeed
+            const dir = h.windDirection
+            // Condicions perfectes: 12-20 kn, vent onshore (E, SE) o side-onshore (NE)
+            return speed >= 12 && speed <= 20 && 
+                   ((dir >= 45 && dir <= 135) || // E, SE
+                    (dir >= 15 && dir <= 75))    // NE inclòs
+          })
+
+          if (perfectHours.length >= 3) {
+            const avgPerfectWind = Math.round(perfectHours.reduce((sum, h) => sum + h.windSpeed, 0) / perfectHours.length)
+            newAlerts.push({
+              type: "info",
+              title: "Condicions excel·lents per kitesurf",
+              description: `S'esperen ${perfectHours.length} hores amb condicions ideals (${avgPerfectWind} kn mitjana, vent favorable del mar). Perfecte per navegar!`,
             })
           }
 
@@ -76,21 +108,39 @@ export function AlertsBanner() {
             })
           }
 
-          // Alerta de condiciones perfectas (nuevo)
-          const perfectHours = today.hours.filter((h: any) => {
-            const speed = h.windSpeed
-            const dir = h.windDirection
-            // Condiciones perfectas: 12-20 kn, viento del E/SE/NE (onshore/side-onshore)
-            return speed >= 12 && speed <= 20 && 
-                   ((dir >= 45 && dir <= 135) || (dir >= 315 || dir <= 45))
-          })
+          // Informació sobre direcció del vent actual
+          if (today.hours.length > 0) {
+            const currentHour = today.hours[Math.floor(today.hours.length / 2)] // Hora del migdia aprox
+            const currentDir = currentHour.windDirection
+            const currentSpeed = currentHour.windSpeed
+            
+            if (currentSpeed > 5) {
+              let windType = ""
+              let windDescription = ""
+              
+              if (currentDir >= 45 && currentDir <= 135) {
+                windType = "onshore"
+                windDescription = "del mar cap a terra - Ideal per kitesurf"
+              } else if (currentDir >= 315 || currentDir <= 45) {
+                windType = "offshore"
+                windDescription = "de terra cap a mar - Precaució!"
+              } else if (currentDir > 135 && currentDir < 225) {
+                windType = "side-shore"
+                windDescription = "paral·lel a la costa - Acceptable"
+              } else {
+                windType = "variable"
+                windDescription = "direcció variable"
+              }
 
-          if (perfectHours.length >= 3) {
-            newAlerts.push({
-              type: "info",
-              title: "Condicions excel·lents per kitesurf",
-              description: `S'esperen ${perfectHours.length} hores amb condicions ideals (12-20 kn, vent favorable). Perfecte per navegar!`,
-            })
+              // Només mostrar si és informatiu (no repetir alertes de perill)
+              if (windType === "onshore" && currentSpeed >= 8) {
+                newAlerts.push({
+                  type: "info",
+                  title: "Vent favorable detectat",
+                  description: `Vent ${windDescription} de ${currentSpeed} kn. Bones condicions per navegar.`,
+                })
+              }
+            }
           }
         }
 
@@ -116,7 +166,9 @@ export function AlertsBanner() {
           className={
             alert.type === "info" && alert.title.includes("excel·lents") 
               ? "border-green-200 bg-green-50" 
-              : ""
+              : alert.type === "info" && alert.title.includes("favorable")
+                ? "border-blue-200 bg-blue-50"
+                : ""
           }
         >
           {alert.type === "danger" ? (
