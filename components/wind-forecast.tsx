@@ -8,7 +8,7 @@ import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Info } from "lucide-react"
+import { Info, Brain, Wifi, Users } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -21,7 +21,7 @@ export function WindForecast() {
       try {
         setLoading(true)
         setError(null)
-        console.log("Cargando previsión para:", selectedSpot)
+        console.log("Cargando previsión millorada para:", selectedSpot)
         const data = await getForecastData(selectedSpot)
         console.log("Datos recibidos:", data)
 
@@ -94,10 +94,56 @@ export function WindForecast() {
     return "Flux"
   }
 
+  // Obtener el icono y color según el tipo de predicción
+  const getPredictionBadge = (hour: any) => {
+    if (hour.isMLEnhanced && hour.mlConfidence > 0.7) {
+      return (
+        <Badge variant="outline" className="text-xs px-1 py-0 bg-purple-50 border-purple-200 text-purple-700">
+          <Brain className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
+          <span className="hidden sm:inline">IA</span>
+          <span className="sm:hidden">AI</span>
+        </Badge>
+      )
+    }
+    
+    if (hour.isCalibrated) {
+      return (
+        <Badge variant="outline" className="text-xs px-1 py-0 bg-green-50 border-green-200 text-green-700">
+          <Users className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
+          <span className="hidden sm:inline">Calibrat</span>
+          <span className="sm:hidden">Cal</span>
+        </Badge>
+      )
+    }
+
+    if (hour.source && hour.source.includes('Agregat')) {
+      return (
+        <Badge variant="outline" className="text-xs px-1 py-0 bg-blue-50 border-blue-200 text-blue-700">
+          <Wifi className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
+          <span className="hidden sm:inline">Multi-API</span>
+          <span className="sm:hidden">API</span>
+        </Badge>
+      )
+    }
+
+    return (
+      <Badge variant="secondary" className="text-xs px-1 py-0">
+        <span className="hidden sm:inline">Model</span>
+        <span className="sm:hidden">Mod</span>
+      </Badge>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg sm:text-xl">Previsió del Vent</CardTitle>
+        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+          <Brain className="h-5 w-5 text-purple-600" />
+          Previsió Millorada amb IA
+        </CardTitle>
+        <div className="text-sm text-muted-foreground">
+          Prediccions combinant múltiples fonts meteorològiques i Machine Learning
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -122,14 +168,14 @@ export function WindForecast() {
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-blue-900">
+                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
                     <div>Ràf.</div>
                     <div className="hidden sm:block">Flux</div>
                     <div className="sm:hidden">Est.</div>
-                    <div className="hidden sm:block">Estat</div>
+                    <div className="hidden sm:block">Tipus</div>
                   </div>
                   
                   {day.hours && day.hours.length > 0 ? (
@@ -141,7 +187,7 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm"
+                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
@@ -169,18 +215,7 @@ export function WindForecast() {
                           </div>
                           
                           <div className="flex justify-center">
-                            {hour.isCalibrated ? (
-                              <Badge variant="outline" className="text-xs px-1 py-0">
-                                <Info className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-                                <span className="hidden sm:inline">Calibrat</span>
-                                <span className="sm:hidden">Cal</span>
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">
-                                <span className="hidden sm:inline">Model</span>
-                                <span className="sm:hidden">Mod</span>
-                              </Badge>
-                            )}
+                            {getPredictionBadge(hour)}
                           </div>
                         </div>
                       ))
@@ -197,11 +232,44 @@ export function WindForecast() {
           <div className="rounded-lg border p-4 text-center text-gray-500">No hi ha dades de previsió disponibles</div>
         )}
         
-        {forecast.length > 0 && forecast[0].hours.some((h: any) => h.isCalibrated) && (
-          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <div className="text-xs sm:text-sm text-blue-800">
-              <strong>Dades calibrades:</strong> Alguns valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
-            </div>
+        {/* Informació sobre les millores */}
+        {forecast.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {forecast[0].hours.some((h: any) => h.isMLEnhanced) && (
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Brain className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium text-purple-800">Prediccions millorades amb IA</span>
+                </div>
+                <div className="text-xs text-purple-700">
+                  Alguns valors han estat optimitzats pel nostre model de Machine Learning basat en observacions locals.
+                </div>
+              </div>
+            )}
+            
+            {forecast[0].hours.some((h: any) => h.source && h.source.includes('Agregat')) && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wifi className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">Dades multi-font</span>
+                </div>
+                <div className="text-xs text-blue-700">
+                  Prediccions combinant múltiples APIs meteorològiques per màxima precisió.
+                </div>
+              </div>
+            )}
+            
+            {forecast[0].hours.some((h: any) => h.isCalibrated) && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Calibració d'usuaris</span>
+                </div>
+                <div className="text-xs text-green-700">
+                  Valors ajustats basant-se en reportes reals de la comunitat de kiters locals.
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

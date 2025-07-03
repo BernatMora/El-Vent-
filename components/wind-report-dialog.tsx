@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useSpotStore } from "@/lib/store"
 import { windCalibration } from "@/lib/calibration"
-import { Wind, CheckCircle } from "lucide-react"
+import { addUserObservation } from "@/lib/api"
+import { Wind, CheckCircle, Brain } from "lucide-react"
 
 interface WindReportDialogProps {
   currentModelData?: {
@@ -58,7 +59,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
 
       const directionDegrees = directionMap[report.windDirection] || 90
 
-      // Añadir observación al sistema de calibración
+      // 1. Añadir observación al sistema de calibración (sistema anterior)
       const observation = windCalibration.addObservation({
         spot: selectedSpot,
         reportedWindSpeed: windSpeedNum,
@@ -68,7 +69,17 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
         userId: `user-${Date.now()}`
       })
 
-      console.log("Observación añadida:", observation)
+      // 2. Añadir observación al sistema de Machine Learning (NUEVO)
+      if (currentModelData) {
+        addUserObservation(selectedSpot, {
+          reportedWindSpeed: windSpeedNum,
+          reportedDirection: directionDegrees,
+          modelWindSpeed: currentModelData.windSpeed,
+          modelWindDirection: currentModelData.windDirection
+        })
+      }
+
+      console.log("Observación añadida a ambos sistemas:", observation)
 
       // Mostrar éxito
       setSuccess(true)
@@ -109,20 +120,29 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg">Reportar condicions actuals</DialogTitle>
+          <DialogTitle className="text-lg flex items-center gap-2">
+            <Wind className="h-5 w-5 text-blue-600" />
+            Reportar condicions actuals
+          </DialogTitle>
           <DialogDescription className="text-sm">
-            Comparteix les condicions reals de vent per ajudar a calibrar les previsions
+            Comparteix les condicions reals de vent per millorar les previsions amb IA
           </DialogDescription>
         </DialogHeader>
         
         {success ? (
           <div className="flex flex-col items-center gap-4 py-8">
-            <CheckCircle className="h-12 w-12 text-green-600" />
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+              <Brain className="h-6 w-6 text-purple-600" />
+            </div>
             <div className="text-center">
               <h3 className="text-lg font-medium text-green-800">Reporte enviat!</h3>
               <p className="text-sm text-green-600 mt-1">
-                Gràcies per ajudar a millorar la precisió de les previsions
+                Gràcies per entrenar la nostra IA i millorar les previsions
               </p>
+              <div className="mt-2 text-xs text-purple-600 bg-purple-50 rounded-lg p-2">
+                <strong>Nou:</strong> El teu reporte també entrena el nostre model de Machine Learning
+              </div>
             </div>
           </div>
         ) : (
@@ -210,6 +230,17 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
                 </div>
               </div>
             )}
+
+            {/* Nou: Informació sobre Machine Learning */}
+            <div className="rounded-lg border bg-gradient-to-r from-purple-50 to-blue-50 p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Brain className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium text-purple-800">Sistema d'IA Millorat</span>
+              </div>
+              <div className="text-xs text-purple-700">
+                El teu reporte entrenarà el nostre model de Machine Learning per fer prediccions més precises específiques per aquest spot.
+              </div>
+            </div>
             
             <DialogFooter>
               <Button 
@@ -218,7 +249,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
                 disabled={loading || !report.windSpeed}
                 className="text-sm"
               >
-                {loading ? "Enviant..." : "Enviar reporte"}
+                {loading ? "Entrenant IA..." : "Enviar reporte"}
               </Button>
             </DialogFooter>
           </>

@@ -17,7 +17,7 @@ import { WindGuide } from "@/components/wind-guide"
 import { WindChart } from "@/components/wind-chart"
 import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
-import { ApiStatus } from "@/components/api-status"
+import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 
 export default function Home() {
   return (
@@ -28,11 +28,14 @@ export default function Home() {
             Els Vents de Sant Pere Pescador
           </h1>
           <p className="text-sm sm:text-lg text-blue-700">
-            Descobreix els vents tradicionals i la meteorologia actual per kitesurf
+            Prediccions meteorològiques amb Intel·ligència Artificial per kitesurf
           </p>
+          <div className="mt-2 text-xs sm:text-sm text-blue-600 bg-blue-50 rounded-lg p-2 inline-block">
+            🤖 Nou: Sistema millorat amb múltiples APIs i Machine Learning
+          </div>
         </div>
 
-        <ApiStatus />
+        <EnhancedApiStatus />
 
         <div className="mb-4 sm:mb-6 grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2">
           <button className="flex items-center justify-center rounded-md bg-blue-100 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-blue-700 transition hover:bg-blue-200">
@@ -91,7 +94,7 @@ export default function Home() {
 
         <Tabs defaultValue="previsio" className="mb-4 sm:mb-8">
           <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="previsio" className="text-xs sm:text-sm">Previsió</TabsTrigger>
+            <TabsTrigger value="previsio" className="text-xs sm:text-sm">Previsió IA</TabsTrigger>
             <TabsTrigger value="condicions" className="text-xs sm:text-sm">Condicions</TabsTrigger>
             <TabsTrigger value="mida" className="text-xs sm:text-sm">Mida d'Estel</TabsTrigger>
           </TabsList>
