@@ -88,10 +88,12 @@ export function WindChart() {
           <p className="mb-1 font-medium">
             {activeTab} - {label}
           </p>
-          <p className="text-blue-600">Vent: {payload[0].value.toFixed(1)} kn</p>
-          <p className="text-amber-600">Ràfegues: {payload[1].value.toFixed(1)} kn</p>
+          <p className="text-blue-600">Vent: {payload[0]?.value?.toFixed(1) || 0} kn</p>
+          {payload[1] && (
+            <p className="text-amber-600">Ràfegues: {payload[1].value?.toFixed(1) || 0} kn</p>
+          )}
           <p>
-            Direcció: {payload[0].payload.directionName} ({payload[0].payload.windDirection}°)
+            Direcció: {payload[0]?.payload?.directionName || 'N/A'} ({payload[0]?.payload?.windDirection || 0}°)
           </p>
         </div>
       )
