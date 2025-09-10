@@ -1,5 +1,3 @@
-import ClientContent from '../components/client-content'
-
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4 md:p-8">
@@ -16,7 +14,10 @@ export default function Home() {
           </div>
         </div>
 
-        <ClientContent />
+        <div className="bg-white rounded-lg p-4 shadow-md">
+          <h2 className="text-xl font-bold mb-4">Aplicació carregant...</h2>
+          <p>Si veus aquest missatge, l'aplicació s'està inicialitzant.</p>
+        </div>
       </div>
     </main>
   )
