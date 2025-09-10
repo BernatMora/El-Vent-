@@ -15,10 +15,8 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg p-4 shadow-md">
-          <h2 className="text-xl font-bold mb-4">Aplicació carregant...</h2>
-          <p>Si veus aquest missatge, l'aplicació s'està inicialitzant.</p>
+          <ClientContent />
         </div>
       </div>
     </main>
   )
-}
