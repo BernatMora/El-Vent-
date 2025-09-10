@@ -1,3 +1,5 @@
+import ClientContent from '../components/client-content'
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4 md:p-8">
