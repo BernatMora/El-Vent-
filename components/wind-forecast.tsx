@@ -33,7 +33,7 @@ export function WindForecast() {
         setForecast(data)
       } catch (err) {
         console.error("Error loading forecast:", err)
-        setError("Error carregant les dades")
+        setError("Sense connexió - No es poden carregar dades meteorològiques")
       } finally {
         setLoading(false)
       }
@@ -153,7 +153,25 @@ export function WindForecast() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">{error}</div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728" />
+              </svg>
+              <span className="text-lg font-medium text-red-800">Sense Connexió</span>
+            </div>
+            <p className="text-red-700 text-sm">
+              No es poden obtenir dades meteorològiques reals en aquest moment.
+              <br />
+              Comprova la connexió a internet i torna-ho a intentar.
+            </p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+            >
+              Tornar a intentar
+            </button>
+          </div>
         ) : forecast && forecast.length > 0 ? (
           <Tabs defaultValue="0">
             <TabsList className="grid w-full grid-cols-3 h-auto">

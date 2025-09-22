@@ -43,7 +43,8 @@ export function CurrentConditions() {
         })
       }
     } catch (err) {
-      console.error(err)
+      console.error("Error loading current data:", err)
+      setCurrentData(null)
     } finally {
       setLoading(false)
     }
@@ -193,6 +194,20 @@ export function CurrentConditions() {
                   <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
                   <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
                 </div>
+              </div>
+            ) : !currentData ? (
+              <div className="mt-4 sm:mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728" />
+                  </svg>
+                  <span className="font-medium text-red-800">Sense Dades Meteorològiques</span>
+                </div>
+                <p className="text-red-700 text-sm">
+                  No es poden obtenir condicions actuals.
+                  <br />
+                  Comprova la connexió i actualitza.
+                </p>
               </div>
             ) : (
               <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">

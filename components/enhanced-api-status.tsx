@@ -56,7 +56,7 @@ export function EnhancedApiStatus() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center text-lg">
             <TrendingUp className="mr-2 h-5 w-5 text-blue-600" />
-            Sistema Protegit - Sempre Gratuït
+            <span className="text-sm font-medium text-blue-800">Sistema Protegit - Només Dades Reals</span>
           </CardTitle>
           <Dialog>
             <DialogTrigger asChild>
@@ -66,28 +66,28 @@ export function EnhancedApiStatus() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Sistema Protegit Contra Costos</DialogTitle>
+                <DialogTitle>Sistema Sense Dades Simulades</DialogTitle>
                 <DialogDescription>
-                  Com garantim que l'aplicació sigui sempre gratuïta fins i tot amb milers d'usuaris
+                  Com garantim que només mostrem dades meteorològiques reals
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
+                  <h4 className="font-semibold mb-2">🌐 Només Dades Reals</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Totes les dades provenen d'APIs meteorològiques professionals. Mai mostrem dades inventades.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">📡 Estat de Connexió</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Si no hi ha connexió o s'esgoten les crides API, l'app mostra clarament "Sense connexió".
+                  </p>
+                </div>
+                <div>
                   <h4 className="font-semibold mb-2">🛡️ Cache Intel·ligent</h4>
                   <p className="text-sm text-muted-foreground">
-                    Les dades es guarden localment durant 15-30 minuts. Milers d'usuaris poden compartir les mateixes dades cached.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">📊 Límits Diaris</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Màxim 100 crides API per dia. Si s'arriba al límit, s'usen dades simulades intel·ligents.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">📴 Mode Offline</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Si no hi ha connexió o s'esgoten les crides, l'app segueix funcionant amb dades simulades realistes.
+                    Les dades reals es guarden temporalment per evitar crides innecessàries, però sempre són dades reals.
                   </p>
                 </div>
               </div>
@@ -158,17 +158,17 @@ export function EnhancedApiStatus() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-sm">Garantia de Cost Zero</span>
+              <span className="font-medium text-sm">Garantia de Dades Reals</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-green-600 text-xs">Protegit</Badge>
+              <Badge className="bg-green-600 text-xs">Només Reals</Badge>
               <Button variant="ghost" size="sm" onClick={updateStats}>
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Sistema amb cache intel·ligent i límits estrictes. Fins i tot amb 1000+ usuaris diaris, l'aplicació segueix sent 100% gratuïta.
+            Mai mostrem dades simulades o inventades. Si no hi ha connexió, l'app ho indica clarament.
           </div>
         </div>
       </CardContent>
