@@ -74,50 +74,74 @@ export class ProtectedWeatherAPI {
     const now = new Date()
     const days = []
 
-    // Patrons realistes basats en l'spot
-    const spotPatterns = {
-      'kitesurf-point': { baseWind: 12, variation: 4, peakHour: 14 },
-      'la-ballena': { baseWind: 14, variation: 5, peakHour: 15 },
-      'can-martinet': { baseWind: 16, variation: 6, peakHour: 16 },
-      'la-rubina': { baseWind: 13, variation: 4, peakHour: 15 }
-    }
-
-    const pattern = spotPatterns[spot as keyof typeof spotPatterns] || spotPatterns['la-ballena']
-
     for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
       const date = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000)
       const dateString = date.toISOString().split("T")[0]
       const hours = []
 
       for (let hour = 9; hour <= 21; hour++) {
-        // Patró realista de vent
-        const hourFactor = Math.sin(((hour - 6) / 12) * Math.PI) * 0.7 + 0.3
-        const peakBonus = hour === pattern.peakHour ? 1.2 : 1.0
-        const dayDecay = dayOffset === 0 ? 1.0 : dayOffset === 1 ? 0.9 : 0.8
-        const randomFactor = 0.8 + Math.random() * 0.4
+        let baseWindSpeed = 2
 
-        let windSpeed = pattern.baseWind * hourFactor * peakBonus * dayDecay * randomFactor
-        windSpeed = Math.max(2, Math.min(25, windSpeed))
+        if (hour >= 11 && hour <= 17) {
+          baseWindSpeed = 6 + Math.sin(((hour - 11) / 6) * Math.PI) * 6
+        } else if (hour >= 9 && hour < 11) {
+          baseWindSpeed = 2 + (hour - 9) * 2
+        } else if (hour > 17 && hour <= 19) {
+          baseWindSpeed = 8 - (hour - 17) * 2
+        } else {
+          baseWindSpeed = 1 + Math.random() * 2
+        }
 
-        // Direcció realista (predominantment E-SE per la Costa Brava)
-        const baseDirection = 90 + (Math.random() - 0.5) * 60 // E ± 30°
-        const windDirection = Math.max(45, Math.min(135, baseDirection))
+        const dayTrend = dayOffset === 0 ? 1.0 : dayOffset === 1 ? 1.1 : 0.9
+        baseWindSpeed *= dayTrend
+        baseWindSpeed += (Math.random() - 0.5) * 2
+
+        let windDirection = 90
+        if (hour < 12) {
+          windDirection = 60 + Math.random() * 30
+        } else if (hour >= 12 && hour <= 16) {
+          windDirection = 80 + Math.random() * 20
+        } else {
+          windDirection = 100 + Math.random() * 35
+        }
+
+        let temperature = 14 + (hour - 9) * 0.7
+        if (hour > 15) {
+          temperature = 19 - (hour - 15) * 0.3
+        }
+        temperature += dayOffset * 0.5
+        temperature += (Math.random() - 0.5) * 1.5
+
+        const humidity = Math.max(50, Math.min(95, 85 - (temperature - 15) * 2 + Math.random() * 10))
 
         hours.push({
           time: `${hour.toString().padStart(2, "0")}:00`,
-          windSpeed: Math.round(windSpeed),
+          windSpeed: Math.max(1, Math.round(baseWindSpeed)),
           windDirection: Math.round(windDirection),
-          windGust: Math.round(windSpeed * (1.2 + Math.random() * 0.3)),
-          temperature: Math.round(18 + (hour - 9) * 0.8 + dayOffset * 1.5),
-          humidity: Math.round(65 + Math.random() * 20),
+          windGust: Math.round(baseWindSpeed * (1.3 + Math.random() * 0.4)),
+          temperature: Math.round(temperature),
+          humidity: Math.round(humidity),
           precipitation: Math.random() < 0.2 ? Math.round(Math.random() * 2 * 10) / 10 : 0,
-          precipitationProbability: Math.round(Math.random() * 80), // Més variació
+          precipitationProbability: Math.round(Math.random() * 70),
           precipitationType: Math.random() < 0.15 ? (
             Math.random() < 0.3 ? 'thunderstorm' : 
             Math.random() < 0.6 ? 'rain' : 'drizzle'
           ) : 'none',
-          cloudCover: Math.round(30 + Math.random() * 40),
-          source: "Dades simulades intel·ligents",
+          cloudCover: Math.round(20 + Math.random() * 60),
+          isCalibrated: false,
+          source: "Simulat"
+        })
+      }
+
+      days.push({
+        date: dateString,
+        hours: hours,
+      })
+    }
+
+    return days
+  }
+
           confidence: 0.4,
           isMLEnhanced: false,
           isCalibrated: false,
