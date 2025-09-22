@@ -158,17 +158,17 @@ export function EnhancedApiStatus() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-sm">Garantia de Dades Reals</span>
+              <span className="font-medium text-sm">Política de Transparència</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-green-600 text-xs">Només Reals</Badge>
+              <Badge className="bg-blue-600 text-xs">Transparent</Badge>
               <Button variant="ghost" size="sm" onClick={updateStats}>
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Mai mostrem dades simulades o inventades. Si no hi ha connexió, l'app ho indica clarament.
+            Sempre indiquem l'origen de les dades. Si no són reals, ho especifiquem clarament com "dades de referència".
           </div>
         </div>
       </CardContent>

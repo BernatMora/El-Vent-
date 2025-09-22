@@ -196,17 +196,15 @@ export function CurrentConditions() {
                 </div>
               </div>
             ) : !currentData ? (
-              <div className="mt-4 sm:mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+              <div className="mt-4 sm:mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728" />
-                  </svg>
-                  <span className="font-medium text-red-800">Sense Dades Meteorològiques</span>
+                  <Info className="h-5 w-5 text-amber-600" />
+                  <span className="font-medium text-amber-800">Dades de Referència</span>
                 </div>
-                <p className="text-red-700 text-sm">
-                  No es poden obtenir condicions actuals.
+                <p className="text-amber-700 text-sm">
+                  No es poden obtenir dades meteorològiques reals.
                   <br />
-                  Comprova la connexió i actualitza.
+                  Comprova altres fonts abans de navegar.
                 </p>
               </div>
             ) : (

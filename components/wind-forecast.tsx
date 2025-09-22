@@ -182,6 +182,20 @@ export function WindForecast() {
               ))}
             </TabsList>
 
+            {/* Alerta si són dades de fallback */}
+            {forecast[0]?.hours?.[0]?.isFallback && (
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Info className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-800">Dades de Referència</span>
+                </div>
+                <div className="text-xs text-amber-700">
+                  No es poden obtenir dades meteorològiques reals. Mostrant patrons típics de la zona com a referència.
+                  <strong> Comprova altres fonts abans de navegar.</strong>
+                </div>
+              </div>
+            )}
+
             {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="space-y-2">
