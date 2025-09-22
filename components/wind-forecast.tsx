@@ -166,6 +166,17 @@ export function WindForecast() {
 
             {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
+                {/* Indicador de tipus de dades */}
+                {day.hours && day.hours.length > 0 && day.hours[0].isReal && (
+                  <div className="mb-3 rounded-lg border border-green-200 bg-green-50 p-2">
+                    <div className="flex items-center gap-2">
+                      <Wifi className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-800">Dades meteorològiques reals</span>
+                      <Badge className="bg-green-600 text-xs">Open-Meteo</Badge>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
                   <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">

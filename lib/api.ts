@@ -1,20 +1,29 @@
 import { protectedWeatherAPI } from "./protected-api"
+import { getOpenMeteoForecast } from "./open-meteo-api"
 
 export async function getForecastData(spot: string) {
   try {
-    console.log("🛡️ getForecastData amb sistema protegit per spot:", spot)
+    console.log("🌐 Intentant obtenir dades reals d'Open-Meteo per spot:", spot)
     
-    // Usar el sistema protegit (sempre gratuït)
-    const protectedData = await protectedWeatherAPI.getForecastData(spot)
-    
-    console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
-    return protectedData
+    // Primer intentar dades reals d'Open-Meteo
+    try {
+      const realData = await getOpenMeteoForecast()
+      console.log("✅ Dades reals d'Open-Meteo obtingudes:", realData.length, "dies")
+      return realData
+    } catch (apiError) {
+      console.warn("⚠️ Open-Meteo no disponible:", apiError)
+      
+      // Si falla, usar sistema protegit
+      const protectedData = await protectedWeatherAPI.getForecastData(spot)
+      console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
+      return protectedData
+    }
     
   } catch (error) {
-    console.error("❌ Error en getForecastData protegit:", error)
+    console.error("❌ Error en getForecastData:", error)
     
-    // Fallback al sistema anterior si hi ha problemes
-    return generateSimulatedData()
+    // Si tot falla, mostrar error
+    throw new Error("No es poden obtenir dades meteorològiques")
   }
 }
 
