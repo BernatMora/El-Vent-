@@ -1,17 +1,17 @@
-import { enhancedWeatherService } from "./enhanced-api"
+import { protectedWeatherAPI } from "./protected-api"
 
 export async function getForecastData(spot: string) {
   try {
-    console.log("getForecastData amb sistema millorat per spot:", spot)
+    console.log("🛡️ getForecastData amb sistema protegit per spot:", spot)
     
-    // Usar el nou sistema millorat
-    const enhancedData = await enhancedWeatherService.getEnhancedForecast(spot)
+    // Usar el sistema protegit (sempre gratuït)
+    const protectedData = await protectedWeatherAPI.getForecastData(spot)
     
-    console.log("Dades millorades obtingudes:", enhancedData.length, "dies")
-    return enhancedData
+    console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
+    return protectedData
     
   } catch (error) {
-    console.error("Error en getForecastData millorat:", error)
+    console.error("❌ Error en getForecastData protegit:", error)
     
     // Fallback al sistema anterior si hi ha problemes
     return generateSimulatedData()
@@ -34,8 +34,8 @@ export function addUserObservation(spot: string, observation: {
 }
 
 // Obtenir estadístiques del sistema millorat
-export function getEnhancedStats(spot: string) {
-  return enhancedWeatherService.getDataSourceInfo(spot)
+export function getProtectionStats() {
+  return protectedWeatherAPI.getProtectionStats()
 }
 
 // Mantenir la funció de fallback
