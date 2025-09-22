@@ -33,7 +33,7 @@ export function WindForecast() {
         setForecast(data)
       } catch (err) {
         console.error("Error loading forecast:", err)
-        setError("Sense connexió - No es poden carregar dades meteorològiques")
+        setError("Error carregant les dades")
       } finally {
         setLoading(false)
       }
@@ -153,25 +153,7 @@ export function WindForecast() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728" />
-              </svg>
-              <span className="text-lg font-medium text-red-800">Sense Connexió</span>
-            </div>
-            <p className="text-red-700 text-sm">
-              No es poden obtenir dades meteorològiques reals en aquest moment.
-              <br />
-              Comprova la connexió a internet i torna-ho a intentar.
-            </p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
-            >
-              Tornar a intentar
-            </button>
-          </div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">{error}</div>
         ) : forecast && forecast.length > 0 ? (
           <Tabs defaultValue="0">
             <TabsList className="grid w-full grid-cols-3 h-auto">
@@ -182,30 +164,15 @@ export function WindForecast() {
               ))}
             </TabsList>
 
-            {/* Alerta si són dades de fallback */}
-            {forecast[0]?.hours?.[0]?.isFallback && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Info className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">Dades de Referència</span>
-                </div>
-                <div className="text-xs text-amber-700">
-                  No es poden obtenir dades meteorològiques reals. Mostrant patrons típics de la zona com a referència.
-                  <strong> Comprova altres fonts abans de navegar.</strong>
-                </div>
-              </div>
-            )}
-
             {forecast.map((day, dayIndex) => (
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
+                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
                     <div>Ràf.</div>
-                    <div>Pluja</div>
                     <div className="hidden sm:block">Flux</div>
                     <div className="sm:hidden">Est.</div>
                     <div className="hidden sm:block">Tipus</div>
@@ -220,7 +187,7 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-7 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
@@ -240,30 +207,6 @@ export function WindForecast() {
                             {Math.round(hour.windGust)} kn
                             <div className="text-xs text-gray-500 hidden sm:block">
                               ({knotsToKmh(hour.windGust)} km/h)
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col items-center">
-                            <div className="text-lg">
-                              {hour.precipitationProbability > 60 ? (
-                                hour.precipitationType === 'thunderstorm' ? '⛈️' : 
-                                hour.precipitationType === 'rain' ? '🌧️' : 
-                                hour.precipitationType === 'drizzle' ? '🌦️' : '🌧️'
-                              ) : hour.precipitationProbability > 30 ? (
-                                '🌦️'
-                              ) : hour.precipitationProbability > 10 ? (
-                                '🌤️'
-                              ) : (
-                                '☀️'
-                              )}
-                            </div>
-                            <div className="text-xs">
-                              {hour.precipitationProbability}%
-                              {hour.precipitation > 0 && (
-                                <div className="text-xs text-blue-600">
-                                  {hour.precipitation.toFixed(1)}mm
-                                </div>
-                              )}
                             </div>
                           </div>
                           

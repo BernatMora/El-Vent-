@@ -43,8 +43,7 @@ export function CurrentConditions() {
         })
       }
     } catch (err) {
-      console.error("Error loading current data:", err)
-      setCurrentData(null)
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -195,18 +194,6 @@ export function CurrentConditions() {
                   <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
                 </div>
               </div>
-            ) : !currentData ? (
-              <div className="mt-4 sm:mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Info className="h-5 w-5 text-amber-600" />
-                  <span className="font-medium text-amber-800">Dades de Referència</span>
-                </div>
-                <p className="text-amber-700 text-sm">
-                  No es poden obtenir dades meteorològiques reals.
-                  <br />
-                  Comprova altres fonts abans de navegar.
-                </p>
-              </div>
             ) : (
               <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">
                 <div className="flex flex-col items-center">
@@ -251,30 +238,6 @@ export function CurrentConditions() {
                     ({knotsToKmh(currentData?.windGust || 0)} km/h)
                   </div>
                 </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="text-3xl sm:text-4xl">
-                    {currentData?.precipitationProbability > 60 ? (
-                      currentData?.precipitationType === 'thunderstorm' ? '⛈️' : 
-                      currentData?.precipitationType === 'rain' ? '🌧️' : 
-                      currentData?.precipitationType === 'drizzle' ? '🌦️' : '🌧️'
-                    ) : currentData?.precipitationProbability > 30 ? (
-                      '🌦️'
-                    ) : currentData?.precipitationProbability > 10 ? (
-                      '🌤️'
-                    ) : (
-                      '☀️'
-                    )}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                    {currentData?.precipitationProbability || 0}% pluja
-                    {currentData?.precipitation > 0 && (
-                      <div className="text-blue-600 font-medium">
-                        {currentData.precipitation.toFixed(1)} mm/h
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -293,25 +256,6 @@ export function CurrentConditions() {
                       ✓ Acabat d'actualitzar amb el teu reporte!
                     </span>
                   )}
-                </div>
-              </div>
-            )}
-
-            {currentData?.precipitationProbability > 50 && (
-              <div className={`mt-4 rounded-lg border p-3 transition-colors duration-500 ${
-                currentData.precipitationType === 'thunderstorm' 
-                  ? 'border-red-200 bg-red-50' 
-                  : 'border-blue-200 bg-blue-50'
-              }`}>
-                <div className={`text-xs sm:text-sm ${
-                  currentData.precipitationType === 'thunderstorm' ? 'text-red-800' : 'text-blue-800'
-                }`}>
-                  <strong>Alerta de precipitació:</strong> {currentData.precipitationProbability}% probabilitat de {
-                    currentData.precipitationType === 'thunderstorm' ? 'tempesta' :
-                    currentData.precipitationType === 'rain' ? 'pluja' :
-                    currentData.precipitationType === 'drizzle' ? 'plugim' : 'precipitació'
-                  }
-                  {currentData.precipitation > 0 && ` (${currentData.precipitation.toFixed(1)} mm/h)`}
                 </div>
               </div>
             )}

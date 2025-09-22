@@ -7,10 +7,6 @@ export interface WeatherData {
   temperature: number
   humidity: number
   pressure?: number
-  precipitation: number // mm/h
-  precipitationProbability: number // 0-100%
-  precipitationType: 'none' | 'rain' | 'drizzle' | 'thunderstorm' | 'snow'
-  cloudCover: number // 0-100%
   source: string
   confidence: number
 }
@@ -39,7 +35,7 @@ export class OpenMeteoProvider implements WeatherProvider {
   async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
     const url = `https://api.open-meteo.com/v1/forecast?` +
       `latitude=${lat}&longitude=${lon}&` +
-      `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,precipitation,precipitation_probability,cloud_cover,weather_code&` +
+      `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&` +
       `wind_speed_unit=kn&timezone=Europe/Madrid&forecast_days=3`
 
     const response = await fetch(url)
@@ -50,7 +46,7 @@ export class OpenMeteoProvider implements WeatherProvider {
   }
 
   private processData(data: any): WeatherData[] {
-    const { time, temperature_2m, relative_humidity_2m, wind_speed_10m, wind_direction_10m, wind_gusts_10m, surface_pressure, precipitation, precipitation_probability, cloud_cover, weather_code } = data.hourly
+    const { time, temperature_2m, relative_humidity_2m, wind_speed_10m, wind_direction_10m, wind_gusts_10m, surface_pressure } = data.hourly
     
     return time.map((timestamp: string, index: number) => ({
       timestamp,
@@ -60,23 +56,9 @@ export class OpenMeteoProvider implements WeatherProvider {
       temperature: temperature_2m[index] || 20,
       humidity: relative_humidity_2m[index] || 70,
       pressure: surface_pressure[index],
-      precipitation: precipitation[index] || 0,
-      precipitationProbability: precipitation_probability[index] || 0,
-      precipitationType: this.getWeatherType(weather_code[index] || 0),
-      cloudCover: cloud_cover[index] || 0,
       source: this.name,
       confidence: 0.8
     }))
-  }
-
-  private getWeatherType(code: number): 'none' | 'rain' | 'drizzle' | 'thunderstorm' | 'snow' {
-    if (code === 0) return 'none'
-    if (code >= 51 && code <= 57) return 'drizzle'
-    if (code >= 61 && code <= 67) return 'rain'
-    if (code >= 80 && code <= 82) return 'rain'
-    if (code >= 95 && code <= 99) return 'thunderstorm'
-    if (code >= 71 && code <= 77) return 'snow'
-    return 'none'
   }
 }
 
@@ -121,10 +103,6 @@ export class WeatherAPIProvider implements WeatherProvider {
           temperature: hour.temp_c,
           humidity: hour.humidity,
           pressure: hour.pressure_mb,
-          precipitation: hour.precip_mm || 0,
-          precipitationProbability: hour.chance_of_rain || 0,
-          precipitationType: this.getWeatherTypeFromCondition(hour.condition.text),
-          cloudCover: hour.cloud || 0,
           source: this.name,
           confidence: 0.85
         })
@@ -132,15 +110,6 @@ export class WeatherAPIProvider implements WeatherProvider {
     })
     
     return results
-  }
-
-  private getWeatherTypeFromCondition(condition: string): 'none' | 'rain' | 'drizzle' | 'thunderstorm' | 'snow' {
-    const lower = condition.toLowerCase()
-    if (lower.includes('thunder') || lower.includes('storm')) return 'thunderstorm'
-    if (lower.includes('drizzle')) return 'drizzle'
-    if (lower.includes('rain') || lower.includes('shower')) return 'rain'
-    if (lower.includes('snow')) return 'snow'
-    return 'none'
   }
 }
 
@@ -181,23 +150,9 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       temperature: item.main.temp,
       humidity: item.main.humidity,
       pressure: item.main.pressure,
-      precipitation: (item.rain?.['1h'] || item.snow?.['1h'] || 0),
-      precipitationProbability: Math.round((item.pop || 0) * 100),
-      precipitationType: this.getWeatherTypeFromMain(item.weather[0].main),
-      cloudCover: item.clouds.all,
       source: this.name,
       confidence: 0.75
     }))
-  }
-
-  private getWeatherTypeFromMain(main: string): 'none' | 'rain' | 'drizzle' | 'thunderstorm' | 'snow' {
-    switch (main.toLowerCase()) {
-      case 'thunderstorm': return 'thunderstorm'
-      case 'drizzle': return 'drizzle'
-      case 'rain': return 'rain'
-      case 'snow': return 'snow'
-      default: return 'none'
-    }
   }
 }
 

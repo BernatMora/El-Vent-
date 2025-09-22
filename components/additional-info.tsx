@@ -93,46 +93,6 @@ export function AdditionalInfo() {
             <div className="text-sm text-muted-foreground">Temperatura de l'aigua</div>
           </div>
         </div>
-        
-        {/* Nova secció de precipitació */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col items-center rounded-lg border p-4 bg-blue-50">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mb-2 h-8 w-8 text-blue-600"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-              <path d="m16 14-3-2-3 2"/>
-              <path d="m8 17 4-5 4 5"/>
-            </svg>
-            <div className="text-2xl font-bold">25%</div>
-            <div className="text-sm text-muted-foreground">Probabilitat de pluja</div>
-          </div>
-          <div className="flex flex-col items-center rounded-lg border p-4 bg-gray-50">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mb-2 h-8 w-8 text-gray-600"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m4 14 4-4 4 4"/>
-              <path d="m0 10 4-4 4 4"/>
-              <path d="m8 6 4-4 4 4"/>
-            </svg>
-            <div className="text-2xl font-bold">45%</div>
-            <div className="text-sm text-muted-foreground">Cobertura de núvols</div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

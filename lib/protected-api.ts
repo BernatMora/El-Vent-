@@ -45,17 +45,44 @@ export class ProtectedWeatherAPI {
     } catch (error) {
       console.error(`❌ API call failed for ${spot}:`, error)
       
-      // 6. Si falla, retornar error per mostrar estat offline
-      console.log(`🔄 Using fallback data for ${spot} due to connection issues`)
+      // 6. Si falla, usar dades de fallback
       return this.getFallbackData(spot)
     }
   }
 
-  // Dades de fallback clarament marcades
   private getFallbackData(spot: string) {
-    console.log("🔄 Generating fallback data...")
+    // Comprovar si tenim dades de fallback cached
+    const fallbackKey = `fallback-${spot}`
+    const cached = cacheManager.get(fallbackKey, 'fallback')
+    
+    if (cached) {
+      console.log(`📦 Using cached fallback data for ${spot}`)
+      return cached.data
+    }
+
+    // Generar noves dades de fallback
+    console.log(`🎲 Generating new fallback data for ${spot}`)
+    const fallbackData = this.generateSmartFallback(spot)
+    
+    // Cache les dades de fallback per 5 minuts
+    cacheManager.set(fallbackKey, fallbackData, 'fallback', 'Smart Fallback')
+    
+    return fallbackData
+  }
+
+  private generateSmartFallback(spot: string) {
     const now = new Date()
     const days = []
+
+    // Patrons realistes basats en l'spot
+    const spotPatterns = {
+      'kitesurf-point': { baseWind: 12, variation: 4, peakHour: 14 },
+      'la-ballena': { baseWind: 14, variation: 5, peakHour: 15 },
+      'can-martinet': { baseWind: 16, variation: 6, peakHour: 16 },
+      'la-rubina': { baseWind: 13, variation: 4, peakHour: 15 }
+    }
+
+    const pattern = spotPatterns[spot as keyof typeof spotPatterns] || spotPatterns['la-ballena']
 
     for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
       const date = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000)
@@ -63,29 +90,31 @@ export class ProtectedWeatherAPI {
       const hours = []
 
       for (let hour = 9; hour <= 21; hour++) {
-        // Patró realista basat en Sant Pere Pescador
-        let baseWindSpeed = 2 + Math.sin(((hour - 11) / 6) * Math.PI) * 6
-        baseWindSpeed += (Math.random() - 0.5) * 2
-        
-        // Direcció típica de la zona
-        let direction = 90 + (hour - 12) * 5 + (Math.random() - 0.5) * 30
-        direction = Math.max(60, Math.min(120, direction))
-        
+        // Patró realista de vent
+        const hourFactor = Math.sin(((hour - 6) / 12) * Math.PI) * 0.7 + 0.3
+        const peakBonus = hour === pattern.peakHour ? 1.2 : 1.0
+        const dayDecay = dayOffset === 0 ? 1.0 : dayOffset === 1 ? 0.9 : 0.8
+        const randomFactor = 0.8 + Math.random() * 0.4
+
+        let windSpeed = pattern.baseWind * hourFactor * peakBonus * dayDecay * randomFactor
+        windSpeed = Math.max(2, Math.min(25, windSpeed))
+
+        // Direcció realista (predominantment E-SE per la Costa Brava)
+        const baseDirection = 90 + (Math.random() - 0.5) * 60 // E ± 30°
+        const windDirection = Math.max(45, Math.min(135, baseDirection))
+
         hours.push({
           time: `${hour.toString().padStart(2, "0")}:00`,
-          windSpeed: Math.max(1, Math.round(baseWindSpeed)),
-          windDirection: Math.round(direction),
-          windGust: Math.round(baseWindSpeed * 1.3),
-          temperature: Math.round(20 + (hour - 12) * 0.8 + dayOffset * 0.5),
+          windSpeed: Math.round(windSpeed),
+          windDirection: Math.round(windDirection),
+          windGust: Math.round(windSpeed * (1.2 + Math.random() * 0.3)),
+          temperature: Math.round(18 + (hour - 9) * 0.8 + dayOffset * 1.5),
           humidity: Math.round(65 + Math.random() * 20),
-          precipitationProbability: Math.round(Math.random() * 30), // Màxim 30%
-          precipitation: 0,
-          precipitationType: 'none',
-          source: "Dades de referència",
-          confidence: 0.3,
+          source: "Dades simulades intel·ligents",
+          confidence: 0.4,
           isMLEnhanced: false,
           isCalibrated: false,
-          isFallback: true // MARCAR CLARAMENT
+          isFallback: true
         })
       }
 
