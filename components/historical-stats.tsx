@@ -26,6 +26,12 @@ export function HistoricalStats() {
       windyDays: 220,
       bestMonth: "Junio",
     },
+    "la-rubina": {
+      avgWind: 16,
+      maxWind: 29,
+      windyDays: 215,
+      bestMonth: "Julio",
+    },
   }
 
   const stats = spotStats[selectedSpot] || spotStats["la-ballena"]

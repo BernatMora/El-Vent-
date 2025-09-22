@@ -106,6 +106,12 @@ export function AlertsBanner() {
               title: "Informació de Can Martinet",
               description: "Aquesta zona pot tenir corrents més forts. Recomanat per a riders amb experiència.",
             })
+          } else if (selectedSpot === "la-rubina" && maxWind > 10) {
+            newAlerts.push({
+              type: "info",
+              title: "Informació de La Rubina",
+              description: "Spot menys massificat entre Sant Pere i Roses. Platja àmplia ideal per sessions llargues.",
+            })
           }
 
           // Informació sobre direcció del vent actual

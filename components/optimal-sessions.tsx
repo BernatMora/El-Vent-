@@ -27,6 +27,12 @@ export function OptimalSessions() {
       evening: false,
       bestDays: ["Miércoles", "Jueves", "Domingo"],
     },
+    "la-rubina": {
+      morning: true,
+      afternoon: true,
+      evening: true,
+      bestDays: ["Lunes", "Miércoles", "Sábado"],
+    },
   }
 
   const sessions = spotSessions[selectedSpot] || spotSessions["la-ballena"]

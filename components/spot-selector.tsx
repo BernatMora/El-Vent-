@@ -24,6 +24,11 @@ const spots = [
     label: "Can Martinet (Zona Sud)",
     description: "Zona sud, amb vents més constants",
   },
+  {
+    value: "la-rubina",
+    label: "La Rubina",
+    description: "Entre Sant Pere i Roses, menys massificat, bon per sessions llargues",
+  },
 ]
 
 export function SpotSelector() {

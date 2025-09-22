@@ -29,6 +29,12 @@ export function SpotDetails() {
       bestTide: "Baja y media",
       access: "Difícil, camino estrecho",
     },
+    "la-rubina": {
+      description: "Spot entre Sant Pere Pescador i Roses, menys massificat amb platja àmplia i bones condicions.",
+      bestWindDirection: "E, NE, SE",
+      bestTide: "Totes les marees",
+      access: "Mitjà, des de la carretera principal",
+    },
   }
 
   const details = spotDetails[selectedSpot] || spotDetails["la-ballena"]

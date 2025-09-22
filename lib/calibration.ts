@@ -85,7 +85,7 @@ class WindCalibrationService {
 
   private initializeDefaultFactors() {
     // Cambiar el orden para que kitesurf-point sea el primero (por defecto)
-    const spots = ['kitesurf-point', 'la-ballena', 'can-martinet']
+    const spots = ['kitesurf-point', 'la-ballena', 'can-martinet', 'la-rubina']
     
     spots.forEach(spot => {
       if (!this.calibrationFactors.has(spot)) {
