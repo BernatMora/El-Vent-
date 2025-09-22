@@ -91,9 +91,12 @@ function generateSimulatedData() {
         windGust: Math.round(baseWindSpeed * (1.3 + Math.random() * 0.4)),
         temperature: Math.round(temperature),
         humidity: Math.round(humidity),
-        precipitation: Math.random() < 0.15 ? Math.round(Math.random() * 3 * 10) / 10 : 0,
-        precipitationProbability: Math.round(Math.random() * 40),
-        precipitationType: Math.random() < 0.05 ? 'rain' : 'none',
+        precipitation: Math.random() < 0.2 ? Math.round(Math.random() * 4 * 10) / 10 : 0,
+        precipitationProbability: Math.round(Math.random() * 70), // Més variació
+        precipitationType: Math.random() < 0.2 ? (
+          Math.random() < 0.2 ? 'thunderstorm' : 
+          Math.random() < 0.6 ? 'rain' : 'drizzle'
+        ) : 'none',
         cloudCover: Math.round(20 + Math.random() * 60),
         isCalibrated: false,
         source: "Simulat"

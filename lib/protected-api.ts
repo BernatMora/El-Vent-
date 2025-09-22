@@ -111,8 +111,11 @@ export class ProtectedWeatherAPI {
           temperature: Math.round(18 + (hour - 9) * 0.8 + dayOffset * 1.5),
           humidity: Math.round(65 + Math.random() * 20),
           precipitation: Math.random() < 0.2 ? Math.round(Math.random() * 2 * 10) / 10 : 0,
-          precipitationProbability: Math.round(Math.random() * 30),
-          precipitationType: Math.random() < 0.1 ? 'rain' : 'none',
+          precipitationProbability: Math.round(Math.random() * 80), // Més variació
+          precipitationType: Math.random() < 0.15 ? (
+            Math.random() < 0.3 ? 'thunderstorm' : 
+            Math.random() < 0.6 ? 'rain' : 'drizzle'
+          ) : 'none',
           cloudCover: Math.round(30 + Math.random() * 40),
           source: "Dades simulades intel·ligents",
           confidence: 0.4,

@@ -212,15 +212,19 @@ export function WindForecast() {
                           </div>
                           
                           <div className="flex flex-col items-center">
-                            {hour.precipitationProbability > 30 ? (
-                              <div className="text-blue-600">
-                                {hour.precipitationType === 'thunderstorm' ? '⛈️' : 
-                                 hour.precipitationType === 'rain' ? '🌧️' : 
-                                 hour.precipitationType === 'drizzle' ? '🌦️' : '☀️'}
-                              </div>
-                            ) : (
-                              <div className="text-gray-400">☀️</div>
-                            )}
+                            <div className="text-lg">
+                              {hour.precipitationProbability > 60 ? (
+                                hour.precipitationType === 'thunderstorm' ? '⛈️' : 
+                                hour.precipitationType === 'rain' ? '🌧️' : 
+                                hour.precipitationType === 'drizzle' ? '🌦️' : '🌧️'
+                              ) : hour.precipitationProbability > 30 ? (
+                                '🌦️'
+                              ) : hour.precipitationProbability > 10 ? (
+                                '🌤️'
+                              ) : (
+                                '☀️'
+                              )}
+                            </div>
                             <div className="text-xs">
                               {hour.precipitationProbability}%
                               {hour.precipitation > 0 && (

@@ -240,12 +240,18 @@ export function CurrentConditions() {
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className="text-2xl sm:text-3xl">
-                    {currentData?.precipitationProbability > 30 ? (
+                  <div className="text-3xl sm:text-4xl">
+                    {currentData?.precipitationProbability > 60 ? (
                       currentData?.precipitationType === 'thunderstorm' ? '⛈️' : 
                       currentData?.precipitationType === 'rain' ? '🌧️' : 
-                      currentData?.precipitationType === 'drizzle' ? '🌦️' : '☀️'
-                    ) : '☀️'}
+                      currentData?.precipitationType === 'drizzle' ? '🌦️' : '🌧️'
+                    ) : currentData?.precipitationProbability > 30 ? (
+                      '🌦️'
+                    ) : currentData?.precipitationProbability > 10 ? (
+                      '🌤️'
+                    ) : (
+                      '☀️'
+                    )}
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground text-center">
                     {currentData?.precipitationProbability || 0}% pluja
