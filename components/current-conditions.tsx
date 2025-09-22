@@ -238,6 +238,24 @@ export function CurrentConditions() {
                     ({knotsToKmh(currentData?.windGust || 0)} km/h)
                   </div>
                 </div>
+
+                <div className="flex flex-col items-center">
+                  <div className="text-2xl sm:text-3xl">
+                    {currentData?.precipitationProbability > 30 ? (
+                      currentData?.precipitationType === 'thunderstorm' ? '⛈️' : 
+                      currentData?.precipitationType === 'rain' ? '🌧️' : 
+                      currentData?.precipitationType === 'drizzle' ? '🌦️' : '☀️'
+                    ) : '☀️'}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground text-center">
+                    {currentData?.precipitationProbability || 0}% pluja
+                    {currentData?.precipitation > 0 && (
+                      <div className="text-blue-600 font-medium">
+                        {currentData.precipitation.toFixed(1)} mm/h
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -256,6 +274,25 @@ export function CurrentConditions() {
                       ✓ Acabat d'actualitzar amb el teu reporte!
                     </span>
                   )}
+                </div>
+              </div>
+            )}
+
+            {currentData?.precipitationProbability > 50 && (
+              <div className={`mt-4 rounded-lg border p-3 transition-colors duration-500 ${
+                currentData.precipitationType === 'thunderstorm' 
+                  ? 'border-red-200 bg-red-50' 
+                  : 'border-blue-200 bg-blue-50'
+              }`}>
+                <div className={`text-xs sm:text-sm ${
+                  currentData.precipitationType === 'thunderstorm' ? 'text-red-800' : 'text-blue-800'
+                }`}>
+                  <strong>Alerta de precipitació:</strong> {currentData.precipitationProbability}% probabilitat de {
+                    currentData.precipitationType === 'thunderstorm' ? 'tempesta' :
+                    currentData.precipitationType === 'rain' ? 'pluja' :
+                    currentData.precipitationType === 'drizzle' ? 'plugim' : 'precipitació'
+                  }
+                  {currentData.precipitation > 0 && ` (${currentData.precipitation.toFixed(1)} mm/h)`}
                 </div>
               </div>
             )}

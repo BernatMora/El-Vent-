@@ -168,11 +168,12 @@ export function WindForecast() {
               <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
                     <div>Ràf.</div>
+                    <div>Pluja</div>
                     <div className="hidden sm:block">Flux</div>
                     <div className="sm:hidden">Est.</div>
                     <div className="hidden sm:block">Tipus</div>
@@ -187,7 +188,7 @@ export function WindForecast() {
                       .map((hour: any) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-7 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
@@ -207,6 +208,26 @@ export function WindForecast() {
                             {Math.round(hour.windGust)} kn
                             <div className="text-xs text-gray-500 hidden sm:block">
                               ({knotsToKmh(hour.windGust)} km/h)
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-center">
+                            {hour.precipitationProbability > 30 ? (
+                              <div className="text-blue-600">
+                                {hour.precipitationType === 'thunderstorm' ? '⛈️' : 
+                                 hour.precipitationType === 'rain' ? '🌧️' : 
+                                 hour.precipitationType === 'drizzle' ? '🌦️' : '☀️'}
+                              </div>
+                            ) : (
+                              <div className="text-gray-400">☀️</div>
+                            )}
+                            <div className="text-xs">
+                              {hour.precipitationProbability}%
+                              {hour.precipitation > 0 && (
+                                <div className="text-xs text-blue-600">
+                                  {hour.precipitation.toFixed(1)}mm
+                                </div>
+                              )}
                             </div>
                           </div>
                           

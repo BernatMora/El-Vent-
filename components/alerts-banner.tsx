@@ -24,6 +24,27 @@ export function AlertsBanner() {
         if (data && data.length > 0) {
           const today = data[0]
 
+          // NUEVA: Alerta de lluvia/tormenta
+          const rainHours = today.hours.filter((h: any) => h.precipitationProbability > 60)
+          const stormHours = today.hours.filter((h: any) => h.precipitationType === 'thunderstorm')
+          
+          if (stormHours.length > 0) {
+            const maxRain = Math.max(...stormHours.map((h: any) => h.precipitation || 0))
+            newAlerts.push({
+              type: "danger",
+              title: "Alerta de tempesta",
+              description: `S'esperen tempestes avui amb precipitació de fins a ${maxRain.toFixed(1)} mm/h. Evita navegar durant les tempestes per seguretat.`,
+            })
+          } else if (rainHours.length > 0) {
+            const avgRainProb = Math.round(rainHours.reduce((sum, h) => sum + h.precipitationProbability, 0) / rainHours.length)
+            const maxRain = Math.max(...rainHours.map((h: any) => h.precipitation || 0))
+            newAlerts.push({
+              type: "warning",
+              title: "Probabilitat de pluja",
+              description: `${avgRainProb}% probabilitat de pluja durant ${rainHours.length} hores avui${maxRain > 0 ? ` (fins a ${maxRain.toFixed(1)} mm/h)` : ''}. Porta protecció adequada.`,
+            })
+          }
+
           // Comprobar viento fuerte (solo si realmente hay viento)
           const maxWind = Math.max(...today.hours.map((h: any) => h.windSpeed))
           if (maxWind > 25) {

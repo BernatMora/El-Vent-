@@ -56,6 +56,8 @@ export function WindChart() {
         windGust: hour.windGust || hour.windSpeed * 1.2,
         windDirection: hour.windDirection,
         directionName: getWindDirectionName(hour.windDirection),
+        precipitation: hour.precipitation || 0,
+        precipitationProbability: hour.precipitationProbability || 0,
       }))
   }
 
@@ -95,6 +97,12 @@ export function WindChart() {
           <p>
             Direcció: {payload[0]?.payload?.directionName || 'N/A'} ({payload[0]?.payload?.windDirection || 0}°)
           </p>
+          {payload[0]?.payload?.precipitationProbability > 0 && (
+            <p className="text-blue-500">
+              Pluja: {payload[0].payload.precipitationProbability}%
+              {payload[0].payload.precipitation > 0 && ` (${payload[0].payload.precipitation.toFixed(1)} mm/h)`}
+            </p>
+          )}
         </div>
       )
     }
@@ -238,6 +246,16 @@ export function WindChart() {
                         dot={false}
                         activeDot={{ r: 6 }}
                       />
+                      {/* Línia de precipitació */}
+                      <Line
+                        type="monotone"
+                        dataKey="precipitationProbability"
+                        stroke="#06b6d4"
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                        dot={false}
+                        yAxisId="right"
+                      />
                       {/* Líneas de referencia */}
                       <line x1="0%" y1="12" x2="100%" y2="12" stroke="#10b981" strokeWidth={1} strokeDasharray="5 5" />
                       <line x1="0%" y1="8" x2="100%" y2="8" stroke="#d1d5db" strokeWidth={1} strokeDasharray="5 5" />
@@ -311,6 +329,20 @@ export function WindChart() {
                   <path d="M12 19V5" />
                 </svg>
                 Ràfegues màximes: {windStats.gustMax} kn ({knotsToKmh(windStats.gustMax)} km/h)
+              </div>
+              
+              {/* Informació de precipitació */}
+              <div className="mt-3 pt-3 border-t">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                      <path d="m16 14-3-2-3 2"/>
+                      <path d="m8 17 4-5 4 5"/>
+                    </svg>
+                    Precipitació: Línia discontínua blava
+                  </div>
+                </div>
               </div>
             </TabsContent>
           </div>
