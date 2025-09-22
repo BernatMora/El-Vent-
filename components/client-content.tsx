@@ -16,6 +16,7 @@ import { WindChart } from "@/components/wind-chart"
 import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
+import { TrainingSection } from "@/components/training-section"
 
 export function ClientContent() {
   return (
@@ -119,6 +120,10 @@ export function ClientContent() {
 
       <div id="wind-guide" className="mb-4 sm:mb-8">
         <WindGuide />
+      </div>
+
+      <div className="mb-4 sm:mb-8">
+        <TrainingSection />
       </div>
     </>
   )
