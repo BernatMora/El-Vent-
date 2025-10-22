@@ -13,32 +13,11 @@ export function ApiStatus() {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        // Primer provar Meteocat (dades oficials de Catalunya)
-        try {
-          const meteocatResponse = await fetch(
-            "https://api.meteo.cat/xema/v1/estacions/CG"
-          )
-
-          if (meteocatResponse.ok) {
-            setApiStatus("real")
-            setDataSource("Meteocat (Oficial Catalunya)")
-            setLastUpdate(
-              new Date().toLocaleTimeString("ca-ES", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            )
-            return
-          }
-        } catch (meteocatError) {
-          console.log("Meteocat no disponible, provant altres fonts...")
-        }
-
-        // Si Meteocat falla, provar Open-Meteo
+        // Probar conexión con Open-Meteo
         const response = await fetch(
           "https://api.open-meteo.com/v1/forecast?latitude=42.1833&longitude=3.0833&hourly=wind_speed_10m&forecast_days=1"
         )
-
+        
         if (response.ok) {
           setApiStatus("real")
           setDataSource("Open-Meteo (Gratuït)")
