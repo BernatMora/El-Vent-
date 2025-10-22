@@ -1,4 +1,6 @@
 // Sistema multi-API per obtenir dades meteorològiques de múltiples fonts
+import { MeteocatProvider } from './meteocat-api'
+
 export interface WeatherData {
   timestamp: string
   windSpeed: number
@@ -7,6 +9,7 @@ export interface WeatherData {
   temperature: number
   humidity: number
   pressure?: number
+  precipitation?: number
   source: string
   confidence: number
 }
@@ -131,12 +134,12 @@ export class OpenWeatherMapProvider implements WeatherProvider {
 
   async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
     if (!this.apiKey) throw new Error("OpenWeatherMap key not configured")
-    
+
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${this.apiKey}&units=metric`
-    
+
     const response = await fetch(url)
     if (!response.ok) throw new Error(`OpenWeatherMap error: ${response.status}`)
-    
+
     const data = await response.json()
     return this.processData(data)
   }
@@ -150,8 +153,36 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       temperature: item.main.temp,
       humidity: item.main.humidity,
       pressure: item.main.pressure,
+      precipitation: item.rain?.['3h'] || 0,
       source: this.name,
       confidence: 0.75
+    }))
+  }
+}
+
+// Meteocat (Servei Meteorològic de Catalunya) - Dades oficials
+export class MeteocatWeatherProvider implements WeatherProvider {
+  name = "Meteocat"
+  priority = 0 // Prioritat màxima per ser dades oficials de Catalunya
+  private meteocatProvider = new MeteocatProvider()
+
+  async isAvailable(): Promise<boolean> {
+    return await this.meteocatProvider.isAvailable()
+  }
+
+  async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
+    const forecast = await this.meteocatProvider.getForecast()
+
+    return forecast.map((item) => ({
+      timestamp: item.timestamp,
+      windSpeed: item.windSpeed,
+      windDirection: item.windDirection,
+      windGust: item.windGust,
+      temperature: item.temperature,
+      humidity: item.humidity || 70,
+      precipitation: item.precipitation,
+      source: item.source,
+      confidence: item.confidence
     }))
   }
 }
@@ -159,6 +190,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
 // Gestor principal de múltiples APIs
 export class MultiWeatherService {
   private providers: WeatherProvider[] = [
+    new MeteocatWeatherProvider(), // Prioritat màxima - dades oficials de Catalunya
     new OpenMeteoProvider(),
     new WeatherAPIProvider(),
     new OpenWeatherMapProvider()
