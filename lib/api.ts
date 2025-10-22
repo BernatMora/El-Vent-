@@ -1,27 +1,39 @@
 import { protectedWeatherAPI } from "./protected-api"
 import { getOpenMeteoForecast } from "./open-meteo-api"
+import { getMeteocatForecast } from "./meteocat-api"
 
 export async function getForecastData(spot: string) {
   try {
-    console.log("🌐 Intentant obtenir dades reals d'Open-Meteo per spot:", spot)
-    
-    // Primer intentar dades reals d'Open-Meteo
+    console.log("🌐 Intentant obtenir dades meteorològiques per spot:", spot)
+
+    // Primer intentar dades de Meteocat (oficial Catalunya)
+    try {
+      const meteocatData = await getMeteocatForecast()
+      if (meteocatData.length > 0) {
+        console.log("✅ Dades de Meteocat obtingudes:", meteocatData.length, "dies")
+        return meteocatData
+      }
+    } catch (meteocatError) {
+      console.warn("⚠️ Meteocat no disponible:", meteocatError)
+    }
+
+    // Si Meteocat falla, intentar Open-Meteo
     try {
       const realData = await getOpenMeteoForecast()
       console.log("✅ Dades reals d'Open-Meteo obtingudes:", realData.length, "dies")
       return realData
     } catch (apiError) {
       console.warn("⚠️ Open-Meteo no disponible:", apiError)
-      
+
       // Si falla, usar sistema protegit
       const protectedData = await protectedWeatherAPI.getForecastData(spot)
       console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
       return protectedData
     }
-    
+
   } catch (error) {
     console.error("❌ Error en getForecastData:", error)
-    
+
     // Si tot falla, mostrar error
     throw new Error("No es poden obtenir dades meteorològiques")
   }
