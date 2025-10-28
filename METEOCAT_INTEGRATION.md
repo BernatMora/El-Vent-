@@ -30,11 +30,12 @@ S'ha integrat el **Servei Meteorològic de Catalunya (Meteocat)** com a font de 
 
 2. **`lib/weather-apis.ts`**: Actualitzat per incloure Meteocat
    - Nova classe `MeteocatWeatherProvider` que implementa la interfaz `WeatherProvider`
-   - Meteocat afegit com a proveïdor amb **prioritat 0** (màxima prioritat)
+   - Meteocat afegit com a proveïdor amb **prioritat 1** (font de suport)
 
-3. **`lib/api.ts`**: Modificat per provar Meteocat primer
-   - Primer intent: Meteocat (dades oficials de Catalunya)
-   - Segon intent: Open-Meteo (dades globals gratuïtes)
+3. **`lib/api.ts`**: Modificat per utilitzar Open-Meteo com a font principal i Meteocat com a suport
+   - Primer intent: Open-Meteo (font principal)
+   - Meteocat s'obté com a font addicional si està disponible
+   - Si Open-Meteo falla: Meteocat com a alternativa
    - Tercer intent: Sistema protegit amb dades simulades
 
 4. **`components/api-status.tsx`**: Actualitzat per mostrar l'estat de Meteocat
@@ -82,16 +83,16 @@ S'ha integrat el **Servei Meteorològic de Catalunya (Meteocat)** com a font de 
 
 1. **Dades oficials**: Font governamental oficial de Catalunya
 2. **Alta precisió local**: Dades específiques per la zona de l'Alt Empordà
-3. **Prioritat màxima**: S'utilitza primer quan està disponible
+3. **Font de suport**: Complementa les dades d'Open-Meteo i serveix com a alternativa
 4. **Gratuït**: API pública sense necessitat de claus d'API
-5. **Alta confiança**: Confiança del 95% assignada a les dades de Meteocat
+5. **Alta confiança**: Confiança del 85-95% assignada a les dades de Meteocat
 
 ## Prioritat de fonts de dades
 
 El sistema utilitza les fonts en aquest ordre de prioritat:
 
-1. **Meteocat** (prioritat 0) - Dades oficials de Catalunya
-2. **Open-Meteo** (prioritat 1) - Dades globals gratuïtes
+1. **Open-Meteo** (prioritat 0) - Font principal amb dades globals gratuïtes
+2. **Meteocat** (prioritat 1) - Font de suport i alternativa amb dades oficials de Catalunya
 3. **WeatherAPI** (prioritat 2) - Servei comercial (requereix API key)
 4. **OpenWeatherMap** (prioritat 3) - Servei comercial (requereix API key)
 5. **Dades simulades** - Sistema de fallback si totes les fonts fallen
@@ -100,10 +101,11 @@ El sistema utilitza les fonts en aquest ordre de prioritat:
 
 La integració és automàtica i transparent. El sistema:
 
-1. Intenta obtenir dades de Meteocat
-2. Si Meteocat no està disponible, prova altres fonts
-3. Mostra l'estat de la font utilitzada al component `ApiStatus`
-4. El component `WeatherSources` mostra totes les fonts disponibles
+1. Obté dades d'Open-Meteo com a font principal
+2. Intenta obtenir també dades de Meteocat com a font addicional
+3. Si Open-Meteo falla, utilitza Meteocat com a alternativa
+4. Mostra l'estat de la font utilitzada al component `ApiStatus`
+5. El component `WeatherSources` mostra totes les fonts disponibles i les seves prioritats
 
 ## Futur desenvolupament
 

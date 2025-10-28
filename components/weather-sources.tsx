@@ -16,18 +16,18 @@ interface SourceStatus {
 export function WeatherSources() {
   const [sources, setSources] = useState<SourceStatus[]>([
     {
-      name: "Meteocat",
-      status: "checking",
-      priority: 0,
-      description: "Servei Meteorològic de Catalunya (Oficial)",
-      official: true
-    },
-    {
       name: "Open-Meteo",
       status: "checking",
-      priority: 1,
-      description: "Dades meteorològiques globals gratuïtes",
+      priority: 0,
+      description: "Dades meteorològiques globals gratuïtes (Font principal)",
       official: false
+    },
+    {
+      name: "Meteocat",
+      status: "checking",
+      priority: 1,
+      description: "Servei Meteorològic de Catalunya (Font de suport)",
+      official: true
     },
     {
       name: "WeatherAPI",
@@ -49,20 +49,20 @@ export function WeatherSources() {
     const checkSources = async () => {
       const updatedSources = [...sources]
 
-      // Verificar Meteocat
-      try {
-        const meteocatResponse = await fetch("https://api.meteo.cat/xema/v1/estacions/CG")
-        updatedSources[0].status = meteocatResponse.ok ? "available" : "unavailable"
-      } catch {
-        updatedSources[0].status = "unavailable"
-      }
-
       // Verificar Open-Meteo
       try {
         const openMeteoResponse = await fetch(
           "https://api.open-meteo.com/v1/forecast?latitude=42.18&longitude=3.08&hourly=temperature_2m&forecast_days=1"
         )
-        updatedSources[1].status = openMeteoResponse.ok ? "available" : "unavailable"
+        updatedSources[0].status = openMeteoResponse.ok ? "available" : "unavailable"
+      } catch {
+        updatedSources[0].status = "unavailable"
+      }
+
+      // Verificar Meteocat
+      try {
+        const meteocatResponse = await fetch("https://api.meteo.cat/xema/v1/estacions/CG")
+        updatedSources[1].status = meteocatResponse.ok ? "available" : "unavailable"
       } catch {
         updatedSources[1].status = "unavailable"
       }
@@ -142,8 +142,7 @@ export function WeatherSources() {
 
         <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-dashed">
           <p className="text-xs text-muted-foreground">
-            <strong>Nota:</strong> El sistema utilitzarà automàticament la font disponible amb prioritat més alta.
-            Meteocat té prioritat màxima per ser la font oficial de Catalunya.
+            <strong>Nota:</strong> El sistema utilitza Open-Meteo com a font principal. Meteocat s'utilitza com a font de suport addicional o alternativa si Open-Meteo no està disponible.
           </p>
         </div>
       </CardContent>
