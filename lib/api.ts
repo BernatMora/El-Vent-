@@ -6,38 +6,26 @@ export async function getForecastData(spot: string) {
   try {
     console.log("🌐 Intentant obtenir dades meteorològiques per spot:", spot)
 
-    // Primer intentar dades d'Open-Meteo (prioritat màxima)
+    // Primer intentar dades de Meteocat (oficial Catalunya)
+    try {
+      const meteocatData = await getMeteocatForecast()
+      if (meteocatData.length > 0) {
+        console.log("✅ Dades de Meteocat obtingudes:", meteocatData.length, "dies")
+        return meteocatData
+      }
+    } catch (meteocatError) {
+      console.warn("⚠️ Meteocat no disponible:", meteocatError)
+    }
+
+    // Si Meteocat falla, intentar Open-Meteo
     try {
       const realData = await getOpenMeteoForecast()
-      console.log("✅ Dades d'Open-Meteo obtingudes:", realData.length, "dies")
-
-      // Intentar enriquir amb dades de Meteocat com a font addicional
-      try {
-        const meteocatData = await getMeteocatForecast()
-        if (meteocatData.length > 0) {
-          console.log("📊 Dades addicionals de Meteocat disponibles:", meteocatData.length, "dies")
-          // Les dades de Meteocat estan disponibles però Open-Meteo és la font principal
-        }
-      } catch (meteocatError) {
-        console.log("ℹ️ Meteocat no disponible com a font addicional")
-      }
-
+      console.log("✅ Dades reals d'Open-Meteo obtingudes:", realData.length, "dies")
       return realData
     } catch (apiError) {
       console.warn("⚠️ Open-Meteo no disponible:", apiError)
 
-      // Si Open-Meteo falla, intentar Meteocat com a alternativa
-      try {
-        const meteocatData = await getMeteocatForecast()
-        if (meteocatData.length > 0) {
-          console.log("✅ Utilitzant Meteocat com a font alternativa:", meteocatData.length, "dies")
-          return meteocatData
-        }
-      } catch (meteocatError) {
-        console.warn("⚠️ Meteocat tampoc disponible:", meteocatError)
-      }
-
-      // Si tot falla, usar sistema protegit
+      // Si falla, usar sistema protegit
       const protectedData = await protectedWeatherAPI.getForecastData(spot)
       console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
       return protectedData
