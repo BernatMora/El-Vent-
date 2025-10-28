@@ -13,42 +13,62 @@ export function ApiStatus() {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        // Primer provar Meteocat (dades oficials de Catalunya)
-        try {
-          const meteocatResponse = await fetch(
-            "https://api.meteo.cat/xema/v1/estacions/CG"
-          )
-
-          if (meteocatResponse.ok) {
-            setApiStatus("real")
-            setDataSource("Meteocat (Oficial Catalunya)")
-            setLastUpdate(
-              new Date().toLocaleTimeString("ca-ES", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            )
-            return
-          }
-        } catch (meteocatError) {
-          console.log("Meteocat no disponible, provant altres fonts...")
-        }
-
-        // Si Meteocat falla, provar Open-Meteo
+        // Primer provar Open-Meteo (prioritat màxima)
         const response = await fetch(
           "https://api.open-meteo.com/v1/forecast?latitude=42.1833&longitude=3.0833&hourly=wind_speed_10m&forecast_days=1"
         )
 
         if (response.ok) {
           setApiStatus("real")
-          setDataSource("Open-Meteo (Gratuït)")
+
+          // Verificar si Meteocat també està disponible com a font addicional
+          try {
+            const meteocatResponse = await fetch(
+              "https://api.meteo.cat/xema/v1/estacions/CG"
+            )
+            if (meteocatResponse.ok) {
+              setDataSource("Open-Meteo + Meteocat")
+            } else {
+              setDataSource("Open-Meteo (Gratuït)")
+            }
+          } catch {
+            setDataSource("Open-Meteo (Gratuït)")
+          }
         } else {
+          // Si Open-Meteo falla, provar Meteocat
+          try {
+            const meteocatResponse = await fetch(
+              "https://api.meteo.cat/xema/v1/estacions/CG"
+            )
+            if (meteocatResponse.ok) {
+              setApiStatus("real")
+              setDataSource("Meteocat (Alternativa)")
+            } else {
+              setApiStatus("fallback")
+              setDataSource("Dades simulades")
+            }
+          } catch {
+            setApiStatus("fallback")
+            setDataSource("Dades simulades")
+          }
+        }
+      } catch (error) {
+        // Si Open-Meteo falla, provar Meteocat
+        try {
+          const meteocatResponse = await fetch(
+            "https://api.meteo.cat/xema/v1/estacions/CG"
+          )
+          if (meteocatResponse.ok) {
+            setApiStatus("real")
+            setDataSource("Meteocat (Alternativa)")
+          } else {
+            setApiStatus("fallback")
+            setDataSource("Dades simulades")
+          }
+        } catch {
           setApiStatus("fallback")
           setDataSource("Dades simulades")
         }
-      } catch (error) {
-        setApiStatus("fallback")
-        setDataSource("Dades simulades")
       }
 
       setLastUpdate(

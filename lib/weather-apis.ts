@@ -24,7 +24,7 @@ export interface WeatherProvider {
 // Open-Meteo API (gratuïta)
 export class OpenMeteoProvider implements WeatherProvider {
   name = "Open-Meteo"
-  priority = 1
+  priority = 0 // Prioritat màxima
 
   async isAvailable(): Promise<boolean> {
     try {
@@ -163,7 +163,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
 // Meteocat (Servei Meteorològic de Catalunya) - Dades oficials
 export class MeteocatWeatherProvider implements WeatherProvider {
   name = "Meteocat"
-  priority = 0 // Prioritat màxima per ser dades oficials de Catalunya
+  priority = 1 // Font de suport
   private meteocatProvider = new MeteocatProvider()
 
   async isAvailable(): Promise<boolean> {
@@ -190,8 +190,8 @@ export class MeteocatWeatherProvider implements WeatherProvider {
 // Gestor principal de múltiples APIs
 export class MultiWeatherService {
   private providers: WeatherProvider[] = [
-    new MeteocatWeatherProvider(), // Prioritat màxima - dades oficials de Catalunya
-    new OpenMeteoProvider(),
+    new OpenMeteoProvider(), // Prioritat màxima
+    new MeteocatWeatherProvider(), // Font de suport
     new WeatherAPIProvider(),
     new OpenWeatherMapProvider()
   ]
