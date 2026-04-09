@@ -85,9 +85,15 @@ export function EnhancedApiStatus() {
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">📴 Mode Offline</h4>
+                  <h4 className="mb-2 font-semibold">📴 Mode Offline</h4>
                   <p className="text-sm text-muted-foreground">
                     Si no hi ha connexió o s'esgoten les crides, l'app segueix funcionant amb dades simulades realistes.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="mb-2 font-semibold">🔑 Claus reals d'API</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Si afegeixes <code>WEATHER_API_KEY</code>, <code>OPENWEATHER_API_KEY</code> o <code>METEOCAT_API_KEY</code> a Netlify, s'activaran automàticament al servidor.
                   </p>
                 </div>
               </div>

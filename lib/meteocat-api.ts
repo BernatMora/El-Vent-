@@ -15,9 +15,9 @@ const SANT_PERE_COORDS = {
 
 function getMeteocatHeaders(): HeadersInit {
   const headers: HeadersInit = { 'Accept': 'application/json' }
-  const apiKey = typeof window !== 'undefined'
+  const apiKey = typeof window !== "undefined"
     ? undefined
-    : process.env.METEOCAT_API_KEY || process.env.NEXT_PUBLIC_METEOCAT_API_KEY
+    : process.env.METEOCAT_API_KEY
   if (apiKey) {
     headers['x-api-key'] = apiKey
   }

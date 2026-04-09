@@ -253,7 +253,7 @@ export function CurrentConditions() {
                   <strong>Dades calibrades:</strong> Aquests valors s'han ajustat a partir de reports d'usuaris recents per millorar la precisió local.
                   {justUpdated && (
                     <span className="block mt-1 font-medium">
-                      ✓ Acabat d'actualitzar amb el teu reporte!
+                      ✓ Acabat d'actualitzar amb el teu report!
                     </span>
                   )}
                 </div>

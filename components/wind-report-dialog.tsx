@@ -102,8 +102,8 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
       }, 2000)
       
     } catch (error) {
-      console.error("Error enviando reporte:", error)
-      alert("Error enviant el reporte. Si us plau, torna-ho a intentar.")
+      console.error("Error enviant el report:", error)
+      alert("Error enviant el report. Si us plau, torna-ho a intentar.")
     } finally {
       setLoading(false)
     }
@@ -112,10 +112,10 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-4 py-2">
+        <Button className="bg-blue-600 px-3 py-2 text-xs hover:bg-blue-700 sm:px-4 sm:text-sm">
           <Wind className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Reportar vent actual</span>
-          <span className="sm:hidden">Reportar</span>
+          <span className="hidden sm:inline">Comparteix vent actual</span>
+          <span className="sm:hidden">Report</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
@@ -125,7 +125,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
             Reportar condicions actuals
           </DialogTitle>
           <DialogDescription className="text-sm">
-            Comparteix les condicions reals de vent per millorar les previsions amb IA
+            Comparteix el vent real que tens ara perquè l'ajust local sigui més útil.
           </DialogDescription>
         </DialogHeader>
         
@@ -136,12 +136,12 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
               <Brain className="h-6 w-6 text-purple-600" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-medium text-green-800">Reporte enviat!</h3>
-              <p className="text-sm text-green-600 mt-1">
-                Gràcies per entrenar la nostra IA i millorar les previsions
+              <h3 className="text-lg font-medium text-green-800">Report enviat!</h3>
+              <p className="mt-1 text-sm text-green-600">
+                Gràcies. L'ajust local tindrà en compte aquesta observació.
               </p>
-              <div className="mt-2 text-xs text-purple-600 bg-purple-50 rounded-lg p-2">
-                <strong>Nou:</strong> El teu reporte també entrena el nostre model de Machine Learning
+              <div className="mt-2 rounded-lg bg-purple-50 p-2 text-xs text-purple-600">
+                <strong>Nou:</strong> aquesta dada ajuda a afinar la previsió d'aquest spot.
               </div>
             </div>
           </div>
@@ -231,25 +231,24 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
               </div>
             )}
 
-            {/* Nou: Informació sobre Machine Learning */}
             <div className="rounded-lg border bg-gradient-to-r from-purple-50 to-blue-50 p-3">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="mb-1 flex items-center gap-2">
                 <Brain className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium text-purple-800">Sistema d'IA Millorat</span>
+                <span className="text-sm font-medium text-purple-800">Ajust local de la previsió</span>
               </div>
               <div className="text-xs text-purple-700">
-                El teu reporte entrenarà el nostre model de Machine Learning per fer prediccions més precises específiques per aquest spot.
+                El teu report no substitueix el model: ajuda a afinar-lo per aquest spot quan hi ha observacions recents.
               </div>
             </div>
-            
+
             <DialogFooter>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 onClick={handleSubmit}
                 disabled={loading || !report.windSpeed}
                 className="text-sm"
               >
-                {loading ? "Entrenant IA..." : "Enviar reporte"}
+                {loading ? "Enviant..." : "Enviar report"}
               </Button>
             </DialogFooter>
           </>
