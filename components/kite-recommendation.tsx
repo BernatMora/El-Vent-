@@ -20,13 +20,19 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getForecastData } from "@/lib/api"
+import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
+
+type KiteRecommendationRow = {
+  time: string
+  windSpeed: number
+  kiteSize: string
+}
 
 export function KiteRecommendation() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
   const [loading, setLoading] = useState(true)
-  const [forecast, setForecast] = useState<any[]>([])
+  const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [weight, setWeight] = useState(userPreferences.weight)
   const [level, setLevel] = useState(userPreferences.level)
   const [open, setOpen] = useState(false)
@@ -70,7 +76,7 @@ export function KiteRecommendation() {
   }
 
   // Preparar datos para mostrar
-  const prepareHourlyData = (dayIndex: number) => {
+  const prepareHourlyData = (dayIndex: number): KiteRecommendationRow[] => {
     if (!forecast || forecast.length === 0 || !forecast[dayIndex]) return []
 
     // Filtrar horas relevantes (10:00, 13:00, 16:00, 19:00)
@@ -78,11 +84,11 @@ export function KiteRecommendation() {
     const day = forecast[dayIndex]
 
     return day.hours
-      .filter((hour: any) => {
+      .filter((hour: ForecastHour) => {
         const hourTime = hour.time.split(":")[0] + ":00"
         return targetHours.includes(hourTime)
       })
-      .map((hour: any) => ({
+      .map((hour: ForecastHour) => ({
         time: hour.time,
         windSpeed: Math.round(hour.windSpeed),
         kiteSize: getKiteSize(hour.windSpeed, weight, level),
@@ -97,10 +103,10 @@ export function KiteRecommendation() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center">
             <Kite className="mr-2 h-5 w-5 text-blue-600" />
-            <CardTitle className="text-base">Recomendación de cometa</CardTitle>
+            <CardTitle className="text-base">Recomanació d'estel</CardTitle>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -111,9 +117,9 @@ export function KiteRecommendation() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Perfil de rider</DialogTitle>
+                <DialogTitle>Perfil del rider</DialogTitle>
                 <DialogDescription>
-                  Actualiza tus datos para obtener recomendaciones de cometa personalizadas.
+                  Actualitza les teves dades per obtenir recomanacions d'estel més ajustades.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -131,29 +137,29 @@ export function KiteRecommendation() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="level" className="text-right">
-                    Nivel
+                    Nivell
                   </Label>
                   <Select value={level} onValueChange={setLevel}>
                     <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecciona tu nivel" />
+                      <SelectValue placeholder="Selecciona el teu nivell" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Principiante</SelectItem>
-                      <SelectItem value="intermediate">Intermedio</SelectItem>
-                      <SelectItem value="advanced">Avanzado</SelectItem>
+                      <SelectItem value="beginner">Principiant</SelectItem>
+                      <SelectItem value="intermediate">Intermedi</SelectItem>
+                      <SelectItem value="advanced">Avançat</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
                 <Button type="submit" onClick={handleSavePreferences}>
-                  Guardar cambios
+                  Desa els canvis
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
-        <CardDescription>Basado en tu peso ({weight}kg) y nivel</CardDescription>
+        <CardDescription>Segons el teu pes ({weight} kg) i nivell</CardDescription>
       </CardHeader>
       <CardContent>
         {loading || forecast.length === 0 ? (
@@ -166,8 +172,8 @@ export function KiteRecommendation() {
           <div className="space-y-2">
             <Tabs defaultValue="0">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="0">Hoy</TabsTrigger>
-                <TabsTrigger value="1">Mañana</TabsTrigger>
+                <TabsTrigger value="0">Avui</TabsTrigger>
+                <TabsTrigger value="1">Demà</TabsTrigger>
               </TabsList>
 
               {[0, 1].map((dayIndex) => (
@@ -176,11 +182,11 @@ export function KiteRecommendation() {
                     {forecast[dayIndex] ? formatDate(forecast[dayIndex].date) : ""}
                   </div>
 
-                  {prepareHourlyData(dayIndex).map((data: any) => (
+                  {prepareHourlyData(dayIndex).map((data) => (
                     <div key={data.time} className="flex items-center justify-between rounded-lg border p-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{data.time}</span>
-                        <Badge variant="outline">{data.windSpeed} kts</Badge>
+                        <Badge variant="outline">{data.windSpeed} kn</Badge>
                       </div>
                       <Badge className="bg-blue-600">{data.kiteSize}</Badge>
                     </div>
@@ -188,7 +194,7 @@ export function KiteRecommendation() {
 
                   {prepareHourlyData(dayIndex).length === 0 && (
                     <div className="rounded-lg border p-3 text-center text-sm text-muted-foreground">
-                      No hay datos disponibles para este día
+                      No hi ha dades disponibles per a aquest dia
                     </div>
                   )}
                 </TabsContent>

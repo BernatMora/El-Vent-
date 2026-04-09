@@ -69,7 +69,7 @@ export class OpenMeteoProvider implements WeatherProvider {
 export class WeatherAPIProvider implements WeatherProvider {
   name = "WeatherAPI"
   priority = 2
-  private apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY
+  private apiKey = process.env.WEATHER_API_KEY || process.env.NEXT_PUBLIC_WEATHER_API_KEY
 
   async isAvailable(): Promise<boolean> {
     if (!this.apiKey) return false
@@ -120,7 +120,7 @@ export class WeatherAPIProvider implements WeatherProvider {
 export class OpenWeatherMapProvider implements WeatherProvider {
   name = "OpenWeatherMap"
   priority = 3
-  private apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
+  private apiKey = process.env.OPENWEATHER_API_KEY || process.env.OPENWEATHERMAP_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
 
   async isAvailable(): Promise<boolean> {
     if (!this.apiKey) return false

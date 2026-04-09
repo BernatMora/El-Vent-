@@ -4,14 +4,23 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
+import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getWindDirectionName, knotsToKmh } from "@/lib/utils"
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+
+type ChartPoint = {
+  time: string
+  windSpeed: number
+  windGust: number
+  windDirection: number
+  directionName: string
+}
 
 export function WindChart() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
-  const [forecast, setForecast] = useState<any[]>([])
+  const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [activeTab, setActiveTab] = useState("")
 
   const formatTabDate = (dateString: string) => {
@@ -41,34 +50,22 @@ export function WindChart() {
   }, [selectedSpot])
 
   // Preparar datos para la gráfica
-  const prepareChartData = (dayIndex: number) => {
+  const prepareChartData = (dayIndex: number): ChartPoint[] => {
     if (!forecast || forecast.length === 0 || !forecast[dayIndex]) return []
 
     const day = forecast[dayIndex]
     return day.hours
-      .filter((hour: any) => {
+      .filter((hour: ForecastHour) => {
         const hourNum = Number.parseInt(hour.time.split(":")[0])
         return hourNum >= 9 && hourNum <= 21
       })
-      .map((hour: any) => ({
+      .map((hour: ForecastHour) => ({
         time: hour.time,
         windSpeed: hour.windSpeed,
         windGust: hour.windGust || hour.windSpeed * 1.2,
         windDirection: hour.windDirection,
         directionName: getWindDirectionName(hour.windDirection),
       }))
-  }
-
-  // Obtener el nombre del viento según su dirección
-  const getWindDirectionName = (direction: number) => {
-    if (direction >= 337.5 || direction < 22.5) return "N"
-    if (direction >= 22.5 && direction < 67.5) return "NE"
-    if (direction >= 67.5 && direction < 112.5) return "E"
-    if (direction >= 112.5 && direction < 157.5) return "SE"
-    if (direction >= 157.5 && direction < 202.5) return "S"
-    if (direction >= 202.5 && direction < 247.5) return "SW"
-    if (direction >= 247.5 && direction < 292.5) return "W"
-    return "NW"
   }
 
   // Obtener el índice del día a partir del tab activo
@@ -81,7 +78,15 @@ export function WindChart() {
   }
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean
+    payload?: Array<{ value?: number; payload?: ChartPoint }>
+    label?: string
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="rounded-lg border bg-white p-3 shadow-md">
@@ -112,8 +117,8 @@ export function WindChart() {
       return { min: 0, avg: 0, max: 0, gustMax: 0 }
     }
 
-    const windSpeeds = chartData.map((item: any) => item.windSpeed)
-    const windGusts = chartData.map((item: any) => item.windGust)
+    const windSpeeds = chartData.map((item) => item.windSpeed)
+    const windGusts = chartData.map((item) => item.windGust)
 
     const min = Math.min(...windSpeeds)
     const max = Math.max(...windSpeeds)
@@ -130,11 +135,6 @@ export function WindChart() {
 
   const dayIndex = getDayIndexFromTab(activeTab)
   const windStats = calculateWindStats(dayIndex)
-
-  // Convertir nudos a km/h
-  const knotsToKmh = (knots: number) => {
-    return Math.round(knots * 1.852 * 10) / 10
-  }
 
   return (
     <Card className="w-full">

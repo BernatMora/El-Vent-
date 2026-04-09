@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
+import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'Els Vents de Sant Pere Pescador',
+  description: 'Prediccions meteorològiques amb Intel·ligència Artificial per kitesurf a Sant Pere Pescador',
 }
 
 export default function RootLayout({
@@ -13,8 +13,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="ca">
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   )
 }

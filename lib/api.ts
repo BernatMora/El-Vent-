@@ -1,8 +1,51 @@
 import { protectedWeatherAPI } from "./protected-api"
 import { getOpenMeteoForecast } from "./open-meteo-api"
 import { getMeteocatForecast } from "./meteocat-api"
+import { enhancedWeatherService } from "./enhanced-api"
 
-export async function getForecastData(spot: string) {
+export interface ForecastHour {
+  time: string
+  windSpeed: number
+  windDirection: number
+  windGust: number
+  temperature?: number
+  humidity?: number
+  pressure?: number
+  precipitation?: number
+  source?: string
+  confidence?: number
+  mlConfidence?: number
+  mlAdjustmentFactor?: number
+  isMLEnhanced?: boolean
+  isCalibrated?: boolean
+  originalWindSpeed?: number
+  originalWindDirection?: number
+  isReal?: boolean
+}
+
+export interface ForecastDay {
+  date: string
+  hours: ForecastHour[]
+}
+
+export interface ProtectionStats {
+  totalRequests: number
+  cacheHits: number
+  cacheMisses: number
+  lastReset: number
+  hitRate: number
+  cacheSize: number
+  dailyApiCalls: number
+  remainingCalls: number
+  isNearLimit: boolean
+  isProtected: boolean
+  offlineMode: boolean
+  costSavings: string
+  status: string
+  lastUpdate: string
+}
+
+export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay[]> {
   try {
     console.log("🌐 Intentant obtenir dades meteorològiques per spot:", spot)
 
@@ -51,6 +94,26 @@ export async function getForecastData(spot: string) {
   }
 }
 
+export async function getForecastData(spot: string): Promise<ForecastDay[]> {
+  if (typeof window !== "undefined") {
+    const response = await fetch(`/api/forecast?spot=${encodeURIComponent(spot)}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error("No es poden obtenir dades meteorològiques")
+    }
+
+    return response.json()
+  }
+
+  return fetchForecastDataDirect(spot)
+}
+
 // Funció per afegir observacions d'usuaris al sistema ML
 export function addUserObservation(spot: string, observation: {
   reportedWindSpeed: number
@@ -67,7 +130,7 @@ export function addUserObservation(spot: string, observation: {
 }
 
 // Obtenir estadístiques del sistema millorat
-export function getProtectionStats() {
+export function getProtectionStats(): ProtectionStats {
   return protectedWeatherAPI.getProtectionStats()
 }
 

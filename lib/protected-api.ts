@@ -133,7 +133,11 @@ export class ProtectedWeatherAPI {
       offlineMode: cacheManager.isOfflineMode(),
       costSavings: `${stats.cacheHits} crides evitades`,
       status: stats.isNearLimit ? 'Prop del límit' : 
-              cacheManager.isOfflineMode() ? 'Mode offline' : 'Operatiu'
+              cacheManager.isOfflineMode() ? 'Mode offline' : 'Operatiu',
+      lastUpdate: new Date().toLocaleTimeString('ca-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
   }
 }

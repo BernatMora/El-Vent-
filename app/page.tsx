@@ -9,10 +9,10 @@ export default function Home() {
             Els Vents de Sant Pere Pescador
           </h1>
           <p className="text-sm sm:text-lg text-blue-700">
-            Prediccions meteorològiques amb Intel·ligència Artificial per kitesurf
+            Prediccions meteorològiques avançades per kitesurf a partir de múltiples fonts
           </p>
-          <div className="mt-2 text-xs sm:text-sm text-blue-600 bg-blue-50 rounded-lg p-2 inline-block">
-            🤖 Nou: Sistema millorat amb múltiples APIs i Machine Learning
+          <div className="mt-2 inline-block rounded-lg bg-blue-50 p-2 text-xs text-blue-600 sm:text-sm">
+            🌬️ Previsió millorada amb dades reals, ajustos locals i cache intel·ligent
           </div>
         </div>
 

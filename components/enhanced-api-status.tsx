@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useSpotStore } from "@/lib/store"
-import { getProtectionStats } from "@/lib/api"
-import { Brain, Database, Users, Wifi, TrendingUp, RefreshCw, Info } from "lucide-react"
+import { getProtectionStats, type ProtectionStats } from "@/lib/api"
+import { Database, Wifi, TrendingUp, RefreshCw, Info } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
 
 export function EnhancedApiStatus() {
   const { selectedSpot } = useSpotStore()
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<ProtectionStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   const updateStats = () => {
@@ -43,8 +43,8 @@ export function EnhancedApiStatus() {
     return (
       <Card className="mb-4">
         <CardContent className="flex items-center justify-center p-4">
-          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-          <span className="text-sm">Carregant estadístiques del sistema...</span>
+          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          <span className="text-sm">Carregant estat de dades i cache...</span>
         </CardContent>
       </Card>
     )
@@ -53,10 +53,10 @@ export function EnhancedApiStatus() {
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-lg">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <TrendingUp className="mr-2 h-5 w-5 text-blue-600" />
-            Sistema Protegit - Sempre Gratuït
+            Estat de dades i cache
           </CardTitle>
           <Dialog>
             <DialogTrigger asChild>
@@ -66,9 +66,9 @@ export function EnhancedApiStatus() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Sistema Protegit Contra Costos</DialogTitle>
+                <DialogTitle>Com funciona l'estat de dades</DialogTitle>
                 <DialogDescription>
-                  Com garantim que l'aplicació sigui sempre gratuïta fins i tot amb milers d'usuaris
+                  Resum de cache, disponibilitat de fonts i control de cost per mantenir la previsió estable
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -106,13 +106,13 @@ export function EnhancedApiStatus() {
             <div className="flex items-center gap-2 mb-2">
               <Database className="h-4 w-4 text-green-600" />
               <span className="font-medium text-sm">Cache Intel·ligent</span>
-              <Badge className={stats.hitRate > 80 ? "bg-green-600" : "bg-blue-600"} className="text-xs">
+              <Badge className={`text-xs ${stats.hitRate > 80 ? "bg-green-600" : "bg-blue-600"}`}>
                 {stats.hitRate}% eficiència
               </Badge>
             </div>
             <div className="text-xs text-green-700">
               <div>Crides evitades: {stats.cacheHits}</div>
-              <div>Última actualització: {stats.lastUpdate}</div>
+              <div>Darrera comprovació: {stats.lastUpdate}</div>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export function EnhancedApiStatus() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-sm">Garantia de Cost Zero</span>
+              <span className="font-medium text-sm">Cost controlat</span>
             </div>
             <div className="flex items-center gap-2">
               <Badge className="bg-green-600 text-xs">Protegit</Badge>
@@ -168,7 +168,7 @@ export function EnhancedApiStatus() {
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Sistema amb cache intel·ligent i límits estrictes. Fins i tot amb 1000+ usuaris diaris, l'aplicació segueix sent 100% gratuïta.
+            Sistema amb cache intel·ligent i límits estrictes per mantenir una previsió estable i sense sorpreses de cost.
           </div>
         </div>
       </CardContent>

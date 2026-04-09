@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
-import { formatDate } from "@/lib/utils"
+import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
+import { formatDate, getWindDirectionName, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Info, Brain, Wifi, Users } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
-  const [forecast, setForecast] = useState<any[]>([])
+  const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -70,23 +70,6 @@ export function WindForecast() {
     )
   }
 
-  // Obtener el nombre del viento según su dirección
-  const getWindDirectionName = (direction: number) => {
-    if (direction >= 337.5 || direction < 22.5) return "N"
-    if (direction >= 22.5 && direction < 67.5) return "NE"
-    if (direction >= 67.5 && direction < 112.5) return "E"
-    if (direction >= 112.5 && direction < 157.5) return "SE"
-    if (direction >= 157.5 && direction < 202.5) return "S"
-    if (direction >= 202.5 && direction < 247.5) return "SW"
-    if (direction >= 247.5 && direction < 292.5) return "W"
-    return "NW"
-  }
-
-  // Convertir nudos a km/h para mostrar ambos
-  const knotsToKmh = (knots: number) => {
-    return Math.round(knots * 1.852)
-  }
-
   // Determinar si el flujo es "Molt fluix", "Fluix" o normal basado en la velocidad del viento
   const getFlowDescription = (windSpeed: number) => {
     if (windSpeed <= 3) return "Molt fluix"
@@ -95,13 +78,13 @@ export function WindForecast() {
   }
 
   // Obtener el icono y color según el tipo de predicción
-  const getPredictionBadge = (hour: any) => {
-    if (hour.isMLEnhanced && hour.mlConfidence > 0.7) {
+  const getPredictionBadge = (hour: ForecastHour) => {
+    if (hour.isMLEnhanced && (hour.mlConfidence ?? 0) > 0.7) {
       return (
         <Badge variant="outline" className="text-xs px-1 py-0 bg-purple-50 border-purple-200 text-purple-700">
           <Brain className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-          <span className="hidden sm:inline">IA</span>
-          <span className="sm:hidden">AI</span>
+          <span className="hidden sm:inline">Model+</span>
+          <span className="sm:hidden">M+</span>
         </Badge>
       )
     }
@@ -137,12 +120,12 @@ export function WindForecast() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <Brain className="h-5 w-5 text-purple-600" />
-          Previsió Millorada amb IA
+          Previsió avançada del vent
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          Prediccions combinant múltiples fonts meteorològiques i Machine Learning
+          Estimació combinant múltiples fonts, calibració local i observacions recents
         </div>
       </CardHeader>
       <CardContent>
@@ -191,11 +174,11 @@ export function WindForecast() {
                   
                   {day.hours && day.hours.length > 0 ? (
                     day.hours
-                      .filter((hour: any) => {
+                      .filter((hour: ForecastHour) => {
                         const hourNum = Number.parseInt(hour.time.split(":")[0])
                         return hourNum >= 9 && hourNum <= 21
                       })
-                      .map((hour: any) => (
+                      .map((hour: ForecastHour) => (
                         <div
                           key={hour.time}
                           className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
@@ -246,7 +229,7 @@ export function WindForecast() {
         {/* Informació sobre les millores */}
         {forecast.length > 0 && (
           <div className="mt-4 space-y-2">
-            {forecast[0].hours.some((h: any) => h.isMLEnhanced) && (
+            {forecast[0].hours.some((h: ForecastHour) => h.isMLEnhanced) && (
               <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Brain className="h-4 w-4 text-purple-600" />
@@ -258,7 +241,7 @@ export function WindForecast() {
               </div>
             )}
             
-            {forecast[0].hours.some((h: any) => h.source && h.source.includes('Agregat')) && (
+            {forecast[0].hours.some((h: ForecastHour) => h.source && h.source.includes('Agregat')) && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Wifi className="h-4 w-4 text-blue-600" />
@@ -270,14 +253,14 @@ export function WindForecast() {
               </div>
             )}
             
-            {forecast[0].hours.some((h: any) => h.isCalibrated) && (
+            {forecast[0].hours.some((h: ForecastHour) => h.isCalibrated) && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Users className="h-4 w-4 text-green-600" />
                   <span className="text-sm font-medium text-green-800">Calibració d'usuaris</span>
                 </div>
                 <div className="text-xs text-green-700">
-                  Valors ajustats basant-se en reportes reals de la comunitat de kiters locals.
+                  Valors ajustats a partir de reports reals de la comunitat local de kiters.
                 </div>
               </div>
             )}

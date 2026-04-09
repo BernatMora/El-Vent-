@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
+import { type ForecastHour, getForecastData } from "@/lib/api"
 import { AlertCircle, AlertTriangle, Info } from "lucide-react"
+
+type AlertItem = {
+  type: "danger" | "warning" | "info"
+  title: string
+  description: string
+}
 
 export function AlertsBanner() {
   const { selectedSpot } = useSpotStore()
-  const [alerts, setAlerts] = useState<{ type: string; title: string; description: string }[]>([])
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,14 +24,14 @@ export function AlertsBanner() {
         const data = await getForecastData(selectedSpot)
 
         // Reiniciar alertas
-        const newAlerts = []
+        const newAlerts: AlertItem[] = []
 
         // Comprobar si hay datos
         if (data && data.length > 0) {
           const today = data[0]
 
           // Comprobar viento fuerte (solo si realmente hay viento)
-          const maxWind = Math.max(...today.hours.map((h: any) => h.windSpeed))
+          const maxWind = Math.max(...today.hours.map((h: ForecastHour) => h.windSpeed))
           if (maxWind > 25) {
             newAlerts.push({
               type: "warning",
@@ -40,7 +46,7 @@ export function AlertsBanner() {
           // - Offshore: N, NW, W (315°-45° aprox) - PERILLOSOS
           // - Onshore: E, SE, S (45°-225° aprox) - SEGURS
           // - Side-shore: NE, SW - ACCEPTABLES
-          const offshoreHours = today.hours.filter((h: any) => {
+          const offshoreHours = today.hours.filter((h: ForecastHour) => {
             const dir = h.windDirection
             const speed = h.windSpeed
             // Offshore: direccions entre 315° i 45° (N, NW, W) Y amb vent > 8 kn
@@ -48,7 +54,7 @@ export function AlertsBanner() {
           })
 
           if (offshoreHours.length > 0) {
-            const maxOffshoreWind = Math.max(...offshoreHours.map((h: any) => h.windSpeed))
+            const maxOffshoreWind = Math.max(...offshoreHours.map((h: ForecastHour) => h.windSpeed))
             const offshoreDirection = offshoreHours[0].windDirection
             let directionName = "Nord"
             if (offshoreDirection >= 315 || offshoreDirection <= 15) directionName = "Tramuntana (N)"
@@ -64,7 +70,7 @@ export function AlertsBanner() {
           }
 
           // Alerta de viento muy débil
-          const avgWind = today.hours.reduce((sum: number, h: any) => sum + h.windSpeed, 0) / today.hours.length
+          const avgWind = today.hours.reduce((sum: number, h: ForecastHour) => sum + h.windSpeed, 0) / today.hours.length
           if (avgWind < 5) {
             newAlerts.push({
               type: "info",
@@ -75,7 +81,7 @@ export function AlertsBanner() {
 
           // Alerta de condiciones perfectas para kitesurf
           // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 12-20 kn
-          const perfectHours = today.hours.filter((h: any) => {
+          const perfectHours = today.hours.filter((h: ForecastHour) => {
             const speed = h.windSpeed
             const dir = h.windDirection
             // Condicions perfectes: 12-20 kn, vent onshore (E, SE) o side-onshore (NE)
@@ -85,7 +91,7 @@ export function AlertsBanner() {
           })
 
           if (perfectHours.length >= 3) {
-            const avgPerfectWind = Math.round(perfectHours.reduce((sum, h) => sum + h.windSpeed, 0) / perfectHours.length)
+            const avgPerfectWind = Math.round(perfectHours.reduce((sum: number, h: ForecastHour) => sum + h.windSpeed, 0) / perfectHours.length)
             newAlerts.push({
               type: "info",
               title: "Condicions excel·lents per kitesurf",

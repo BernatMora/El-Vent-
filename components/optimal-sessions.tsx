@@ -13,25 +13,25 @@ export function OptimalSessions() {
       morning: false,
       afternoon: true,
       evening: true,
-      bestDays: ["Martes", "Miércoles", "Jueves"],
+      bestDays: ["Dimarts", "Dimecres", "Dijous"],
     },
     "kitesurf-point": {
       morning: true,
       afternoon: true,
       evening: false,
-      bestDays: ["Lunes", "Martes", "Viernes"],
+      bestDays: ["Dilluns", "Dimarts", "Divendres"],
     },
     "can-martinet": {
       morning: false,
       afternoon: true,
       evening: false,
-      bestDays: ["Miércoles", "Jueves", "Domingo"],
+      bestDays: ["Dimecres", "Dijous", "Diumenge"],
     },
     "la-rubina": {
       morning: true,
       afternoon: true,
       evening: true,
-      bestDays: ["Lunes", "Miércoles", "Sábado"],
+      bestDays: ["Dilluns", "Dimecres", "Dissabte"],
     },
   }
 
@@ -44,14 +44,14 @@ export function OptimalSessions() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div
               className={`rounded-lg border p-3 text-center ${sessions.morning ? "bg-green-50 border-green-200" : ""}`}
             >
               <div className="text-sm font-medium">Matí</div>
               <div className="mt-1">
                 {sessions.morning ? (
-                  <Badge variant="success" className="bg-green-600">
+                  <Badge className="bg-green-600 text-white">
                     Recomanat
                   </Badge>
                 ) : (
@@ -65,7 +65,7 @@ export function OptimalSessions() {
               <div className="text-sm font-medium">Migdia</div>
               <div className="mt-1">
                 {sessions.afternoon ? (
-                  <Badge variant="success" className="bg-green-600">
+                  <Badge className="bg-green-600 text-white">
                     Recomanat
                   </Badge>
                 ) : (
@@ -79,7 +79,7 @@ export function OptimalSessions() {
               <div className="text-sm font-medium">Tarda</div>
               <div className="mt-1">
                 {sessions.evening ? (
-                  <Badge variant="success" className="bg-green-600">
+                  <Badge className="bg-green-600 text-white">
                     Recomanat
                   </Badge>
                 ) : (

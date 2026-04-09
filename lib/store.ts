@@ -19,10 +19,23 @@ type SpotStore = {
   userPreferences: UserPreferences
   setSelectedSpot: (spot: string) => void
   setUserPreferences: (preferences: UserPreferences) => void
+  hydrateStore: () => void
+}
+
+const DEFAULT_SPOT = "kitesurf-point"
+const VALID_SPOTS = new Set([DEFAULT_SPOT, "la-ballena", "can-martinet", "la-rubina"])
+
+function getStoredSpot() {
+  if (typeof window === "undefined") {
+    return DEFAULT_SPOT
+  }
+
+  const storedSpot = window.localStorage.getItem("selected-spot")
+  return storedSpot && VALID_SPOTS.has(storedSpot) ? storedSpot : DEFAULT_SPOT
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
-  selectedSpot: "kitesurf-point", // Canviat de "la-ballena" a "kitesurf-point"
+  selectedSpot: DEFAULT_SPOT,
   userPreferences: {
     weight: 75,
     level: "intermediate",
@@ -36,6 +49,12 @@ export const useSpotStore = create<SpotStore>((set) => ({
     considerWaves: true,
     maxWaveHeight: 1.5,
   },
-  setSelectedSpot: (spot) => set({ selectedSpot: spot }),
+  setSelectedSpot: (spot) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("selected-spot", spot)
+    }
+    set({ selectedSpot: spot })
+  },
   setUserPreferences: (preferences) => set({ userPreferences: preferences }),
+  hydrateStore: () => set({ selectedSpot: getStoredSpot() }),
 }))

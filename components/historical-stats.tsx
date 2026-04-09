@@ -12,29 +12,29 @@ export function HistoricalStats() {
       avgWind: 16,
       maxWind: 28,
       windyDays: 210,
-      bestMonth: "Julio",
+      bestMonth: "Juliol",
     },
     "kitesurf-point": {
       avgWind: 15,
       maxWind: 26,
       windyDays: 200,
-      bestMonth: "Agosto",
+      bestMonth: "Agost",
     },
     "can-martinet": {
       avgWind: 17,
       maxWind: 30,
       windyDays: 220,
-      bestMonth: "Junio",
+      bestMonth: "Juny",
     },
     "la-rubina": {
       avgWind: 16,
       maxWind: 29,
       windyDays: 215,
-      bestMonth: "Julio",
+      bestMonth: "Juliol",
     },
   }
 
-  const stats = spotStats[selectedSpot] || spotStats["la-ballena"]
+  const stats = spotStats[selectedSpot] || spotStats["kitesurf-point"]
 
   return (
     <Card>

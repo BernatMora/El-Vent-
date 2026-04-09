@@ -13,6 +13,17 @@ const SANT_PERE_COORDS = {
   lon: 3.0833,
 }
 
+function getMeteocatHeaders(): HeadersInit {
+  const headers: HeadersInit = { 'Accept': 'application/json' }
+  const apiKey = typeof window !== 'undefined'
+    ? undefined
+    : process.env.METEOCAT_API_KEY || process.env.NEXT_PUBLIC_METEOCAT_API_KEY
+  if (apiKey) {
+    headers['x-api-key'] = apiKey
+  }
+  return headers
+}
+
 export interface MeteocatWeatherData {
   timestamp: string
   windSpeed: number
@@ -38,9 +49,7 @@ export class MeteocatProvider {
       const url = `${METEOCAT_BASE}/xema/v1/estacions/${METEOCAT_STATION}/variables/mesurades?estat=ope`
 
       const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: getMeteocatHeaders(),
       })
 
       if (!response.ok) {
@@ -69,9 +78,7 @@ export class MeteocatProvider {
       const url = `${METEOCAT_BASE}/prediccio/v1/municipal/${municipiCode}`
 
       const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: getMeteocatHeaders(),
       })
 
       if (!response.ok) {
@@ -222,9 +229,7 @@ export class MeteocatProvider {
   async isAvailable(): Promise<boolean> {
     try {
       const response = await fetch(`${METEOCAT_BASE}/xema/v1/estacions/${METEOCAT_STATION}`, {
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: getMeteocatHeaders(),
       })
       return response.ok
     } catch {

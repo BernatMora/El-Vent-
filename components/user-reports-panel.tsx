@@ -4,20 +4,20 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useSpotStore } from "@/lib/store"
-import { windCalibration, type WindObservation } from "@/lib/calibration"
+import { windCalibration, type CalibrationFactor, type WindObservation } from "@/lib/calibration"
 import { Users, Clock, Wind, TrendingUp, Activity } from "lucide-react"
 
 export function UserReportsPanel() {
   const { selectedSpot } = useSpotStore()
   const [reports, setReports] = useState<WindObservation[]>([])
-  const [calibrationInfo, setCalibrationInfo] = useState<any>(null)
+  const [calibrationInfo, setCalibrationInfo] = useState<CalibrationFactor | null>(null)
 
   const updateReports = () => {
     const recentReports = windCalibration.getRecentObservations(selectedSpot, 6)
     setReports(recentReports)
     
     const info = windCalibration.getCalibrationInfo(selectedSpot)
-    setCalibrationInfo(info)
+    setCalibrationInfo(info ?? null)
   }
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export function UserReportsPanel() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center text-lg">
           <Users className="mr-2 h-5 w-5 text-blue-600" />
-          Reportes d'usuaris
+          Reports d'usuaris
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -119,16 +119,16 @@ export function UserReportsPanel() {
             ))
           ) : (
             <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-              No hi ha reportes recents per aquest spot.
+              No hi ha reports recents per aquest spot.
               <br />
-              <span className="text-blue-600 font-medium">Sigues el primer en reportar les condicions actuals!</span>
+              <span className="font-medium text-blue-600">Sigues el primer a reportar les condicions actuals!</span>
             </div>
           )}
         </div>
 
         {reports.length > 0 && (
           <div className="mt-4 text-xs text-center text-muted-foreground">
-            Els reportes ajuden a calibrar automàticament les previsions
+            Els reports ajuden a calibrar automàticament les previsions
           </div>
         )}
       </CardContent>

@@ -8,7 +8,8 @@ body {
 
 @layer utilities {
   .text-balance {
-    text-wrap: balance;
+    text-wrap: balance; /* stylelint-disable-line */
+    -webkit-hyphens: auto;
   }
 }
 

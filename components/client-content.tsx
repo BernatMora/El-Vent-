@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { RefreshCw } from "lucide-react"
 import { SpotSelector } from "@/components/spot-selector"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,31 +19,63 @@ import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { TrainingSection } from "@/components/training-section"
+import { useSpotStore } from "@/lib/store"
+import { getForecastData } from "@/lib/api"
+import { toast } from "@/hooks/use-toast"
 
 export function ClientContent() {
+  const { selectedSpot, hydrateStore } = useSpotStore()
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  useEffect(() => {
+    hydrateStore()
+  }, [hydrateStore])
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return
+
+    setIsRefreshing(true)
+
+    try {
+      const data = await getForecastData(selectedSpot)
+
+      if (!data || data.length === 0) {
+        throw new Error("No hi ha dades disponibles")
+      }
+
+      setRefreshKey((prev) => prev + 1)
+      toast({
+        title: "Dades actualitzades",
+        description: `La previsió per ${selectedSpot} s'ha refrescat correctament.`,
+      })
+    } catch (error) {
+      console.error("Error refreshing weather data:", error)
+      toast({
+        variant: "destructive",
+        title: "No s'han pogut actualitzar les dades",
+        description: "Torna-ho a provar d'aquí uns instants.",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   return (
     <>
       <EnhancedApiStatus />
 
       <div className="mb-4 sm:mb-6 grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2">
-        <button className="flex items-center justify-center rounded-md bg-blue-100 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-blue-700 transition hover:bg-blue-200">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mr-2 h-4 w-4 sm:h-5 sm:w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-            <path d="M16 21h5v-5" />
-          </svg>
-          <span className="hidden sm:inline">Actualitza dades meteorològiques</span>
-          <span className="sm:hidden">Actualitza dades</span>
+        <button
+          className="flex items-center justify-center rounded-md bg-blue-100 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-blue-700 transition hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-70"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 sm:h-5 sm:w-5 ${isRefreshing ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">
+            {isRefreshing ? "Actualitzant dades..." : "Actualitza dades meteorològiques"}
+          </span>
+          <span className="sm:hidden">{isRefreshing ? "Actualitzant..." : "Actualitza dades"}</span>
         </button>
         <button
           className="flex items-center justify-center rounded-md bg-green-100 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-green-700 transition hover:bg-green-200"
@@ -73,25 +107,28 @@ export function ClientContent() {
       <AlertsBanner />
 
       <div className="mb-4 sm:mb-8 rounded-xl bg-white p-3 sm:p-6 shadow-md">
-        <CurrentConditions />
+        <CurrentConditions key={`conditions-${refreshKey}`} />
       </div>
 
       <WindDirectionLegend />
 
       <Tabs defaultValue="previsio" className="mb-4 sm:mb-8">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="previsio" className="text-xs sm:text-sm">Previsió IA</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-3">
+          <TabsTrigger value="previsio" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Previsió avançada</span>
+            <span className="sm:hidden">Previsió</span>
+          </TabsTrigger>
           <TabsTrigger value="condicions" className="text-xs sm:text-sm">Condicions</TabsTrigger>
           <TabsTrigger value="mida" className="text-xs sm:text-sm">Mida d'Estel</TabsTrigger>
         </TabsList>
         <TabsContent value="previsio" className="mt-4">
-          <WindForecast />
+          <WindForecast key={`forecast-${refreshKey}`} />
         </TabsContent>
         <TabsContent value="condicions" className="mt-4">
-          <WindChart />
+          <WindChart key={`chart-${refreshKey}`} />
         </TabsContent>
         <TabsContent value="mida" className="mt-4">
-          <KiteRecommendation />
+          <KiteRecommendation key={`kite-${refreshKey}`} />
         </TabsContent>
       </Tabs>
 

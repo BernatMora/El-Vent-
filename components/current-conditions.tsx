@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useSpotStore } from "@/lib/store"
-import { getForecastData } from "@/lib/api"
+import { type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getWindName, knotsToKmh } from "@/lib/utils"
 import { WindReportDialog } from "@/components/wind-report-dialog"
 import { UserReportsPanel } from "@/components/user-reports-panel"
 import { Badge } from "@/components/ui/badge"
@@ -15,9 +16,10 @@ import { Button } from "@/components/ui/button"
 export function CurrentConditions() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
-  const [currentData, setCurrentData] = useState<any>(null)
+  const [currentData, setCurrentData] = useState<(ForecastHour & { date: string }) | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [justUpdated, setJustUpdated] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
   const loadCurrentData = async () => {
     try {
@@ -30,7 +32,7 @@ export function CurrentConditions() {
 
         // Encontrar la hora más cercana en los datos
         let closestHour = data[0].hours[0]
-        data[0].hours.forEach((h: any) => {
+        data[0].hours.forEach((h: ForecastHour) => {
           const hourNum = Number.parseInt(h.time.split(":")[0])
           if (Math.abs(hourNum - hour) < Math.abs(Number.parseInt(closestHour.time.split(":")[0]) - hour)) {
             closestHour = h
@@ -41,6 +43,12 @@ export function CurrentConditions() {
           ...closestHour,
           date: data[0].date,
         })
+        setLastUpdated(
+          new Date().toLocaleTimeString("ca-ES", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        )
       }
     } catch (err) {
       console.error(err)
@@ -58,7 +66,7 @@ export function CurrentConditions() {
       loadCurrentData()
     })
 
-    return unsubscribe
+    return () => { unsubscribe() }
   }, [selectedSpot, refreshKey])
 
   const handleReportSubmitted = () => {
@@ -78,19 +86,6 @@ export function CurrentConditions() {
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1)
-  }
-
-  // Función para obtener el nombre del viento según su dirección
-  const getWindName = (direction: number) => {
-    if (direction >= 337.5 || direction < 22.5) return "Tramuntana"
-    if (direction >= 22.5 && direction < 67.5) return "Gregal"
-    if (direction >= 67.5 && direction < 112.5) return "Llevant"
-    if (direction >= 112.5 && direction < 157.5) return "Xaloc"
-    if (direction >= 157.5 && direction < 202.5) return "Migjorn"
-    if (direction >= 202.5 && direction < 247.5) return "Llebeig"
-    if (direction >= 247.5 && direction < 292.5) return "Ponent"
-    if (direction >= 292.5 && direction < 337.5) return "Mestral"
-    return "Tramuntana"
   }
 
   // Función para renderizar la flecha de dirección del viento
@@ -123,11 +118,6 @@ export function CurrentConditions() {
     )
   }
 
-  // Convertir nudos a km/h
-  const knotsToKmh = (knots: number) => {
-    return Math.round(knots * 1.852)
-  }
-
   return (
     <div>
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -146,10 +136,20 @@ export function CurrentConditions() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     {loading ? "Carregant..." : `Previsió per les ${currentData?.time || "00:00"}`}
                   </p>
+                  {currentData?.source && (
+                    <Badge variant="secondary" className="text-xs">
+                      Font: {currentData.source}
+                    </Badge>
+                  )}
+                  {lastUpdated && (
+                    <span className="text-xs text-muted-foreground">
+                      Actualitzat a les {lastUpdated}
+                    </span>
+                  )}
                   {currentData?.isCalibrated && (
                     <Badge variant="outline" className={`text-xs transition-colors duration-300 ${
                       justUpdated ? 'bg-green-100 border-green-300 text-green-700' : ''
@@ -250,7 +250,7 @@ export function CurrentConditions() {
                 <div className={`text-xs sm:text-sm ${
                   justUpdated ? 'text-green-800' : 'text-blue-800'
                 }`}>
-                  <strong>Dades calibrades:</strong> Aquests valors han estat ajustats basant-se en reportes d'usuaris recents per millorar la precisió local.
+                  <strong>Dades calibrades:</strong> Aquests valors s'han ajustat a partir de reports d'usuaris recents per millorar la precisió local.
                   {justUpdated && (
                     <span className="block mt-1 font-medium">
                       ✓ Acabat d'actualitzar amb el teu reporte!
