@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSpotStore } from "@/lib/store"
 import { BirdIcon as Kite, User } from "lucide-react"
@@ -95,6 +95,14 @@ export function KiteRecommendation() {
       }))
   }
 
+  const hourlyDataByDay = useMemo(
+    () => ({
+      0: prepareHourlyData(0),
+      1: prepareHourlyData(1),
+    }),
+    [forecast, weight, level],
+  )
+
   const handleSavePreferences = () => {
     setUserPreferences({ weight, level })
     setOpen(false)
@@ -117,7 +125,7 @@ export function KiteRecommendation() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Perfil del rider</DialogTitle>
+                <DialogTitle>Perfil del kiter</DialogTitle>
                 <DialogDescription>
                   Actualitza les teves dades per obtenir recomanacions d'estel més ajustades.
                 </DialogDescription>
@@ -125,7 +133,7 @@ export function KiteRecommendation() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="weight" className="text-right">
-                    Peso (kg)
+                    Pes (kg)
                   </Label>
                   <Input
                     id="weight"
@@ -182,7 +190,7 @@ export function KiteRecommendation() {
                     {forecast[dayIndex] ? formatDate(forecast[dayIndex].date) : ""}
                   </div>
 
-                  {prepareHourlyData(dayIndex).map((data) => (
+                  {hourlyDataByDay[dayIndex as 0 | 1].map((data) => (
                     <div key={data.time} className="flex items-center justify-between rounded-lg border p-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{data.time}</span>
@@ -192,7 +200,7 @@ export function KiteRecommendation() {
                     </div>
                   ))}
 
-                  {prepareHourlyData(dayIndex).length === 0 && (
+                  {hourlyDataByDay[dayIndex as 0 | 1].length === 0 && (
                     <div className="rounded-lg border p-3 text-center text-sm text-muted-foreground">
                       No hi ha dades disponibles per a aquest dia
                     </div>

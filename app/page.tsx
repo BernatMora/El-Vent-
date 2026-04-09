@@ -2,13 +2,13 @@ import { ClientContent } from "@/components/client-content"
 
 const highlights = [
   { value: "3 dies", label: "previsió" },
-  { value: "Mòbil", label: "ràpid" },
-  { value: "Fonts reals", label: "actives" },
+  { value: "Offline", label: "disponible" },
+  { value: "Instal·lable", label: "com app" },
 ]
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50 to-slate-100 p-2 sm:p-4 md:p-8">
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50 to-slate-100 p-2 pb-safe sm:p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         <section className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-r from-sky-900 via-blue-800 to-cyan-700 p-4 text-white shadow-xl sm:mb-8 sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -20,7 +20,7 @@ export default function Home() {
                 Els Vents de Sant Pere Pescador
               </h1>
               <p className="max-w-2xl text-sm text-blue-50 sm:text-base md:text-lg">
-                Previsió de vent i mar més clara, ràpida i pensada per consultar-la des del mòbil abans d'entrar a l'aigua.
+                Previsió de vent i mar més clara, ràpida i instal·lable com una app, preparada per consultar-la fins i tot amb poca cobertura abans d'entrar a l'aigua.
               </p>
             </div>
 

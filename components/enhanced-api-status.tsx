@@ -44,7 +44,7 @@ export function EnhancedApiStatus() {
       <Card className="mb-4">
         <CardContent className="flex items-center justify-center p-4">
           <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-          <span className="text-sm">Carregant estat de dades i cache...</span>
+          <span className="text-sm">Carregant estat de dades i memòria cau...</span>
         </CardContent>
       </Card>
     )
@@ -56,7 +56,7 @@ export function EnhancedApiStatus() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center text-base sm:text-lg">
             <TrendingUp className="mr-2 h-5 w-5 text-blue-600" />
-            Estat de dades i cache
+            Estat de dades i memòria cau
           </CardTitle>
           <Dialog>
             <DialogTrigger asChild>
@@ -75,7 +75,7 @@ export function EnhancedApiStatus() {
                 <div>
                   <h4 className="font-semibold mb-2">🛡️ Cache Intel·ligent</h4>
                   <p className="text-sm text-muted-foreground">
-                    Les dades es guarden localment durant 15-30 minuts. Milers d'usuaris poden compartir les mateixes dades cached.
+                    Les dades es guarden localment durant 15-30 minuts. Això permet reutilitzar la mateixa resposta sense fer noves consultes innecessàries.
                   </p>
                 </div>
                 <div>
@@ -111,14 +111,14 @@ export function EnhancedApiStatus() {
           }`}>
             <div className="flex items-center gap-2 mb-2">
               <Database className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-sm">Cache Intel·ligent</span>
+              <span className="font-medium text-sm">Memòria cau intel·ligent</span>
               <Badge className={`text-xs ${stats.hitRate > 80 ? "bg-green-600" : "bg-blue-600"}`}>
                 {stats.hitRate}% eficiència
               </Badge>
             </div>
             <div className="text-xs text-green-700">
               <div>Crides evitades: {stats.cacheHits}</div>
-              <div>Darrera comprovació: {stats.lastUpdate}</div>
+              <div>Darrera actualització: {stats.lastUpdate}</div>
             </div>
           </div>
 
@@ -134,12 +134,12 @@ export function EnhancedApiStatus() {
               <Wifi className="h-4 w-4 text-blue-600" />
               <span className="font-medium text-sm">Connexió API</span>
               <Badge variant={stats.offlineMode ? "destructive" : stats.isNearLimit ? "secondary" : "default"} className="text-xs">
-                {stats.offlineMode ? "Offline" : stats.isNearLimit ? "Prop límit" : "Connectat"}
+                {stats.offlineMode ? "Sense connexió" : stats.isNearLimit ? "Prop del límit" : "En línia"}
               </Badge>
             </div>
             <div className="text-xs text-blue-700">
-              <div>Estat: {stats.offlineMode ? "Sense connexió" : "Connectat"}</div>
-              <div>Font: {stats.offlineMode ? "Dades de referència" : "Open-Meteo"}</div>
+              <div>Estat: {stats.offlineMode ? "Sense connexió" : "En línia"}</div>
+              <div>Font: {stats.offlineMode ? "Dades guardades o simulades" : "Open-Meteo"}</div>
             </div>
           </div>
 

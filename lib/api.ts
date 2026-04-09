@@ -45,6 +45,61 @@ export interface ProtectionStats {
   lastUpdate: string
 }
 
+type ForecastRequestOptions = {
+  forceRefresh?: boolean
+}
+
+type ForecastCacheEntry = {
+  data: ForecastDay[]
+  timestamp: number
+}
+
+const pendingForecastRequests = new Map<string, Promise<ForecastDay[]>>()
+const memoryForecastCache = new Map<string, ForecastCacheEntry>()
+const FORECAST_CACHE_TTL = 60 * 1000
+
+function getStoredForecastKey(spot: string) {
+  return `el-vent:forecast:${spot}`
+}
+
+function storeForecastInCache(spot: string, data: ForecastDay[]) {
+  const entry = { data, timestamp: Date.now() }
+  memoryForecastCache.set(spot, entry)
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(getStoredForecastKey(spot), JSON.stringify(entry))
+    } catch (error) {
+      console.warn("⚠️ No s'ha pogut desar la previsió al dispositiu:", error)
+    }
+  }
+}
+
+function getCachedForecast(spot: string): ForecastDay[] | null {
+  const inMemory = memoryForecastCache.get(spot)
+  if (inMemory && Date.now() - inMemory.timestamp < FORECAST_CACHE_TTL) {
+    return inMemory.data
+  }
+
+  if (typeof window === "undefined") return null
+
+  try {
+    const stored = localStorage.getItem(getStoredForecastKey(spot))
+    if (!stored) return null
+
+    const parsed = JSON.parse(stored) as ForecastCacheEntry
+    if (!parsed?.data || !Array.isArray(parsed.data)) {
+      return null
+    }
+
+    memoryForecastCache.set(spot, parsed)
+    return parsed.data
+  } catch (error) {
+    console.warn("⚠️ No s'ha pogut recuperar la previsió desada:", error)
+    return null
+  }
+}
+
 export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay[]> {
   try {
     console.log("🌐 Intentant obtenir dades meteorològiques per spot:", spot)
@@ -94,21 +149,54 @@ export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay
   }
 }
 
-export async function getForecastData(spot: string): Promise<ForecastDay[]> {
+export async function getForecastData(spot: string, options: ForecastRequestOptions = {}): Promise<ForecastDay[]> {
   if (typeof window !== "undefined") {
-    const response = await fetch(`/api/forecast?spot=${encodeURIComponent(spot)}`, {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    const { forceRefresh = false } = options
 
-    if (!response.ok) {
-      throw new Error("No es poden obtenir dades meteorològiques")
+    if (!forceRefresh) {
+      const cachedData = getCachedForecast(spot)
+      if (cachedData) {
+        return cachedData
+      }
+
+      const pendingRequest = pendingForecastRequests.get(spot)
+      if (pendingRequest) {
+        return pendingRequest
+      }
     }
 
-    return response.json()
+    const requestPromise = (async () => {
+      try {
+        const response = await fetch(`/api/forecast?spot=${encodeURIComponent(spot)}`, {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("No es poden obtenir dades meteorològiques")
+        }
+
+        const data = (await response.json()) as ForecastDay[]
+        storeForecastInCache(spot, data)
+        return data
+      } catch (error) {
+        const cachedData = getCachedForecast(spot)
+        if (cachedData) {
+          console.warn("⚠️ Sense connexió o error temporal. Mostrant l'última previsió desada.", error)
+          return cachedData
+        }
+
+        throw new Error("No es poden obtenir dades meteorològiques")
+      } finally {
+        pendingForecastRequests.delete(spot)
+      }
+    })()
+
+    pendingForecastRequests.set(spot, requestPromise)
+    return requestPromise
   }
 
   return fetchForecastDataDirect(spot)

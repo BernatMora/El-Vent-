@@ -20,11 +20,13 @@ export function CurrentConditions() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [justUpdated, setJustUpdated] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const loadCurrentData = async () => {
+  const loadCurrentData = async (forceRefresh = false) => {
     try {
       setLoading(true)
-      const data = await getForecastData(selectedSpot)
+      setError(null)
+      const data = await getForecastData(selectedSpot, { forceRefresh })
 
       if (data && data.length > 0) {
         const now = new Date()
@@ -49,9 +51,12 @@ export function CurrentConditions() {
             minute: "2-digit",
           })
         )
+      } else {
+        setError("No hi ha condicions actuals disponibles.")
       }
     } catch (err) {
       console.error(err)
+      setError("No s'han pogut carregar les condicions actuals.")
     } finally {
       setLoading(false)
     }
@@ -86,6 +91,7 @@ export function CurrentConditions() {
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1)
+    loadCurrentData(true)
   }
 
   // Funció per renderitzar la fletxa de direcció del vent
@@ -193,6 +199,13 @@ export function CurrentConditions() {
                   <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
                   <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
                 </div>
+              </div>
+            ) : error ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <p className="font-medium">{error}</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => loadCurrentData(true)}>
+                  Torna-ho a provar
+                </Button>
               </div>
             ) : (
               <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">

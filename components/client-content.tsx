@@ -19,6 +19,7 @@ import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { TrainingSection } from "@/components/training-section"
+import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
@@ -38,7 +39,7 @@ export function ClientContent() {
     setIsRefreshing(true)
 
     try {
-      const data = await getForecastData(selectedSpot)
+      const data = await getForecastData(selectedSpot, { forceRefresh: true })
 
       if (!data || data.length === 0) {
         throw new Error("No hi ha dades disponibles")
@@ -64,8 +65,9 @@ export function ClientContent() {
   return (
     <>
       <EnhancedApiStatus />
+      <PwaInstallBanner />
 
-      <div className="mb-4 rounded-2xl border bg-slate-50/80 p-2 shadow-sm sm:mb-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+      <div className="sticky top-2 z-20 mb-4 rounded-2xl border bg-slate-50/90 p-2 shadow-sm backdrop-blur sm:mb-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
         <div className="grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2">
           <button
             className="flex items-center justify-center rounded-xl bg-blue-100 px-4 py-2 text-sm text-blue-700 transition hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-70 sm:px-6 sm:py-3 sm:text-base"
@@ -101,7 +103,7 @@ export function ClientContent() {
           </button>
         </div>
         <p className="mt-2 px-1 text-center text-[11px] text-slate-500 sm:hidden">
-          Actualitza la previsió o obre la guia ràpida abans de baixar a la platja.
+          Actualitza la previsió, instal·la l'app i consulta-la ràpid abans de baixar a la platja.
         </p>
       </div>
 

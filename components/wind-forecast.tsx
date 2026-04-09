@@ -8,7 +8,8 @@ import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate, getWindDirectionName, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Info, Brain, Wifi, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Brain, RefreshCw, Wifi, Users } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -16,31 +17,35 @@ export function WindForecast() {
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function loadForecast() {
-      try {
-        setLoading(true)
-        setError(null)
-        console.log("Carregant previsió millorada per:", selectedSpot)
-        const data = await getForecastData(selectedSpot)
-        console.log("Dades rebudes:", data)
+  const loadForecast = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      console.log("Carregant previsió millorada per:", selectedSpot)
+      const data = await getForecastData(selectedSpot)
+      console.log("Dades rebudes:", data)
 
-        if (!data || data.length === 0) {
-          setError("No s'han pogut carregar les dades de previsió")
-          return
-        }
-
-        setForecast(data)
-      } catch (err) {
-        console.error("Error carregant la previsió:", err)
-        setError("Error carregant les dades")
-      } finally {
-        setLoading(false)
+      if (!data || data.length === 0) {
+        setError("No s'han pogut carregar les dades de previsió")
+        return
       }
-    }
 
+      setForecast(data)
+    } catch (err) {
+      console.error("Error carregant la previsió:", err)
+      setError("No s'han pogut carregar les dades ara mateix.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadForecast()
   }, [selectedSpot])
+
+  const hasSimulatedData = forecast.some((day) =>
+    day.hours?.some((hour: ForecastHour) => hour.source?.includes("Simulat")),
+  )
 
   // Funció per renderitzar la fletxa de direcció del vent
   const renderWindArrow = (direction: number) => {
@@ -122,6 +127,15 @@ export function WindForecast() {
       )
     }
 
+    if (hour.source && hour.source.includes('Simulat')) {
+      return (
+        <Badge variant="outline" className="text-xs px-1 py-0 bg-amber-50 border-amber-200 text-amber-700">
+          <span className="hidden sm:inline">Simulat</span>
+          <span className="sm:hidden">Sim</span>
+        </Badge>
+      )
+    }
+
     return (
       <Badge variant="secondary" className="text-xs px-1 py-0">
         <span className="hidden sm:inline">Model</span>
@@ -149,10 +163,26 @@ export function WindForecast() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">{error}</div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
+            <p>{error}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={loadForecast}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Torna-ho a provar
+            </Button>
+          </div>
         ) : forecast && forecast.length > 0 ? (
-          <Tabs defaultValue="0">
-            <TabsList className="grid w-full grid-cols-3 h-auto">
+          <>
+            {hasSimulatedData && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <div className="font-medium">Mode de continuïtat actiu</div>
+                <div className="text-xs text-amber-800 sm:text-sm">
+                  Algunes franges es mostren amb dades simulades o guardades localment perquè la connexió o la font en temps real no està disponible.
+                </div>
+              </div>
+            )}
+
+            <Tabs defaultValue="0">
+              <TabsList className="grid w-full grid-cols-3 h-auto">
               {forecast.map((day, index) => (
                 <TabsTrigger key={day.date} value={index.toString()} className="text-xs sm:text-sm px-2 py-2">
                   {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date).split(',')[0]}
@@ -160,8 +190,8 @@ export function WindForecast() {
               ))}
             </TabsList>
 
-            {forecast.map((day, dayIndex) => (
-              <TabsContent key={day.date} value={dayIndex.toString()}>
+              {forecast.map((day, dayIndex) => (
+                <TabsContent key={day.date} value={dayIndex.toString()}>
                 {/* Indicador de tipus de dades */}
                 {day.hours && day.hours.length > 0 && day.hours[0].isReal && (
                   <div className="mb-3 rounded-lg border border-green-200 bg-green-50 p-2">
@@ -233,8 +263,9 @@ export function WindForecast() {
                   )}
                 </div>
               </TabsContent>
-            ))}
-          </Tabs>
+              ))}
+            </Tabs>
+          </>
         ) : (
           <div className="rounded-lg border p-4 text-center text-gray-500">No hi ha dades de previsió disponibles</div>
         )}

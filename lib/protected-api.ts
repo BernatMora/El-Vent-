@@ -13,7 +13,7 @@ export class ProtectedWeatherAPI {
     const cached = cacheManager.get(cacheKey, 'forecast')
     
     if (cached) {
-      console.log(`✅ Servint dades cached per ${spot}`)
+      console.log(`✅ Servint dades guardades per ${spot}`)
       return cached.data
     }
 
@@ -56,7 +56,7 @@ export class ProtectedWeatherAPI {
     const cached = cacheManager.get(fallbackKey, 'fallback')
     
     if (cached) {
-      console.log(`📦 Usant dades cached de fallback per ${spot}`)
+      console.log(`📦 Usant dades guardades de reserva per ${spot}`)
       return cached.data
     }
 

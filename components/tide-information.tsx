@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSpotStore } from "@/lib/store"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Waves } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { RefreshCw, Waves } from "lucide-react"
 
 type TideData = {
   location: string
@@ -28,11 +29,12 @@ export function TideInformation() {
   const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [tideData, setTideData] = useState<TideData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function loadTideData() {
-      try {
-        setLoading(true)
+  const loadTideData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
         // Simulamos la carga de datos de mareas
         // En una implementación real, esto vendría de una API
@@ -54,7 +56,7 @@ export function TideInformation() {
           waveHeight: 0.7,
           waveDirection: "NE",
           wavePeriod: 4,
-          source: "Puertos del Estado",
+          source: "Ports de l'Estat",
         }
 
         // Ajustar datos según el spot
@@ -70,13 +72,15 @@ export function TideInformation() {
         }
 
         setTideData(data)
-      } catch (error) {
-        console.error("Error carregant dades de marees:", error)
-      } finally {
-        setLoading(false)
-      }
+    } catch (error) {
+      console.error("Error carregant dades de marees:", error)
+      setError("No s'han pogut carregar les dades de marees.")
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadTideData()
   }, [selectedSpot])
 
@@ -93,9 +97,15 @@ export function TideInformation() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center text-lg">
-          <Waves className="mr-2 h-5 w-5 text-blue-600" />
-          Informació de Marees
+        <CardTitle className="flex items-center justify-between gap-2 text-lg">
+          <span className="flex items-center">
+            <Waves className="mr-2 h-5 w-5 text-blue-600" />
+            Informació de marees
+          </span>
+          <Button variant="ghost" size="sm" onClick={loadTideData} disabled={loading} className="h-8 px-2 text-xs">
+            <RefreshCw className={`mr-1 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresca
+          </Button>
         </CardTitle>
         {!loading && tideData && (
           <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -110,11 +120,19 @@ export function TideInformation() {
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-24 w-full" />
           </div>
+        ) : error ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-medium">{error}</p>
+            <p className="mt-1 text-amber-700">Torna-ho a provar i, si continues sense cobertura, consulta les dades ja guardades a l'app.</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={loadTideData}>
+              Torna-ho a provar
+            </Button>
+          </div>
         ) : (
           <>
             <div className="mb-4 grid grid-cols-2 gap-4">
               <div className="rounded-lg border bg-card p-3">
-                <div className="text-sm font-medium text-muted-foreground">Altura actual</div>
+                <div className="text-sm font-medium text-muted-foreground">Alçada actual</div>
                 <div className="mt-1 text-3xl font-bold">{tideData?.currentHeight.toFixed(2)} m</div>
                 <div className="mt-1 text-xs text-right text-muted-foreground">Font: {tideData?.source}</div>
               </div>
@@ -184,7 +202,7 @@ export function TideInformation() {
                     <path d="M2 12h20" />
                     <path d="M12 2v20" />
                   </svg>
-                  <span>Bajamar</span>
+                  <span>Baixamar</span>
                 </div>
                 <div className="text-right">
                   <div className="font-medium">{tideData?.nextLow.time}</div>
