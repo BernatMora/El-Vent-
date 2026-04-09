@@ -50,7 +50,7 @@ export function ClientContent() {
         description: `La previsió per ${selectedSpot} s'ha refrescat correctament.`,
       })
     } catch (error) {
-      console.error("Error refreshing weather data:", error)
+      console.error("Error actualitzant dades meteorològiques:", error)
       toast({
         variant: "destructive",
         title: "No s'han pogut actualitzar les dades",

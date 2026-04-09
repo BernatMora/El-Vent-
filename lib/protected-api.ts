@@ -6,32 +6,32 @@ export class ProtectedWeatherAPI {
   private readonly FALLBACK_DATA_DURATION = 24 * 60 * 60 * 1000 // 24 hores
 
   async getForecastData(spot: string) {
-    console.log(`🛡️ Protected API call for spot: ${spot}`)
+    console.log(`🛡️ Crida protegida a l'API per spot: ${spot}`)
     
     // 1. Intentar obtenir del cache primer
     const cacheKey = `forecast-${spot}`
     const cached = cacheManager.get(cacheKey, 'forecast')
     
     if (cached) {
-      console.log(`✅ Serving cached data for ${spot}`)
+      console.log(`✅ Servint dades cached per ${spot}`)
       return cached.data
     }
 
     // 2. Comprovar si podem fer crides API
     if (!cacheManager.canMakeApiCall(spot)) {
-      console.log(`⚠️ API limit reached for ${spot}, using fallback`)
+      console.log(`⚠️ Límit d'API assolit per ${spot}, usant fallback`)
       return this.getFallbackData(spot)
     }
 
     // 3. Comprovar si estem en mode offline forçat
     if (cacheManager.isOfflineMode()) {
-      console.log(`📴 Offline mode active, using fallback`)
+      console.log(`📴 Mode offline actiu, usant fallback`)
       return this.getFallbackData(spot)
     }
 
     try {
       // 4. Intentar obtenir dades reals
-      console.log(`🌐 Making API call for ${spot}`)
+      console.log(`🌐 Fent crida API per ${spot}`)
       cacheManager.recordApiCall(spot)
       
       const data = await enhancedWeatherService.getEnhancedForecast(spot)
@@ -39,11 +39,11 @@ export class ProtectedWeatherAPI {
       // 5. Guardar al cache amb durada llarga
       cacheManager.set(cacheKey, data, 'forecast', 'Enhanced API')
       
-      console.log(`✅ Fresh data obtained and cached for ${spot}`)
+      console.log(`✅ Dades noves obtingudes i desades per ${spot}`)
       return data
 
     } catch (error) {
-      console.error(`❌ API call failed for ${spot}:`, error)
+      console.error(`❌ Crida API fallada per ${spot}:`, error)
       
       // 6. Si falla, usar dades de fallback
       return this.getFallbackData(spot)
@@ -56,12 +56,12 @@ export class ProtectedWeatherAPI {
     const cached = cacheManager.get(fallbackKey, 'fallback')
     
     if (cached) {
-      console.log(`📦 Using cached fallback data for ${spot}`)
+      console.log(`📦 Usant dades cached de fallback per ${spot}`)
       return cached.data
     }
 
     // Generar noves dades de fallback
-    console.log(`🎲 Generating new fallback data for ${spot}`)
+    console.log(`🎲 Generant noves dades de fallback per ${spot}`)
     const fallbackData = this.generateSmartFallback(spot)
     
     // Cache les dades de fallback per 5 minuts

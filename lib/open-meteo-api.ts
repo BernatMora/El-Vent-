@@ -1,18 +1,10 @@
 // API gratuïta Open-Meteo per dades meteorològiques reals
+import { getSpotCoords } from './spot-coordinates'
+
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1"
 
-// Coordenades per spot
-const SPOT_COORDS: Record<string, { lat: number; lon: number }> = {
-  "kitesurf-point": { lat: 42.1833, lon: 3.0833 },
-  "la-ballena":     { lat: 42.1830, lon: 3.0835 },
-  "can-martinet":   { lat: 42.1825, lon: 3.0840 },
-  "la-rubina":      { lat: 42.1900, lon: 3.1200 },
-}
-
-const DEFAULT_COORDS = SPOT_COORDS["kitesurf-point"]
-
 export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
-  const coords = (spot && SPOT_COORDS[spot]) || DEFAULT_COORDS
+  const coords = getSpotCoords(spot)
 
   try {
     console.log(`🌐 Obtenint dades d'Open-Meteo per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)

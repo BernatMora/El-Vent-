@@ -74,7 +74,7 @@ class CacheManager {
           }
         }
       } catch (error) {
-        console.error('Error loading cache:', error)
+        console.error('Error carregant cache:', error)
       }
     }
   }
@@ -102,7 +102,7 @@ class CacheManager {
         }
         localStorage.setItem('daily-usage', JSON.stringify(usageData))
       } catch (error) {
-        console.error('Error saving cache:', error)
+        console.error('Error desant cache:', error)
       }
     }
   }

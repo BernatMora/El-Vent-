@@ -87,7 +87,7 @@ export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay
     }
 
   } catch (error) {
-    console.error("❌ Error en getForecastData:", error)
+    console.error("❌ Error obtenint dades de previsió:", error)
 
     // Si tot falla, mostrar error
     throw new Error("No es poden obtenir dades meteorològiques")

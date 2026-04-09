@@ -2,14 +2,7 @@
 import { MultiWeatherService } from './weather-apis'
 import { weatherML, MLTrainingData } from './ml-predictions'
 import { windCalibration } from './calibration'
-
-// Coordenades dels spots
-const SPOT_COORDINATES = {
-  'kitesurf-point': { lat: 42.1833, lon: 3.0833 },
-  'la-ballena': { lat: 42.1830, lon: 3.0835 },
-  'can-martinet': { lat: 42.1825, lon: 3.0840 },
-  'la-rubina': { lat: 42.1900, lon: 3.1200 }
-}
+import { getSpotCoords } from './spot-coordinates'
 
 export class EnhancedWeatherService {
   private multiWeatherService = new MultiWeatherService()
@@ -18,12 +11,12 @@ export class EnhancedWeatherService {
   async getEnhancedForecast(spot: string) {
     try {
       console.log(`Obtenint previsió millorada per ${spot}...`)
-      
-      const coords = SPOT_COORDINATES[spot as keyof typeof SPOT_COORDINATES] || SPOT_COORDINATES['kitesurf-point']
-      
+
+      const coords = getSpotCoords(spot)
+
       // 1. Obtenir dades agregades de múltiples APIs
       const multiApiData = await this.multiWeatherService.getAggregatedWeatherData(coords.lat, coords.lon)
-      
+
       // 2. Aplicar Machine Learning per millorar prediccions
       const mlEnhancedData = multiApiData.map(data => {
         const prediction = weatherML.predict(spot, {

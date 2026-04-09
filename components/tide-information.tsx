@@ -71,7 +71,7 @@ export function TideInformation() {
 
         setTideData(data)
       } catch (error) {
-        console.error("Error loading tide data:", error)
+        console.error("Error carregant dades de marees:", error)
       } finally {
         setLoading(false)
       }

@@ -30,7 +30,7 @@ export function CurrentConditions() {
         const now = new Date()
         const hour = now.getHours()
 
-        // Encontrar la hora más cercana en los datos
+        // Trobar l'hora més propera a les dades
         let closestHour = data[0].hours[0]
         data[0].hours.forEach((h: ForecastHour) => {
           const hourNum = Number.parseInt(h.time.split(":")[0])
@@ -60,9 +60,9 @@ export function CurrentConditions() {
   useEffect(() => {
     loadCurrentData()
 
-    // Suscribirse a cambios en el sistema de calibración
+    // Subscriure's a canvis en el sistema de calibració
     const unsubscribe = windCalibration.subscribe(() => {
-      console.log("Calibración actualizada, recargando datos...")
+      console.log("Calibració actualitzada, recarregant dades...")
       loadCurrentData()
     })
 
@@ -70,15 +70,15 @@ export function CurrentConditions() {
   }, [selectedSpot, refreshKey])
 
   const handleReportSubmitted = () => {
-    // Mostrar indicador visual de actualización
+    // Mostrar indicador visual d'actualització
     setJustUpdated(true)
     
-    // Forzar recarga de datos después de enviar un reporte
+    // Forçar recàrrega de dades després d'enviar un report
     setTimeout(() => {
       setRefreshKey(prev => prev + 1)
     }, 500)
 
-    // Ocultar indicador después de 3 segundos
+    // Amagar indicador després de 3 segons
     setTimeout(() => {
       setJustUpdated(false)
     }, 3000)
@@ -88,7 +88,7 @@ export function CurrentConditions() {
     setRefreshKey(prev => prev + 1)
   }
 
-  // Función para renderizar la flecha de dirección del viento
+  // Funció per renderitzar la fletxa de direcció del vent
   const renderWindArrow = (direction: number) => {
     const rotationDegree = (direction + 180) % 360
 

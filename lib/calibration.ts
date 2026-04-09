@@ -1,4 +1,4 @@
-// Sistema de calibración local basado en observaciones reales
+// Sistema de calibració local basat en observacions reals
 export interface WindObservation {
   id: string
   timestamp: Date
@@ -29,13 +29,13 @@ class WindCalibrationService {
     this.initializeDefaultFactors()
   }
 
-  // Método para suscribirse a cambios
+  // Mètode per subscriure's a canvis
   subscribe(listener: () => void) {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
   }
 
-  // Notificar a los listeners
+  // Notificar als listeners
   private notifyListeners() {
     this.listeners.forEach(listener => listener())
   }
@@ -62,7 +62,7 @@ class WindCalibrationService {
           })
         }
       } catch (error) {
-        console.error('Error loading calibration data:', error)
+        console.error('Error carregant dades de calibració:', error)
       }
     }
   }
@@ -78,13 +78,13 @@ class WindCalibrationService {
         })
         localStorage.setItem('calibration-factors', JSON.stringify(factorsObj))
       } catch (error) {
-        console.error('Error saving calibration data:', error)
+        console.error('Error desant dades de calibració:', error)
       }
     }
   }
 
   private initializeDefaultFactors() {
-    // Cambiar el orden para que kitesurf-point sea el primero (por defecto)
+    // Canviar l'ordre perquè kitesurf-point sigui el primer (per defecte)
     const spots = ['kitesurf-point', 'la-ballena', 'can-martinet', 'la-rubina']
     
     spots.forEach(spot => {
@@ -110,7 +110,7 @@ class WindCalibrationService {
 
     this.observations.push(newObservation)
     
-    // Mantener solo las últimas 100 observaciones
+    // Mantenir només les últimes 100 observacions
     if (this.observations.length > 100) {
       this.observations = this.observations.slice(-100)
     }
@@ -127,25 +127,25 @@ class WindCalibrationService {
       .filter(obs => obs.spot === spot)
       .filter(obs => {
         const hoursSince = (Date.now() - obs.timestamp.getTime()) / (1000 * 60 * 60)
-        return hoursSince <= 24 // Solo últimas 24 horas
+        return hoursSince <= 24 // Només les últimes 24 hores
       })
 
     if (recentObservations.length === 0) return
 
-    // Para la primera observación, usar directamente la diferencia
+    // Per la primera observació, usar directament la diferència
     if (recentObservations.length === 1) {
       const obs = recentObservations[0]
       if (obs.modelWindSpeed > 0) {
         const speedMultiplier = obs.reportedWindSpeed / obs.modelWindSpeed
         let directionOffset = obs.reportedDirection - obs.modelDirection
         
-        // Normalizar diferencia de ángulos
+        // Normalitzar diferència d'angles
         if (directionOffset > 180) directionOffset -= 360
         if (directionOffset < -180) directionOffset += 360
 
         this.calibrationFactors.set(spot, {
           spot,
-          speedMultiplier: Math.max(0.5, Math.min(2.0, speedMultiplier)), // Limitar entre 0.5x y 2x
+          speedMultiplier: Math.max(0.5, Math.min(2.0, speedMultiplier)), // Limitar entre 0.5x i 2x
           directionOffset: Math.max(-45, Math.min(45, directionOffset)), // Limitar a ±45°
           lastUpdated: new Date(),
           observationCount: 1
@@ -154,14 +154,14 @@ class WindCalibrationService {
       return
     }
 
-    // Para múltiples observaciones, calcular promedio ponderado
+    // Per múltiples observacions, calcular mitjana ponderada
     const speedRatios = recentObservations
       .filter(obs => obs.modelWindSpeed > 0)
       .map(obs => obs.reportedWindSpeed / obs.modelWindSpeed)
 
     const directionOffsets = recentObservations.map(obs => {
       let diff = obs.reportedDirection - obs.modelDirection
-      // Normalizar diferencia de ángulos
+      // Normalitzar diferència d'angles
       if (diff > 180) diff -= 360
       if (diff < -180) diff += 360
       return diff
@@ -171,9 +171,9 @@ class WindCalibrationService {
       const avgSpeedMultiplier = speedRatios.reduce((a, b) => a + b, 0) / speedRatios.length
       const avgDirectionOffset = directionOffsets.reduce((a, b) => a + b, 0) / directionOffsets.length
 
-      // Aplicar suavizado más agresivo para cambios inmediatos
+      // Aplicar suavitzat més agressiu per canvis immediats
       const currentFactor = this.calibrationFactors.get(spot)!
-      const smoothingFactor = recentObservations.length === 1 ? 0.8 : 0.4 // Más agresivo para primera observación
+      const smoothingFactor = recentObservations.length === 1 ? 0.8 : 0.4 // Més agressiu per primera observació
 
       this.calibrationFactors.set(spot, {
         spot,
@@ -198,7 +198,7 @@ class WindCalibrationService {
     const calibratedSpeed = Math.max(0, Math.round(windSpeed * factor.speedMultiplier))
     let calibratedDirection = windDirection + factor.directionOffset
     
-    // Normalizar dirección
+    // Normalitzar direcció
     calibratedDirection = ((calibratedDirection % 360) + 360) % 360
 
     return {
@@ -226,7 +226,7 @@ class WindCalibrationService {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
   }
 
-  // Método para forzar recalibración
+  // Mètode per forçar recalibració
   forceRecalibration(spot: string) {
     this.updateCalibrationFactor(spot)
     this.saveToStorage()

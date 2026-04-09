@@ -12,8 +12,14 @@ export const runtime = "nodejs"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const requestedSpot = searchParams.get("spot") ?? "kitesurf-point"
-  const spot = VALID_SPOTS.has(requestedSpot) ? requestedSpot : "kitesurf-point"
+  const requestedSpot = searchParams.get("spot")
+  if (requestedSpot && !VALID_SPOTS.has(requestedSpot)) {
+    return NextResponse.json(
+      { error: "Spot no vàlid" },
+      { status: 400 },
+    )
+  }
+  const spot = requestedSpot ?? "kitesurf-point"
 
   try {
     const data = await fetchForecastDataDirect(spot)
@@ -25,7 +31,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
-    console.error("API /api/forecast error:", error)
+    console.error("Error a l'API /api/forecast:", error)
 
     return NextResponse.json(
       { error: "No es poden obtenir dades meteorològiques" },

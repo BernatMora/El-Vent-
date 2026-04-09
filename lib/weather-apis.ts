@@ -42,7 +42,7 @@ export class OpenMeteoProvider implements WeatherProvider {
       `wind_speed_unit=kn&timezone=Europe/Madrid&forecast_days=3`
 
     const response = await fetch(url)
-    if (!response.ok) throw new Error(`Open-Meteo error: ${response.status}`)
+    if (!response.ok) throw new Error(`Error d'Open-Meteo: ${response.status}`)
     
     const data = await response.json()
     return this.processData(data)
@@ -82,12 +82,12 @@ export class WeatherAPIProvider implements WeatherProvider {
   }
 
   async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
-    if (!this.apiKey) throw new Error("WeatherAPI key not configured")
+    if (!this.apiKey) throw new Error("Clau de WeatherAPI no configurada")
     
     const url = `https://api.weatherapi.com/v1/forecast.json?key=${this.apiKey}&q=${lat},${lon}&days=3&aqi=no&alerts=no`
     
     const response = await fetch(url)
-    if (!response.ok) throw new Error(`WeatherAPI error: ${response.status}`)
+    if (!response.ok) throw new Error(`Error de WeatherAPI: ${response.status}`)
     
     const data = await response.json()
     return this.processData(data)
@@ -133,12 +133,12 @@ export class OpenWeatherMapProvider implements WeatherProvider {
   }
 
   async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
-    if (!this.apiKey) throw new Error("OpenWeatherMap key not configured")
+    if (!this.apiKey) throw new Error("Clau d'OpenWeatherMap no configurada")
 
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${this.apiKey}&units=metric`
 
     const response = await fetch(url)
-    if (!response.ok) throw new Error(`OpenWeatherMap error: ${response.status}`)
+    if (!response.ok) throw new Error(`Error d'OpenWeatherMap: ${response.status}`)
 
     const data = await response.json()
     return this.processData(data)
@@ -217,7 +217,7 @@ export class MultiWeatherService {
         const data = await provider.getWeatherData(lat, lon)
         return data
       } catch (error) {
-        console.error(`Error fetching from ${provider.name}:`, error)
+        console.error(`Error obtenint dades de ${provider.name}:`, error)
         return []
       }
     })

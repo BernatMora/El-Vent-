@@ -47,7 +47,7 @@ export class WeatherMLService {
           }))
         }
       } catch (error) {
-        console.error('Error loading ML training data:', error)
+        console.error('Error carregant dades d\'entrenament ML:', error)
       }
     }
   }
@@ -58,7 +58,7 @@ export class WeatherMLService {
       try {
         localStorage.setItem('ml-training-data', JSON.stringify(this.trainingData))
       } catch (error) {
-        console.error('Error saving ML training data:', error)
+        console.error('Error desant dades d\'entrenament ML:', error)
       }
     }
   }

@@ -21,9 +21,9 @@ export function WindForecast() {
       try {
         setLoading(true)
         setError(null)
-        console.log("Cargando previsión millorada para:", selectedSpot)
+        console.log("Carregant previsió millorada per:", selectedSpot)
         const data = await getForecastData(selectedSpot)
-        console.log("Datos recibidos:", data)
+        console.log("Dades rebudes:", data)
 
         if (!data || data.length === 0) {
           setError("No s'han pogut carregar les dades de previsió")
@@ -32,7 +32,7 @@ export function WindForecast() {
 
         setForecast(data)
       } catch (err) {
-        console.error("Error loading forecast:", err)
+        console.error("Error carregant la previsió:", err)
         setError("Error carregant les dades")
       } finally {
         setLoading(false)
@@ -42,7 +42,7 @@ export function WindForecast() {
     loadForecast()
   }, [selectedSpot])
 
-  // Función para renderizar la flecha de dirección del viento
+  // Funció per renderitzar la fletxa de direcció del vent
   const renderWindArrow = (direction: number) => {
     const rotationDegree = (direction + 180) % 360
 
@@ -80,7 +80,7 @@ export function WindForecast() {
     return "Extrem"
   }
 
-  // Obtener el icono y color según el tipo de predicción
+  // Obtenir la icona i color segons el tipus de predicció
   const getPredictionBadge = (hour: ForecastHour) => {
     if (hour.isReal) {
       return (

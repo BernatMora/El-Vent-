@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSpotStore } from "@/lib/store"
@@ -35,7 +35,7 @@ export function WindChart() {
         const data = await getForecastData(selectedSpot)
         setForecast(data)
 
-        // Set the active tab to the first day when data is loaded
+        // Establir la pestanya activa al primer dia quan es carreguen les dades
         if (data && data.length > 0) {
           setActiveTab(formatTabDate(data[0].date))
         }
@@ -49,7 +49,7 @@ export function WindChart() {
     loadForecast()
   }, [selectedSpot])
 
-  // Preparar datos para la gráfica
+  // Preparar dades per la gràfica
   const prepareChartData = (dayIndex: number): ChartPoint[] => {
     if (!forecast || forecast.length === 0 || !forecast[dayIndex]) return []
 
@@ -68,16 +68,16 @@ export function WindChart() {
       }))
   }
 
-  // Obtener el índice del día a partir del tab activo
+  // Obtenir l'índex del dia a partir del tab actiu
   const getDayIndexFromTab = (tab: string) => {
-    if (tab === "Tots") return 0 // Por defecto mostrar el primer día
+    if (tab === "Tots") return 0 // Per defecte mostrar el primer dia
 
-    // Buscar el índice del día que coincide con el formato de fecha del tab
+    // Buscar l'índex del dia que coincideix amb el format de data del tab
     const index = forecast.findIndex((day) => formatTabDate(day.date) === tab)
     return index >= 0 ? index : 0
   }
 
-  // Componente personalizado para el tooltip
+  // Component personalitzat per al tooltip
   const CustomTooltip = ({
     active,
     payload,
@@ -106,7 +106,7 @@ export function WindChart() {
     return null
   }
 
-  // Calcular estadísticas del viento para el día seleccionado
+  // Calcular estadístiques del vent per al dia seleccionat
   const calculateWindStats = (dayIndex: number) => {
     if (!forecast || forecast.length === 0 || !forecast[dayIndex]) {
       return { min: 0, avg: 0, max: 0, gustMax: 0 }
@@ -127,14 +127,31 @@ export function WindChart() {
 
     return {
       min: Math.round(min * 10) / 10,
-      avg: Math.round(avg * 10) / 10, // Redondear a 1 decimal
+      avg: Math.round(avg * 10) / 10, // Arrodonir a 1 decimal
       max: Math.round(max * 10) / 10,
       gustMax: Math.round(gustMax * 10) / 10,
     }
   }
 
   const dayIndex = getDayIndexFromTab(activeTab)
-  const windStats = calculateWindStats(dayIndex)
+  const chartData = useMemo(() => prepareChartData(dayIndex), [forecast, dayIndex])
+  const windStats = useMemo(() => {
+    if (chartData.length === 0) {
+      return { min: 0, avg: 0, max: 0, gustMax: 0 }
+    }
+    const windSpeeds = chartData.map((item) => item.windSpeed)
+    const windGusts = chartData.map((item) => item.windGust)
+    const min = Math.min(...windSpeeds)
+    const max = Math.max(...windSpeeds)
+    const avg = windSpeeds.reduce((sum: number, speed: number) => sum + speed, 0) / windSpeeds.length
+    const gustMax = Math.max(...windGusts)
+    return {
+      min: Math.round(min * 10) / 10,
+      avg: Math.round(avg * 10) / 10,
+      max: Math.round(max * 10) / 10,
+      gustMax: Math.round(gustMax * 10) / 10,
+    }
+  }, [chartData])
 
   return (
     <Card className="w-full">
@@ -209,7 +226,7 @@ export function WindChart() {
               ) : (
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={prepareChartData(dayIndex)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorWind" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />

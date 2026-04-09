@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#0f172a"/>
+  <g transform="translate(96,96)">
+    <!-- Wind symbol -->
+    <path d="M-60,10 Q-30,-30 0,10 Q30,50 60,10" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"/>
+    <path d="M-50,30 Q-20,-10 10,30 Q40,70 70,30" fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+    <path d="M-40,50 Q-10,10 20,50 Q50,90 80,50" fill="none" stroke="#93c5fd" stroke-width="4" stroke-linecap="round"/>
+    <!-- Kite -->
+    <path d="M-20,-55 L10,-35 L-20,-15 L-50,-35 Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="2"/>
+    <line x1="-20" y1="-15" x2="-20" y2="10" stroke="#93c5fd" stroke-width="2"/>
+  </g>
+</svg>

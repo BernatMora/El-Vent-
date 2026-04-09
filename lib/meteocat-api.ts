@@ -136,7 +136,7 @@ export class MeteocatProvider {
             case 81: // Ratxa màxima de vent
               windGust = Math.round((parseFloat(valor) || 0) * 1.944)
               break
-            case 35: // Precipitació
+            case 6: // Precipitació acumulada
               precipitation = parseFloat(valor) || 0
               break
           }

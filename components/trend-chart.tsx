@@ -7,15 +7,15 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 export function TrendChart() {
   const { selectedSpot } = useSpotStore()
 
-  // Datos simulados para la tendencia del viento
+  // Dades simulades per la tendència del vent
   const trendData = [
-    { day: "Lun", wind: 12 },
-    { day: "Mar", wind: 15 },
-    { day: "Mié", wind: 18 },
-    { day: "Jue", wind: 14 },
-    { day: "Vie", wind: 16 },
-    { day: "Sáb", wind: 20 },
-    { day: "Dom", wind: 22 },
+    { day: "Dll", wind: 12 },
+    { day: "Dm", wind: 15 },
+    { day: "Dc", wind: 18 },
+    { day: "Dj", wind: 14 },
+    { day: "Dv", wind: 16 },
+    { day: "Ds", wind: 20 },
+    { day: "Dg", wind: 22 },
   ]
 
   return (
