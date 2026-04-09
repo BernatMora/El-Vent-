@@ -51,7 +51,7 @@ export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay
 
     // Primer intentar dades d'Open-Meteo (prioritat màxima)
     try {
-      const realData = await getOpenMeteoForecast()
+      const realData = await getOpenMeteoForecast(spot)
       console.log("✅ Dades d'Open-Meteo obtingudes:", realData.length, "dies")
 
       // Intentar enriquir amb dades de Meteocat com a font addicional

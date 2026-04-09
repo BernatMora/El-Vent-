@@ -65,7 +65,7 @@ export function KiteRecommendation() {
 
     // Cálculo más realista
     if (windSpeed < 8)
-      return `${Math.round(14 + adjustment + weightAdjustment)}-${Math.round(17 + adjustment + weightAdjustment)}m²`
+      return "No recomanat"
     if (windSpeed < 12)
       return `${Math.round(12 + adjustment + weightAdjustment)}-${Math.round(14 + adjustment + weightAdjustment)}m²`
     if (windSpeed < 16)
@@ -188,7 +188,7 @@ export function KiteRecommendation() {
                         <span className="font-medium">{data.time}</span>
                         <Badge variant="outline">{data.windSpeed} kn</Badge>
                       </div>
-                      <Badge className="bg-blue-600">{data.kiteSize}</Badge>
+                      <Badge className={data.kiteSize === "No recomanat" ? "bg-slate-400" : "bg-blue-600"}>{data.kiteSize}</Badge>
                     </div>
                   ))}
 

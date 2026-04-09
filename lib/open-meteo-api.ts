@@ -1,19 +1,25 @@
 // API gratuïta Open-Meteo per dades meteorològiques reals
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1"
 
-// Coordenades de Sant Pere Pescador
-const SANT_PERE_COORDS = {
-  lat: 42.1833,
-  lon: 3.0833,
+// Coordenades per spot
+const SPOT_COORDS: Record<string, { lat: number; lon: number }> = {
+  "kitesurf-point": { lat: 42.1833, lon: 3.0833 },
+  "la-ballena":     { lat: 42.1830, lon: 3.0835 },
+  "can-martinet":   { lat: 42.1825, lon: 3.0840 },
+  "la-rubina":      { lat: 42.1900, lon: 3.1200 },
 }
 
-export async function getOpenMeteoForecast(): Promise<any[]> {
+const DEFAULT_COORDS = SPOT_COORDS["kitesurf-point"]
+
+export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
+  const coords = (spot && SPOT_COORDS[spot]) || DEFAULT_COORDS
+
   try {
-    console.log("🌐 Obtenint dades reals d'Open-Meteo...")
+    console.log(`🌐 Obtenint dades d'Open-Meteo per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)
 
     const url = `${OPEN_METEO_BASE}/forecast?` +
-      `latitude=${SANT_PERE_COORDS.lat}&` +
-      `longitude=${SANT_PERE_COORDS.lon}&` +
+      `latitude=${coords.lat}&` +
+      `longitude=${coords.lon}&` +
       `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&` +
       `wind_speed_unit=kn&` +
       `timezone=Europe/Madrid&` +
@@ -69,12 +75,12 @@ function processOpenMeteoData(data: any): any[] {
 
       dayGroups[dateKey].push({
         time: `${hour.toString().padStart(2, '0')}:00`,
-        windSpeed: Math.round(wind_speed_10m[index] || 0),
-        windDirection: Math.round(wind_direction_10m[index] || 0),
-        windGust: Math.round(wind_gusts_10m[index] || wind_speed_10m[index] * 1.3),
-        temperature: Math.round(temperature_2m[index] || 20),
-        humidity: Math.round(relative_humidity_2m[index] || 70),
-        precipitation: precipitation ? Math.round((precipitation[index] || 0) * 10) / 10 : 0,
+        windSpeed: Math.round(wind_speed_10m[index] ?? 0),
+        windDirection: Math.round(wind_direction_10m[index] ?? 0),
+        windGust: Math.round(wind_gusts_10m[index] ?? (wind_speed_10m[index] ?? 0) * 1.3),
+        temperature: Math.round(temperature_2m[index] ?? 20),
+        humidity: Math.round(relative_humidity_2m[index] ?? 70),
+        precipitation: precipitation ? Math.round((precipitation[index] ?? 0) * 10) / 10 : 0,
         source: "Open-Meteo (Real)",
         confidence: 0.9,
         isReal: true

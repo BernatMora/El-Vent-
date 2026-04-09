@@ -70,15 +70,28 @@ export function WindForecast() {
     )
   }
 
-  // Determinar si el flujo es "Molt fluix", "Fluix" o normal basado en la velocidad del viento
+  // Condicions útils per al kiter
   const getFlowDescription = (windSpeed: number) => {
-    if (windSpeed <= 3) return "Molt fluix"
+    if (windSpeed <= 3) return "Calma"
     if (windSpeed <= 7) return "Fluix"
-    return "Flux"
+    if (windSpeed <= 12) return "Moderat"
+    if (windSpeed <= 18) return "Fort"
+    if (windSpeed <= 24) return "Molt fort"
+    return "Extrem"
   }
 
   // Obtener el icono y color según el tipo de predicción
   const getPredictionBadge = (hour: ForecastHour) => {
+    if (hour.isReal) {
+      return (
+        <Badge variant="outline" className="text-xs px-1 py-0 bg-green-50 border-green-200 text-green-700">
+          <Wifi className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
+          <span className="hidden sm:inline">Real</span>
+          <span className="sm:hidden">R</span>
+        </Badge>
+      )
+    }
+
     if (hour.isMLEnhanced && (hour.mlConfidence ?? 0) > 0.7) {
       return (
         <Badge variant="outline" className="text-xs px-1 py-0 bg-purple-50 border-purple-200 text-purple-700">
