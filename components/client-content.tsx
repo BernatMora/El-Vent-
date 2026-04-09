@@ -9,7 +9,6 @@ import { TrendChart } from "@/components/trend-chart"
 import { AdditionalInfo } from "@/components/additional-info"
 import { SpotDetails } from "@/components/spot-details"
 import { KiteRecommendation } from "@/components/kite-recommendation"
-import { OptimalSessions } from "@/components/optimal-sessions"
 import { HistoricalStats } from "@/components/historical-stats"
 import { AlertsBanner } from "@/components/alerts-banner"
 import { CurrentConditions } from "@/components/current-conditions"
@@ -20,6 +19,7 @@ import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { TrainingSection } from "@/components/training-section"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
+import { SessionOverview } from "@/components/session-overview"
 import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
@@ -28,9 +28,11 @@ export function ClientContent() {
   const { selectedSpot, hydrateStore } = useSpotStore()
   const [refreshKey, setRefreshKey] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
     hydrateStore()
+    setIsHydrated(true)
   }, [hydrateStore])
 
   const handleRefresh = async () => {
@@ -60,6 +62,16 @@ export function ClientContent() {
     } finally {
       setIsRefreshing(false)
     }
+  }
+
+  if (!isHydrated) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div className="h-12 rounded-2xl bg-slate-100 animate-pulse" />
+        <div className="h-24 rounded-2xl bg-slate-100 animate-pulse" />
+        <div className="h-72 rounded-2xl bg-slate-100 animate-pulse" />
+      </div>
+    )
   }
 
   return (
@@ -112,6 +124,7 @@ export function ClientContent() {
       </div>
 
       <AlertsBanner />
+      <SessionOverview key={`session-${refreshKey}`} />
 
       <div className="mb-4 sm:mb-8 rounded-xl bg-white p-3 sm:p-6 shadow-md">
         <CurrentConditions key={`conditions-${refreshKey}`} />
@@ -143,8 +156,7 @@ export function ClientContent() {
         <TideInformation />
       </div>
 
-      <div className="mb-4 sm:mb-8 grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-        <OptimalSessions />
+      <div className="mb-4 sm:mb-8">
         <SpotDetails />
       </div>
 

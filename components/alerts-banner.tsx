@@ -69,13 +69,13 @@ export function AlertsBanner() {
             })
           }
 
-          // Alerta de viento muy débil
+          // Alerta de poc vent: per sota de 10 kn no sol ser suficient per fer kitesurf amb comoditat
           const avgWind = today.hours.reduce((sum: number, h: ForecastHour) => sum + h.windSpeed, 0) / today.hours.length
-          if (avgWind < 5) {
+          if (avgWind < 10) {
             newAlerts.push({
               type: "info",
               title: "Condicions de poc vent",
-              description: `S'esperen vents febles avui (mitjana ${Math.round(avgWind)} kn). Ideal per a principiants o per practicar maniobres.`,
+              description: `S'esperen vents fluixos avui (mitjana ${Math.round(avgWind)} kn). Amb menys de 10 kn no acostuma a haver-hi prou tracció per navegar bé amb la cometa.`,
             })
           }
 
@@ -145,11 +145,11 @@ export function AlertsBanner() {
               }
 
               // Només mostrar si és informatiu (no repetir alertes de perill)
-              if (windType === "onshore" && currentSpeed >= 8) {
+              if (windType === "onshore" && currentSpeed >= 10) {
                 newAlerts.push({
                   type: "info",
                   title: "Vent favorable detectat",
-                  description: `Vent ${windDescription} de ${currentSpeed} kn. Bones condicions per navegar.`,
+                  description: `Vent ${windDescription} de ${currentSpeed} kn. Ja hi ha més possibilitats de navegar amb bona tracció.`,
                 })
               }
             }

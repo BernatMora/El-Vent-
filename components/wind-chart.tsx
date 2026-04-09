@@ -7,7 +7,7 @@ import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindDirectionName, knotsToKmh } from "@/lib/utils"
-import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 type ChartPoint = {
   time: string
@@ -16,6 +16,10 @@ type ChartPoint = {
   windDirection: number
   directionName: string
 }
+
+const MIN_RIDEABLE_WIND = 10
+const IDEAL_WIND_START = 12
+const IDEAL_WIND_END = 20
 
 export function WindChart() {
   const { selectedSpot } = useSpotStore()
@@ -51,26 +55,29 @@ export function WindChart() {
 
   // Preparar dades per la gràfica
   const prepareChartData = (dayIndex: number): ChartPoint[] => {
-    if (!forecast || forecast.length === 0 || !forecast[dayIndex]) return []
+    if (!forecast || forecast.length === 0) return []
 
-    const day = forecast[dayIndex]
-    return day.hours
-      .filter((hour: ForecastHour) => {
-        const hourNum = Number.parseInt(hour.time.split(":")[0])
-        return hourNum >= 9 && hourNum <= 21
-      })
-      .map((hour: ForecastHour) => ({
-        time: hour.time,
-        windSpeed: hour.windSpeed,
-        windGust: hour.windGust || hour.windSpeed * 1.2,
-        windDirection: hour.windDirection,
-        directionName: getWindDirectionName(hour.windDirection),
-      }))
+    const daysToShow = dayIndex === -1 ? forecast : forecast[dayIndex] ? [forecast[dayIndex]] : []
+
+    return daysToShow.flatMap((day) =>
+      day.hours
+        .filter((hour: ForecastHour) => {
+          const hourNum = Number.parseInt(hour.time.split(":")[0])
+          return hourNum >= 9 && hourNum <= 21
+        })
+        .map((hour: ForecastHour) => ({
+          time: dayIndex === -1 ? `${formatTabDate(day.date)} · ${hour.time}` : hour.time,
+          windSpeed: hour.windSpeed,
+          windGust: hour.windGust || hour.windSpeed * 1.2,
+          windDirection: hour.windDirection,
+          directionName: getWindDirectionName(hour.windDirection),
+        })),
+    )
   }
 
   // Obtenir l'índex del dia a partir del tab actiu
   const getDayIndexFromTab = (tab: string) => {
-    if (tab === "Tots") return 0 // Per defecte mostrar el primer dia
+    if (tab === "Tots") return -1
 
     // Buscar l'índex del dia que coincideix amb el format de data del tab
     const index = forecast.findIndex((day) => formatTabDate(day.date) === tab)
@@ -172,7 +179,7 @@ export function WindChart() {
           </svg>
           Anàlisi visual del vent
         </CardTitle>
-        <CardDescription>Visualitza les dades de vent i temperatura per entendre millor les condicions</CardDescription>
+        <CardDescription>Visualitza quan el vent queda curt, quan entra en zona bona i quan les ràfegues poden complicar la sessió</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="evolucio" className="mb-4">
@@ -233,6 +240,8 @@ export function WindChart() {
                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
                         </linearGradient>
                       </defs>
+                      <ReferenceArea y1={0} y2={MIN_RIDEABLE_WIND} fill="#fee2e2" fillOpacity={0.5} />
+                      <ReferenceArea y1={IDEAL_WIND_START} y2={IDEAL_WIND_END} fill="#dcfce7" fillOpacity={0.45} />
                       <XAxis dataKey="time" />
                       <YAxis
                         label={{ value: "Vent (kn)", angle: -90, position: "insideLeft" }}
@@ -240,10 +249,13 @@ export function WindChart() {
                       />
                       <CartesianGrid strokeDasharray="3 3" />
                       <Tooltip content={<CustomTooltip />} />
+                      <ReferenceLine y={MIN_RIDEABLE_WIND} stroke="#ef4444" strokeDasharray="6 6" />
+                      <ReferenceLine y={IDEAL_WIND_START} stroke="#10b981" strokeDasharray="6 6" />
                       <Area
                         type="monotone"
                         dataKey="windSpeed"
-                        stroke="#3b82f6"
+                        stroke="#2563eb"
+                        strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#colorWind)"
                       />
@@ -255,79 +267,44 @@ export function WindChart() {
                         dot={false}
                         activeDot={{ r: 6 }}
                       />
-                      {/* Líneas de referencia */}
-                      <line x1="0%" y1="12" x2="100%" y2="12" stroke="#10b981" strokeWidth={1} strokeDasharray="5 5" />
-                      <line x1="0%" y1="8" x2="100%" y2="8" stroke="#d1d5db" strokeWidth={1} strokeDasharray="5 5" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 19V5" />
-                    <path d="M5 12h14" />
-                  </svg>
-                  Vent mínim: {windStats.min} kn ({knotsToKmh(windStats.min)} km/h)
+              <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
+                <div className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">
+                  Vermell: per sota de {MIN_RIDEABLE_WIND} kn
                 </div>
-                <div className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-4 w-4 text-blue-600"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 19V5" />
-                    <path d="M5 12h14" />
-                  </svg>
-                  Mitjana: {windStats.avg} kn ({knotsToKmh(windStats.avg)} km/h)
+                <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                  Verd: zona bona {IDEAL_WIND_START}-{IDEAL_WIND_END} kn
                 </div>
-                <div className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-4 w-4 text-blue-600"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m5 12 7-7 7 7" />
-                    <path d="M12 19V5" />
-                  </svg>
-                  Vent màxim: {windStats.max} kn ({knotsToKmh(windStats.max)} km/h)
+                <div className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+                  Línia taronja: ràfegues
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-end text-sm text-amber-600">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-1 h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m5 12 7-7 7 7" />
-                  <path d="M12 19V5" />
-                </svg>
-                Ràfegues màximes: {windStats.gustMax} kn ({knotsToKmh(windStats.gustMax)} km/h)
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Vent mínim</div>
+                  <div className="mt-1 text-lg font-bold text-slate-900">{windStats.min} kn</div>
+                  <div>{knotsToKmh(windStats.min)} km/h</div>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">Mitjana</div>
+                  <div className="mt-1 text-lg font-bold text-blue-900">{windStats.avg} kn</div>
+                  <div>{knotsToKmh(windStats.avg)} km/h</div>
+                </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Vent màxim</div>
+                  <div className="mt-1 text-lg font-bold text-emerald-900">{windStats.max} kn</div>
+                  <div>{knotsToKmh(windStats.max)} km/h</div>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-amber-600">Ràfega màxima</div>
+                  <div className="mt-1 text-lg font-bold text-amber-900">{windStats.gustMax} kn</div>
+                  <div>{knotsToKmh(windStats.gustMax)} km/h</div>
+                </div>
               </div>
             </TabsContent>
           </div>

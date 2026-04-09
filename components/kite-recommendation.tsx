@@ -29,6 +29,8 @@ type KiteRecommendationRow = {
   kiteSize: string
 }
 
+const MIN_KITESURF_WIND = 10
+
 export function KiteRecommendation() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
   const [loading, setLoading] = useState(true)
@@ -63,8 +65,8 @@ export function KiteRecommendation() {
     // Ajuste según el peso (riders más pesados necesitan cometas más grandes)
     const weightAdjustment = (userWeight - 75) / 15 // Cada 15kg de diferencia ajusta ~1m²
 
-    // Cálculo más realista
-    if (windSpeed < 8)
+    // Càlcul més realista: amb menys de 10 kn no acostuma a haver-hi prou tracció per navegar bé
+    if (windSpeed < MIN_KITESURF_WIND)
       return "No recomanat"
     if (windSpeed < 12)
       return `${Math.round(12 + adjustment + weightAdjustment)}-${Math.round(14 + adjustment + weightAdjustment)}m²`
@@ -167,7 +169,7 @@ export function KiteRecommendation() {
             </DialogContent>
           </Dialog>
         </div>
-        <CardDescription>Segons el teu pes ({weight} kg) i nivell</CardDescription>
+        <CardDescription>Segons el teu pes ({weight} kg) i nivell · menys de 10 kn: no recomanat</CardDescription>
       </CardHeader>
       <CardContent>
         {loading || forecast.length === 0 ? (
