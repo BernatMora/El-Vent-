@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = "el-vent-v1"
-const RUNTIME_CACHE = "el-vent-runtime-v1"
+const CACHE_NAME = "el-vent-v2"
+const RUNTIME_CACHE = "el-vent-runtime-v2"
 
 // Recursos estàtics per cachejar durant la instal·lació
 const PRECACHE_URLS = [
