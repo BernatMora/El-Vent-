@@ -41,3 +41,17 @@ export function getWindName(direction: number) {
 export function knotsToKmh(knots: number) {
   return Math.round(knots * 1.852)
 }
+
+// Sant Pere Pescador: la platja mira a Est/SE. Onshore = E/SE, Side-shore = NE/S, Offshore = W/NW/N/SW
+export function getShoreType(direction: number): { label: string; color: string; emoji: string } {
+  // Onshore: vent que ve del mar (E, SE)
+  if (direction >= 67.5 && direction < 157.5) {
+    return { label: "Onshore", color: "text-green-700 bg-green-50 border-green-200", emoji: "🟢" }
+  }
+  // Side-shore: vent lateral (NE, S)
+  if ((direction >= 22.5 && direction < 67.5) || (direction >= 157.5 && direction < 202.5)) {
+    return { label: "Side", color: "text-amber-700 bg-amber-50 border-amber-200", emoji: "🟡" }
+  }
+  // Offshore: vent de terra (W, NW, N, SW)
+  return { label: "Offshore", color: "text-red-700 bg-red-50 border-red-200", emoji: "🔴" }
+}

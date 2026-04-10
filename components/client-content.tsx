@@ -5,19 +5,15 @@ import { RefreshCw } from "lucide-react"
 import { SpotSelector } from "@/components/spot-selector"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TrendChart } from "@/components/trend-chart"
-import { AdditionalInfo } from "@/components/additional-info"
 import { SpotDetails } from "@/components/spot-details"
 import { KiteRecommendation } from "@/components/kite-recommendation"
-import { HistoricalStats } from "@/components/historical-stats"
+import { TrendChart } from "@/components/trend-chart"
 import { AlertsBanner } from "@/components/alerts-banner"
 import { CurrentConditions } from "@/components/current-conditions"
 import { WindGuide } from "@/components/wind-guide"
 import { WindChart } from "@/components/wind-chart"
-import { TideInformation } from "@/components/tide-information"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
-import { TrainingSection } from "@/components/training-section"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { useSpotStore } from "@/lib/store"
@@ -153,33 +149,15 @@ export function ClientContent() {
       </Tabs>
 
       <div className="mb-4 sm:mb-8">
-        <TideInformation />
-      </div>
-
-      <div className="mb-4 sm:mb-8">
         <SpotDetails />
       </div>
 
-      <Tabs defaultValue="trends" className="mb-4 sm:mb-8">
-        <TabsList className="grid w-full grid-cols-1 rounded-xl bg-slate-100 p-1">
-          <TabsTrigger value="trends">Tendències</TabsTrigger>
-        </TabsList>
-        <TabsContent value="trends" className="mt-4">
-          <TrendChart />
-        </TabsContent>
-      </Tabs>
-
-      <div className="mb-4 sm:mb-8 grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-        <AdditionalInfo />
-        <HistoricalStats />
+      <div className="mb-4 sm:mb-8">
+        <TrendChart key={`trend-${refreshKey}`} />
       </div>
 
       <div id="wind-guide" className="mb-4 sm:mb-8">
         <WindGuide />
-      </div>
-
-      <div className="mb-4 sm:mb-8">
-        <TrainingSection />
       </div>
     </>
   )

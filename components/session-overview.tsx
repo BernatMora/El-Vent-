@@ -22,6 +22,8 @@ type DaySummary = {
   score: number
   scoreLabel: string
   bestWindow: string
+  bestWindowAvg: number
+  gustQuality: string
   reason: string
   decisionTitle: string
   decisionText: string
@@ -72,6 +74,10 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const targetHours = idealHours.length > 0 ? idealHours : rideableHours
   const bestWindow =
     targetHours.length > 0 ? `${targetHours[0].time}–${targetHours[targetHours.length - 1].time}` : "Cap franja clara"
+  const bestWindowAvg = targetHours.length > 0
+    ? Math.round(targetHours.reduce((s, h) => s + h.windSpeed, 0) / targetHours.length)
+    : 0
+  const gustQuality = gustSpread <= 3 ? "Molt estable" : gustSpread <= 6 ? "Moderat" : "Ratxejat"
 
   // "good": enough rideable hours with decent avg wind, not dominated by offshore
   const isGood =
@@ -89,6 +95,8 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
       score,
       scoreLabel: "molt bona pinta",
       bestWindow,
+      bestWindowAvg,
+      gustQuality,
       reason: `Hi ha ${rideableHours.length} hores navegables amb ${Math.round(avgWind)} kn de mitjana.`,
       decisionTitle: "Sí, val la pena anar-hi!",
       decisionText: `La millor finestra és ${bestWindow}, amb vent prou sòlid per a la majoria de kitesurfistes.`,
@@ -103,6 +111,8 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
       score,
       scoreLabel: "sessió aprofitable però al límit",
       bestWindow,
+      bestWindowAvg,
+      gustQuality,
       reason: `Hi ha algunes hores per sobre dels ${MIN_RIDEABLE_WIND} kn, però no serà un dia rodó per a tothom.`,
       decisionTitle: "Potser, però serà justeta.",
       decisionText: `Si hi vas, apunta a la franja ${bestWindow} i no esperis una tracció constant tot el dia.`,
@@ -116,6 +126,8 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     score,
     scoreLabel: "massa fluix o irregular",
     bestWindow,
+    bestWindowAvg,
+    gustQuality,
     reason: `La major part del dia queda per sota dels ${MIN_RIDEABLE_WIND} kn (màxim ${Math.round(maxWind)} kn).`,
     decisionTitle: "No, avui pinta massa fluix.",
     decisionText: `Amb menys de ${MIN_RIDEABLE_WIND} kn costa molt que la cometa treballi bé per a la majoria de riders.`,
@@ -236,7 +248,11 @@ export function SessionOverview() {
                   Millor franja d'avui
                 </div>
                 <div className="text-xl font-bold text-slate-900">{summary.bestWindow}</div>
-                <p className="mt-1 text-sm text-slate-600">Prioritza les hores amb més opcions reals de navegar.</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {summary.bestWindowAvg > 0
+                    ? `Mitjana ${summary.bestWindowAvg} kn · ${summary.gustQuality}`
+                    : "Sense franja clara de vent navegable"}
+                </p>
               </div>
             </div>
 

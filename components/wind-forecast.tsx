@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
-import { formatDate, getWindDirectionName, knotsToKmh } from "@/lib/utils"
+import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Brain, RefreshCw, Wifi, Users } from "lucide-react"
@@ -210,8 +210,8 @@ export function WindForecast() {
                     <div>Vent</div>
                     <div>Dir.</div>
                     <div>Ràf.</div>
-                    <div className="hidden sm:block">Flux</div>
-                    <div className="sm:hidden">Est.</div>
+                    <div className="hidden sm:block">Shore</div>
+                    <div className="sm:hidden">🏖️</div>
                     <div className="hidden sm:block">Tipus</div>
                   </div>
                   
@@ -247,8 +247,16 @@ export function WindForecast() {
                             </div>
                           </div>
                           
-                          <div className="text-xs sm:text-sm text-gray-600">
-                            {getFlowDescription(hour.windSpeed)}
+                          <div className="text-xs sm:text-sm">
+                            {(() => {
+                              const shore = getShoreType(hour.windDirection)
+                              return (
+                                <span className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] sm:text-xs font-medium ${shore.color}`}>
+                                  <span>{shore.emoji}</span>
+                                  <span className="hidden sm:inline">{shore.label}</span>
+                                </span>
+                              )
+                            })()}
                           </div>
                           
                           <div className="flex justify-center">
