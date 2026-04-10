@@ -16,6 +16,9 @@ import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
+import { WaveInfo } from "@/components/wave-info"
+import { SpotComparison } from "@/components/spot-comparison"
+import { WindAlerts } from "@/components/wind-alerts"
 import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
@@ -122,6 +125,10 @@ export function ClientContent() {
       <AlertsBanner />
       <SessionOverview key={`session-${refreshKey}`} />
 
+      <div className="mb-4 sm:mb-6">
+        <WindAlerts />
+      </div>
+
       <div className="mb-4 sm:mb-8 rounded-xl bg-white p-3 sm:p-6 shadow-md">
         <CurrentConditions key={`conditions-${refreshKey}`} />
       </div>
@@ -150,6 +157,14 @@ export function ClientContent() {
 
       <div className="mb-4 sm:mb-8">
         <SpotDetails />
+      </div>
+
+      <div className="mb-4 sm:mb-8">
+        <SpotComparison key={`comparison-${refreshKey}`} />
+      </div>
+
+      <div className="mb-4 sm:mb-8">
+        <WaveInfo key={`wave-${refreshKey}`} />
       </div>
 
       <div className="mb-4 sm:mb-8">

@@ -1,4 +1,5 @@
 import { ClientContent } from "@/components/client-content"
+import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { Gauge, Waves, Wind } from "lucide-react"
 
 const highlights = [
@@ -9,9 +10,12 @@ const highlights = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50 to-slate-100 p-2 pb-safe sm:p-4 md:p-8">
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-2 pb-safe sm:p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
-        <section className="mb-4 overflow-hidden rounded-3xl bg-gradient-to-r from-sky-900 via-blue-800 to-cyan-700 p-4 text-white shadow-xl animate-in fade-in-50 slide-in-from-top-2 duration-500 sm:mb-8 sm:p-6 md:p-8">
+        <section className="relative mb-4 overflow-hidden rounded-3xl bg-gradient-to-r from-sky-900 via-blue-800 to-cyan-700 p-4 text-white shadow-xl animate-in fade-in-50 slide-in-from-top-2 duration-500 sm:mb-8 sm:p-6 md:p-8">
+          <div className="absolute top-3 right-3 z-10">
+            <DarkModeToggle />
+          </div>
           <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div className="text-center lg:text-left">
               <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-sky-100 sm:text-xs">
@@ -57,7 +61,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="rounded-2xl bg-white/90 p-3 shadow-xl ring-1 ring-slate-200/70 backdrop-blur sm:p-4 md:p-6">
+        <div className="rounded-2xl bg-white/90 dark:bg-slate-800/90 p-3 shadow-xl ring-1 ring-slate-200/70 dark:ring-slate-700/70 backdrop-blur sm:p-4 md:p-6">
           <ClientContent />
         </div>
       </div>

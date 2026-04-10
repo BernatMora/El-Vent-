@@ -9,7 +9,7 @@ import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Brain, RefreshCw, Wifi, Users } from "lucide-react"
+import { Brain, CloudRain, RefreshCw, Thermometer, Wifi, Users } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -205,13 +205,15 @@ export function WindForecast() {
                 
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-6 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
+                  <div className="grid grid-cols-8 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
                     <div>Ràf.</div>
                     <div className="hidden sm:block">Shore</div>
                     <div className="sm:hidden">🏖️</div>
+                    <div>🌡️</div>
+                    <div>🌧️</div>
                     <div className="hidden sm:block">Tipus</div>
                   </div>
                   
@@ -224,7 +226,7 @@ export function WindForecast() {
                       .map((hour: ForecastHour) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-6 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-8 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
@@ -259,7 +261,22 @@ export function WindForecast() {
                             })()}
                           </div>
                           
-                          <div className="flex justify-center">
+                          <div className="text-xs text-slate-700">
+                            {hour.temperature != null ? `${hour.temperature}°` : "—"}
+                          </div>
+
+                          <div className="text-xs">
+                            {(hour.precipitation ?? 0) > 0 ? (
+                              <span className="inline-flex items-center gap-0.5 text-blue-600 font-medium">
+                                <CloudRain className="h-3 w-3" />
+                                <span>{hour.precipitation} mm</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </div>
+
+                          <div className="flex justify-center hidden sm:flex">
                             {getPredictionBadge(hour)}
                           </div>
                         </div>

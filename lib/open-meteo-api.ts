@@ -3,6 +3,62 @@ import { getSpotCoords } from './spot-coordinates'
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1"
 
+// --- Marine / Wave data ---
+export interface MarineHour {
+  time: string
+  waveHeight: number
+  wavePeriod: number
+  waveDirection: number
+}
+
+export interface MarineDay {
+  date: string
+  hours: MarineHour[]
+}
+
+export async function getMarineForecast(spot?: string): Promise<MarineDay[]> {
+  const coords = getSpotCoords(spot)
+
+  try {
+    const url = `https://marine-api.open-meteo.com/v1/marine?` +
+      `latitude=${coords.lat}&longitude=${coords.lon}&` +
+      `hourly=wave_height,wave_period,wave_direction&` +
+      `timezone=Europe/Madrid&forecast_days=3`
+
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Marine API error: ${response.status}`)
+
+    const data = await response.json()
+    if (!data.hourly) throw new Error("Dades marines invàlides")
+
+    const { time, wave_height, wave_period, wave_direction } = data.hourly
+    const dayGroups: Record<string, MarineHour[]> = {}
+
+    time.forEach((timestamp: string, i: number) => {
+      const date = new Date(timestamp)
+      const hour = date.getHours()
+      if (hour >= 9 && hour <= 21) {
+        const dateKey = timestamp.split('T')[0]
+        if (!dayGroups[dateKey]) dayGroups[dateKey] = []
+        dayGroups[dateKey].push({
+          time: `${hour.toString().padStart(2, '0')}:00`,
+          waveHeight: Math.round((wave_height[i] ?? 0) * 10) / 10,
+          wavePeriod: Math.round(wave_period[i] ?? 0),
+          waveDirection: Math.round(wave_direction[i] ?? 0),
+        })
+      }
+    })
+
+    return Object.entries(dayGroups).slice(0, 3).map(([date, hours]) => ({
+      date,
+      hours: hours.sort((a, b) => a.time.localeCompare(b.time)),
+    }))
+  } catch (error) {
+    console.error("❌ Error obtenint dades marines:", error)
+    return []
+  }
+}
+
 export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
   const coords = getSpotCoords(spot)
 

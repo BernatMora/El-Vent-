@@ -1,17 +1,13 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = "el-vent-v2"
-const RUNTIME_CACHE = "el-vent-runtime-v2"
+const CACHE_NAME = "el-vent-v3"
 
-// Recursos estàtics per cachejar durant la instal·lació
 const PRECACHE_URLS = [
-  "/",
   "/manifest.json",
   "/icons/icon-192.svg",
   "/icons/icon-512.svg",
 ]
 
-// Instal·lació: cachejar recursos estàtics
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -21,79 +17,42 @@ self.addEventListener("install", (event) => {
   )
 })
 
-// Activació: netejar caches antics
 self.addEventListener("activate", (event) => {
-  const currentCaches = [CACHE_NAME, RUNTIME_CACHE]
   event.waitUntil(
     caches
       .keys()
-      .then((cacheNames) =>
-        cacheNames.filter((name) => !currentCaches.includes(name))
-      )
-      .then((toDelete) =>
-        Promise.all(toDelete.map((name) => caches.delete(name)))
-      )
+      .then((names) => Promise.all(
+        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+      ))
       .then(() => self.clients.claim())
   )
 })
 
-// Estratègia de fetch: Network First per API, Cache First per estàtics
+// Network-First for EVERYTHING — always get fresh content when online
 self.addEventListener("fetch", (event) => {
-  const { request } = event
-  const url = new URL(request.url)
+  if (event.request.method !== "GET") return
 
-  // Ignorar peticions que no siguin GET
-  if (request.method !== "GET") return
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME)
+      try {
+        const response = await fetch(event.request)
+        if (response.ok) {
+          cache.put(event.request, response.clone())
+        }
+        return response
+      } catch {
+        const cached = await cache.match(event.request)
+        if (cached) return cached
 
-  // API de previsió: Network First amb fallback a cache
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(networkFirst(request))
-    return
-  }
+        // Fallback for navigation requests (offline page shell)
+        if (event.request.mode === "navigate") {
+          const root = await cache.match("/")
+          if (root) return root
+        }
 
-  // Recursos estàtics i pàgines: Stale While Revalidate
-  event.respondWith(staleWhileRevalidate(request))
+        return new Response("Sense connexió", { status: 503 })
+      }
+    })()
+  )
 })
-
-// Network First: intentar xarxa, si falla usar cache
-async function networkFirst(request) {
-  const cache = await caches.open(RUNTIME_CACHE)
-  try {
-    const response = await fetch(request)
-    if (response.ok) {
-      cache.put(request, response.clone())
-    }
-    return response
-  } catch {
-    const cached = await cache.match(request)
-    if (cached) return cached
-    // Retornar resposta offline per API
-    return new Response(
-      JSON.stringify({
-        error: "Sense connexió",
-        offline: true,
-      }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      }
-    )
-  }
-}
-
-// Stale While Revalidate: servir cache immediatament, actualitzar en segon pla
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(RUNTIME_CACHE)
-  const cached = await cache.match(request)
-
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone())
-      }
-      return response
-    })
-    .catch(() => null)
-
-  return cached || (await fetchPromise) || new Response("Sense connexió", { status: 503 })
-}

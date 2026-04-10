@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, CheckCircle2, Clock3, Sparkles, Waves, Wind, XCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Clock3, Share2, Sparkles, Waves, Wind, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -267,6 +267,27 @@ export function SessionOverview() {
                 Referència ràpida: {MIN_RIDEABLE_WIND} kn són uns {knotsToKmh(MIN_RIDEABLE_WIND)} km/h.
               </p>
             </div>
+
+            <button
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-100 px-4 py-3 text-sm font-medium text-sky-700 transition hover:bg-sky-200"
+              onClick={() => {
+                const text = `🪁 ${summary.label} a ${selectedSpot.replace(/-/g, ' ')}\n` +
+                  `${summary.statusLabel} (${summary.score}/100)\n` +
+                  `Millor franja: ${summary.bestWindow}` +
+                  (summary.bestWindowAvg > 0 ? ` · ${summary.bestWindowAvg} kn · ${summary.gustQuality}` : '') +
+                  `\n${summary.decisionTitle}\n\nels-vents-de-sant-pere-pescador.netlify.app`
+                if (navigator.share) {
+                  navigator.share({ title: "El Vent — Sessió", text }).catch(() => {})
+                } else {
+                  navigator.clipboard.writeText(text).then(() => {
+                    alert("Copiat al portapapers!")
+                  }).catch(() => {})
+                }
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+              Compartir sessió
+            </button>
           </div>
         )}
       </CardContent>
