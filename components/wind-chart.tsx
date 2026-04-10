@@ -114,33 +114,6 @@ export function WindChart() {
     return null
   }
 
-  // Calcular estadístiques del vent per al dia seleccionat
-  const calculateWindStats = (dayIndex: number) => {
-    if (!forecast || forecast.length === 0 || !forecast[dayIndex]) {
-      return { min: 0, avg: 0, max: 0, gustMax: 0 }
-    }
-
-    const chartData = prepareChartData(dayIndex)
-    if (chartData.length === 0) {
-      return { min: 0, avg: 0, max: 0, gustMax: 0 }
-    }
-
-    const windSpeeds = chartData.map((item) => item.windSpeed)
-    const windGusts = chartData.map((item) => item.windGust)
-
-    const min = Math.min(...windSpeeds)
-    const max = Math.max(...windSpeeds)
-    const avg = windSpeeds.reduce((sum: number, speed: number) => sum + speed, 0) / windSpeeds.length
-    const gustMax = Math.max(...windGusts)
-
-    return {
-      min: Math.round(min * 10) / 10,
-      avg: Math.round(avg * 10) / 10, // Arrodonir a 1 decimal
-      max: Math.round(max * 10) / 10,
-      gustMax: Math.round(gustMax * 10) / 10,
-    }
-  }
-
   const dayIndex = getDayIndexFromTab(activeTab)
   const chartData = useMemo(() => prepareChartData(dayIndex), [forecast, dayIndex])
   const windStats = useMemo(() => {

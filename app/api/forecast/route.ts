@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server"
 import { fetchForecastDataDirect } from "@/lib/api"
-
-const VALID_SPOTS = new Set([
-  "kitesurf-point",
-  "la-ballena",
-  "can-martinet",
-  "la-rubina",
-])
+import { VALID_SPOTS } from "@/lib/spot-coordinates"
 
 export const runtime = "nodejs"
 

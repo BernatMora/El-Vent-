@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { DEFAULT_SPOT, VALID_SPOTS } from "./spot-coordinates"
 
 type UserPreferences = {
   weight: number
@@ -22,8 +23,7 @@ type SpotStore = {
   hydrateStore: () => void
 }
 
-const DEFAULT_SPOT = "kitesurf-point"
-const VALID_SPOTS = new Set([DEFAULT_SPOT, "la-ballena", "can-martinet", "la-rubina"])
+
 
 function getStoredSpot() {
   if (typeof window === "undefined") {

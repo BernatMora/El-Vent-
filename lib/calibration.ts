@@ -160,11 +160,8 @@ class WindCalibrationService {
       .map(obs => obs.reportedWindSpeed / obs.modelWindSpeed)
 
     const directionOffsets = recentObservations.map(obs => {
-      let diff = obs.reportedDirection - obs.modelDirection
-      // Normalitzar diferència d'angles
-      if (diff > 180) diff -= 360
-      if (diff < -180) diff += 360
-      return diff
+      const diff = obs.reportedDirection - obs.modelDirection
+      return ((diff % 360) + 540) % 360 - 180
     })
 
     if (speedRatios.length > 0) {
