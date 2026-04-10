@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = "el-vent-v3"
+// IMPORTANT: bump this version string on every deploy to trigger SW update
+const CACHE_VERSION = "v4-" + "20260410"
+const CACHE_NAME = "el-vent-" + CACHE_VERSION
 
 const PRECACHE_URLS = [
   "/manifest.json",
@@ -9,6 +11,7 @@ const PRECACHE_URLS = [
 ]
 
 self.addEventListener("install", (event) => {
+  // Force the new SW to activate immediately, don't wait for tabs to close
   event.waitUntil(
     caches
       .open(CACHE_NAME)
@@ -18,6 +21,7 @@ self.addEventListener("install", (event) => {
 })
 
 self.addEventListener("activate", (event) => {
+  // Delete ALL old caches and take control of all clients immediately
   event.waitUntil(
     caches
       .keys()
@@ -26,6 +30,13 @@ self.addEventListener("activate", (event) => {
       ))
       .then(() => self.clients.claim())
   )
+})
+
+// Listen for messages from the page (e.g. force update)
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting()
+  }
 })
 
 // Network-First for EVERYTHING — always get fresh content when online
