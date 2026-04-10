@@ -7,9 +7,10 @@ export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
   const coords = getSpotCoords(spot)
 
   try {
-    console.log(`🌐 Obtenint dades d'Open-Meteo per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)
+    console.log(`🌐 Obtenint dades d'Open-Meteo (GFS) per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)
 
-    const url = `${OPEN_METEO_BASE}/forecast?` +
+    // Usem l'endpoint GFS per coincidir amb el model que usa Windguru
+    const url = `${OPEN_METEO_BASE}/gfs?` +
       `latitude=${coords.lat}&` +
       `longitude=${coords.lon}&` +
       `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&` +
@@ -73,7 +74,7 @@ function processOpenMeteoData(data: any): any[] {
         temperature: Math.round(temperature_2m[index] ?? 20),
         humidity: Math.round(relative_humidity_2m[index] ?? 70),
         precipitation: precipitation ? Math.round((precipitation[index] ?? 0) * 10) / 10 : 0,
-        source: "Open-Meteo (Real)",
+        source: "Open-Meteo GFS",
         confidence: 0.9,
         isReal: true
       })
