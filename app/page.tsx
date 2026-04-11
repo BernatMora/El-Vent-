@@ -23,14 +23,11 @@ export default function Home() {
             <div className="mb-2 text-sm font-semibold text-cyan-100 sm:text-base">
               Bernat Mora
             </div>
-            <h1 className="mb-2 text-2xl font-bold sm:text-4xl md:text-5xl">
+            <h1 className="mb-4 text-2xl font-bold sm:text-4xl md:text-5xl">
               Els Vents de Sant Pere Pescador
             </h1>
-            <p className="mx-auto max-w-2xl text-sm text-blue-50 sm:text-base md:text-lg">
-              Previsió de vent i mar clara i ràpida, pensada per decidir en segons si avui compensa sortir i quina franja pot donar la millor sessió.
-            </p>
 
-            <div className="mx-auto mt-4 grid max-w-md grid-cols-3 gap-2 text-left">
+            <div className="mx-auto grid max-w-md grid-cols-3 gap-2 text-left">
               {highlights.map((item) => (
                 <div key={item.label} className="rounded-xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-lg">
                   <item.Icon className="mb-2 h-4 w-4 text-cyan-200" />
