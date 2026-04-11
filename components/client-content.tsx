@@ -13,7 +13,6 @@ import { CurrentConditions } from "@/components/current-conditions"
 import { WindGuide } from "@/components/wind-guide"
 import { WindChart } from "@/components/wind-chart"
 import { WindDirectionLegend } from "@/components/wind-direction-legend"
-import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { WaveInfo } from "@/components/wave-info"
@@ -75,7 +74,6 @@ export function ClientContent() {
 
   return (
     <>
-      <EnhancedApiStatus />
       <PwaInstallBanner />
 
       <div className="sticky top-2 z-20 mb-4 rounded-2xl border bg-slate-50/90 p-2 shadow-sm backdrop-blur sm:mb-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
