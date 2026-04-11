@@ -20,12 +20,9 @@ export default function Home() {
             <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-sky-100 sm:text-xs">
               Sant Pere Pescador · Kitesurf
             </div>
-            <div className="mb-2 text-sm font-semibold text-cyan-100 sm:text-base">
+            <div className="mb-4 text-sm font-semibold text-cyan-100 sm:text-base">
               Bernat Mora
             </div>
-            <h1 className="mb-4 text-2xl font-bold sm:text-4xl md:text-5xl">
-              Els Vents de Sant Pere Pescador
-            </h1>
 
             <div className="mx-auto grid max-w-md grid-cols-3 gap-2 text-left">
               {highlights.map((item) => (
