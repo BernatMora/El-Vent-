@@ -12,7 +12,6 @@ import { AlertsBanner } from "@/components/alerts-banner"
 import { CurrentConditions } from "@/components/current-conditions"
 import { WindGuide } from "@/components/wind-guide"
 import { WindChart } from "@/components/wind-chart"
-import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { WaveInfo } from "@/components/wave-info"
@@ -133,8 +132,6 @@ export function ClientContent() {
       <div className="mb-4 sm:mb-8 rounded-xl bg-white p-3 sm:p-6 shadow-md">
         <CurrentConditions key={`conditions-${refreshKey}`} />
       </div>
-
-      <WindDirectionLegend />
 
       <Tabs defaultValue="previsio" className="mb-4 sm:mb-8">
         <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-slate-100 p-1">
