@@ -1,9 +1,8 @@
 import { ClientContent } from "@/components/client-content"
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
-import { Gauge, Waves, Wind } from "lucide-react"
+import { Gauge, Waves } from "lucide-react"
 
 const highlights = [
-  { value: "12 kn", label: "mínim útil", Icon: Wind },
   { value: "7 dies", label: "previsió", Icon: Gauge },
   { value: "Offline", label: "consulta ràpida", Icon: Waves },
 ]
@@ -20,14 +19,11 @@ export default function Home() {
             <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-sky-100 sm:text-xs">
               Sant Pere Pescador · Kitesurf
             </div>
-            <div className="mb-2 text-sm font-semibold text-cyan-100 sm:text-base">
+            <div className="mb-4 text-sm font-semibold text-cyan-100 sm:text-base">
               Bernat Mora
             </div>
-            <h1 className="mb-4 text-2xl font-bold sm:text-4xl md:text-5xl">
-              Els Vents de Sant Pere Pescador
-            </h1>
 
-            <div className="mx-auto grid max-w-md grid-cols-3 gap-2 text-left">
+            <div className="mx-auto grid max-w-xs grid-cols-2 gap-2 text-left">
               {highlights.map((item) => (
                 <div key={item.label} className="rounded-xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-lg">
                   <item.Icon className="mb-2 h-4 w-4 text-cyan-200" />

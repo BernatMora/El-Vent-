@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 import { BirdIcon as Kite, User } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -30,20 +29,40 @@ type KiteRecommendationRow = {
 }
 
 const MIN_KITESURF_WIND = 12
+const SPOT = "sant-pere-pescador"
+
+// Preferencies guardades localment
+function getUserPreferences() {
+  if (typeof window === "undefined") return { weight: 75, level: "intermediate" }
+  const stored = localStorage.getItem("el-vent:user-prefs")
+  if (stored) return JSON.parse(stored)
+  return { weight: 75, level: "intermediate" }
+}
+
+function saveUserPreferences(prefs: { weight: number; level: string }) {
+  localStorage.setItem("el-vent:user-prefs", JSON.stringify(prefs))
+}
 
 export function KiteRecommendation() {
-  const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
-  const [weight, setWeight] = useState(userPreferences.weight)
-  const [level, setLevel] = useState(userPreferences.level)
+  const [userPreferences, setUserPreferencesState] = useState({ weight: 75, level: "intermediate" })
+  const [weight, setWeight] = useState(75)
+  const [level, setLevel] = useState("intermediate")
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const prefs = getUserPreferences()
+    setUserPreferencesState(prefs)
+    setWeight(prefs.weight)
+    setLevel(prefs.level)
+  }, [])
 
   useEffect(() => {
     async function loadForecast() {
       try {
         setLoading(true)
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
         setForecast(data)
       } catch (err) {
         console.error(err)
@@ -53,7 +72,7 @@ export function KiteRecommendation() {
     }
 
     loadForecast()
-  }, [selectedSpot])
+  }, [])
 
   // Función para recomendar tamaño de cometa basado en velocidad del viento y peso del usuario
   const getKiteSize = (windSpeed: number, userWeight: number, userLevel: string) => {
@@ -106,7 +125,8 @@ export function KiteRecommendation() {
   )
 
   const handleSavePreferences = () => {
-    setUserPreferences({ weight, level })
+    saveUserPreferences({ weight, level })
+    setUserPreferencesState({ weight, level })
     setOpen(false)
   }
 

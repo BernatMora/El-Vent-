@@ -4,15 +4,15 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Brain, CloudRain, RefreshCw } from "lucide-react"
 
+const SPOT = "sant-pere-pescador"
+
 export function WindForecast() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -21,8 +21,7 @@ export function WindForecast() {
     try {
       setLoading(true)
       setError(null)
-      console.log("Carregant previsió millorada per:", selectedSpot)
-      const data = await getForecastData(selectedSpot)
+      const data = await getForecastData(SPOT)
       console.log("Dades rebudes:", data)
 
       if (!data || data.length === 0) {
@@ -125,9 +124,9 @@ export function WindForecast() {
             )}
 
             <Tabs defaultValue="0">
-              <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsList className="flex w-full h-auto overflow-x-auto">
               {forecast.map((day, index) => (
-                <TabsTrigger key={day.date} value={index.toString()} className="text-xs sm:text-sm px-2 py-2">
+                <TabsTrigger key={day.date} value={index.toString()} className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-2">
                   {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date).split(',')[0]}
                 </TabsTrigger>
               ))}

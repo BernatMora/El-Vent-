@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useSpotStore } from "@/lib/store"
 import { windCalibration } from "@/lib/calibration"
 import { addUserObservation } from "@/lib/api"
 import { predictionHistory } from "@/lib/prediction-history"
@@ -29,8 +28,9 @@ interface WindReportDialogProps {
   onReportSubmitted?: () => void
 }
 
+const SPOT = "sant-pere-pescador"
+
 export function WindReportDialog({ currentModelData, onReportSubmitted }: WindReportDialogProps) {
-  const { selectedSpot } = useSpotStore()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -60,9 +60,9 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
 
       const directionDegrees = directionMap[report.windDirection] || 90
 
-      // 1. Añadir observación al sistema de calibración (sistema anterior)
+      // 1. Añadir observación al sistema de calibración
       const observation = windCalibration.addObservation({
-        spot: selectedSpot,
+        spot: SPOT,
         reportedWindSpeed: windSpeedNum,
         reportedDirection: directionDegrees,
         modelWindSpeed: currentModelData?.windSpeed || 0,
@@ -72,7 +72,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
 
       // 2. Añadir observación al sistema de Machine Learning
       if (currentModelData) {
-        addUserObservation(selectedSpot, {
+        addUserObservation(SPOT, {
           reportedWindSpeed: windSpeedNum,
           reportedDirection: directionDegrees,
           modelWindSpeed: currentModelData.windSpeed,
@@ -83,7 +83,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
       // 3. Registrar a l'historic de precisio per calcular accuracy
       const gustEstimate = Math.round(windSpeedNum * 1.3)
       predictionHistory.reportActualConditions(
-        selectedSpot,
+        SPOT,
         windSpeedNum,
         directionDegrees,
         gustEstimate

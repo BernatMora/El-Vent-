@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { Bell, BellOff } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, getForecastData } from "@/lib/api"
 
+const SPOT = "sant-pere-pescador"
 const WIND_THRESHOLD = 12 // kn - llindar mínim per navegar
 
 function getNotificationPermission(): boolean {
@@ -28,7 +28,6 @@ async function sendNotification(title: string, body: string) {
 }
 
 export function WindAlerts() {
-  const { selectedSpot } = useSpotStore()
   const [enabled, setEnabled] = useState(false)
   const [lastAlert, setLastAlert] = useState<string | null>(null)
 
@@ -41,7 +40,7 @@ export function WindAlerts() {
 
     async function check() {
       try {
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
         if (!data[0]?.hours) return
 
         const now = new Date()
@@ -70,7 +69,7 @@ export function WindAlerts() {
     check()
     const interval = setInterval(check, 30 * 60 * 1000) // cada 30 min
     return () => clearInterval(interval)
-  }, [enabled, selectedSpot, lastAlert])
+  }, [enabled, lastAlert])
 
   const toggle = async () => {
     if (!enabled) {

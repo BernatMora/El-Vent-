@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useSpotStore } from "@/lib/store"
 import { type ForecastHour, getForecastData } from "@/lib/api"
 import { AlertCircle, AlertTriangle, Info } from "lucide-react"
 
@@ -12,8 +11,9 @@ type AlertItem = {
   description: string
 }
 
+const SPOT = "sant-pere-pescador"
+
 export function AlertsBanner() {
-  const { selectedSpot } = useSpotStore()
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -21,7 +21,7 @@ export function AlertsBanner() {
     async function checkAlerts() {
       try {
         setLoading(true)
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
 
         // Reiniciar alertas
         const newAlerts: AlertItem[] = []
@@ -166,7 +166,7 @@ export function AlertsBanner() {
     }
 
     checkAlerts()
-  }, [selectedSpot])
+  }, [])
 
   if (loading || alerts.length === 0) return null
 

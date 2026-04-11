@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useSpotStore } from "@/lib/store"
 import { type MarineDay, getMarineForecast } from "@/lib/open-meteo-api"
 import { formatDate, getWindDirectionName } from "@/lib/utils"
 
@@ -17,20 +16,21 @@ function getWaveLabel(height: number) {
   return { text: "Grossa", color: "text-red-700 bg-red-50" }
 }
 
+const SPOT = "sant-pere-pescador"
+
 export function WaveInfo() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [marine, setMarine] = useState<MarineDay[]>([])
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const data = await getMarineForecast(selectedSpot)
+      const data = await getMarineForecast(SPOT)
       setMarine(data)
       setLoading(false)
     }
     load()
-  }, [selectedSpot])
+  }, [])
 
   if (loading) {
     return (
