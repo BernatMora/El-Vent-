@@ -40,7 +40,7 @@ export function WindForecast() {
 
   useEffect(() => {
     loadForecast()
-  }, [selectedSpot])
+  }, [])
 
   const hasSimulatedData = forecast.some((day) =>
     day.hours?.some((hour: ForecastHour) => hour.source?.includes("Simulat")),

@@ -3,20 +3,20 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useSpotStore } from "@/lib/store"
 import { windCalibration, type CalibrationFactor, type WindObservation } from "@/lib/calibration"
 import { Users, Clock, Wind, TrendingUp, Activity } from "lucide-react"
 
+const SPOT = "sant-pere-pescador"
+
 export function UserReportsPanel() {
-  const { selectedSpot } = useSpotStore()
   const [reports, setReports] = useState<WindObservation[]>([])
   const [calibrationInfo, setCalibrationInfo] = useState<CalibrationFactor | null>(null)
 
   const updateReports = () => {
-    const recentReports = windCalibration.getRecentObservations(selectedSpot, 6)
+    const recentReports = windCalibration.getRecentObservations(SPOT, 6)
     setReports(recentReports)
     
-    const info = windCalibration.getCalibrationInfo(selectedSpot)
+    const info = windCalibration.getCalibrationInfo(SPOT)
     setCalibrationInfo(info ?? null)
   }
 
@@ -35,7 +35,7 @@ export function UserReportsPanel() {
       unsubscribe()
       clearInterval(interval)
     }
-  }, [selectedSpot])
+  }, [])
 
   const getDirectionName = (degrees: number) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']

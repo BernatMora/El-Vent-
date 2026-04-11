@@ -1,20 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 
 export function AdditionalInfo() {
-  const { selectedSpot } = useSpotStore()
-
-  // Información adicional para cada spot
-  const spotInfo: Record<string, { temperature: number; uvIndex: number; waterTemp: number }> = {
-    "la-ballena": { temperature: 25, uvIndex: 7, waterTemp: 22 },
-    "kitesurf-point": { temperature: 24, uvIndex: 6, waterTemp: 21 },
-    "can-martinet": { temperature: 26, uvIndex: 8, waterTemp: 23 },
-    "la-rubina": { temperature: 25, uvIndex: 7, waterTemp: 22 },
-  }
-
-  const info = spotInfo[selectedSpot] || spotInfo["la-ballena"]
+  const info = { temperature: 25, uvIndex: 7, waterTemp: 22 }
 
   return (
     <Card>

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useSpotStore } from "@/lib/store"
 import { getProtectionStats, type ProtectionStats } from "@/lib/api"
 import { Database, Wifi, TrendingUp, RefreshCw, Info } from "lucide-react"
 import {
@@ -17,7 +16,6 @@ import {
 } from "@/components/ui/dialog"
 
 export function EnhancedApiStatus() {
-  const { selectedSpot } = useSpotStore()
   const [stats, setStats] = useState<ProtectionStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -37,7 +35,7 @@ export function EnhancedApiStatus() {
     updateStats()
     const interval = setInterval(updateStats, 30000) // Actualitzar cada 30 segons
     return () => clearInterval(interval)
-  }, [selectedSpot])
+  }, [])
 
   if (loading || !stats) {
     return (

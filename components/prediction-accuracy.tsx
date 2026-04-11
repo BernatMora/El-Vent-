@@ -80,7 +80,7 @@ export function PredictionAccuracy() {
           <CardTitle className="text-lg text-blue-900">Precisio de les prediccions</CardTitle>
         </div>
         <CardDescription className="text-blue-700">
-          Basat en {stats.verifiedPredictions} verificacions a {selectedSpot}
+          Basat en {stats.verifiedPredictions} verificacions
         </CardDescription>
       </CardHeader>
 

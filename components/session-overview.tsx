@@ -314,7 +314,7 @@ export function SessionOverview() {
             <button
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-100 px-4 py-3 text-sm font-medium text-sky-700 transition hover:bg-sky-200"
               onClick={() => {
-                const text = `🪁 ${summary.label} a ${selectedSpot.replace(/-/g, ' ')}\n` +
+                const text = `🪁 ${summary.label} a Sant Pere Pescador\n` +
                   `${summary.statusLabel} (${summary.score}/100)\n` +
                   `Millor franja: ${summary.bestWindow}` +
                   (summary.bestWindowAvg > 0 ? ` · ${summary.bestWindowAvg} kn · ${summary.gustQuality}` : '') +
