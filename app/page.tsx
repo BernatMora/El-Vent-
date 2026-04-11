@@ -3,7 +3,7 @@ import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { Gauge, Waves, Wind } from "lucide-react"
 
 const highlights = [
-  { value: "10 kn", label: "mínim útil", Icon: Wind },
+  { value: "12 kn", label: "mínim útil", Icon: Wind },
   { value: "3 dies", label: "previsió", Icon: Gauge },
   { value: "Offline", label: "consulta ràpida", Icon: Waves },
 ]
