@@ -71,7 +71,7 @@ export function CurrentConditions() {
     })
 
     return () => { unsubscribe() }
-  }, [selectedSpot, refreshKey])
+  }, [refreshKey])
 
   const handleReportSubmitted = () => {
     // Mostrar indicador visual d'actualització
