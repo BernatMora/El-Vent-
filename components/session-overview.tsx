@@ -251,7 +251,7 @@ export function SessionOverview() {
               </Badge>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
               {daySummaries.map((day) => {
                 const dayTone = toneStyles[day.tone]
                 const DayIcon = dayTone.Icon
@@ -259,7 +259,7 @@ export function SessionOverview() {
                 return (
                   <div
                     key={day.label}
-                    className={`rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${dayTone.panel}`}
+                    className={`min-w-[140px] flex-shrink-0 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:min-w-0 sm:flex-shrink ${dayTone.panel}`}
                   >
                     <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
                       <div className="flex items-center gap-2">

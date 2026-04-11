@@ -125,9 +125,9 @@ export function WindForecast() {
             )}
 
             <Tabs defaultValue="0">
-              <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsList className="flex w-full h-auto overflow-x-auto">
               {forecast.map((day, index) => (
-                <TabsTrigger key={day.date} value={index.toString()} className="text-xs sm:text-sm px-2 py-2">
+                <TabsTrigger key={day.date} value={index.toString()} className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-2">
                   {index === 0 ? "Avui" : index === 1 ? "Demà" : formatDate(day.date).split(',')[0]}
                 </TabsTrigger>
               ))}
