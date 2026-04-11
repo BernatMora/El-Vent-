@@ -122,10 +122,12 @@ function processOpenMeteoData(data: any): any[] {
         dayGroups[dateKey] = []
       }
 
-      const windSpeed = Math.round(wind_speed_10m[index] ?? 0)
+      const rawWindSpeed = wind_speed_10m[index] ?? 0
+      const windSpeed = Math.round(rawWindSpeed)
       // Assegurar que les ràfegues sempre siguin >= al vent sostingut
-      const rawGust = wind_gusts_10m[index] ?? (wind_speed_10m[index] ?? 0) * 1.3
-      const windGust = Math.round(Math.max(rawGust, windSpeed))
+      const rawGust = wind_gusts_10m[index] ?? rawWindSpeed * 1.3
+      // Primer fem el màxim amb els valors sense arrodonir, després arrodonim
+      const windGust = Math.round(Math.max(rawGust, rawWindSpeed))
 
       dayGroups[dateKey].push({
         time: `${hour.toString().padStart(2, '0')}:00`,

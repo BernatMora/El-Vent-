@@ -185,11 +185,15 @@ export class EnhancedWeatherService {
         let baseWindSpeed = 8 + Math.sin(((hour - 11) / 6) * Math.PI) * 4
         baseWindSpeed += (Math.random() - 0.5) * 3
         
+        const roundedWindSpeed = Math.max(1, Math.round(baseWindSpeed))
+        // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+        const windGust = Math.round(Math.max(baseWindSpeed * 1.3, baseWindSpeed))
+
         hours.push({
           time: `${hour.toString().padStart(2, "0")}:00`,
-          windSpeed: Math.max(1, Math.round(baseWindSpeed)),
+          windSpeed: roundedWindSpeed,
           windDirection: Math.round(90 + (Math.random() - 0.5) * 60),
-          windGust: Math.round(baseWindSpeed * 1.3),
+          windGust,
           temperature: Math.round(20 + (hour - 12) * 0.5),
           humidity: Math.round(70 + Math.random() * 20),
           source: "Simulat",

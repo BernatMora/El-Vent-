@@ -268,11 +268,15 @@ function generateSimulatedData() {
 
       const humidity = Math.max(50, Math.min(95, 85 - (temperature - 15) * 2 + Math.random() * 10))
 
+      const roundedWindSpeed = Math.max(1, Math.round(baseWindSpeed))
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const windGust = Math.round(Math.max(baseWindSpeed * (1.3 + Math.random() * 0.4), baseWindSpeed))
+
       hours.push({
         time: `${hour.toString().padStart(2, "0")}:00`,
-        windSpeed: Math.max(1, Math.round(baseWindSpeed)),
+        windSpeed: roundedWindSpeed,
         windDirection: Math.round(windDirection) % 360,
-        windGust: Math.round(baseWindSpeed * (1.3 + Math.random() * 0.4)),
+        windGust,
         temperature: Math.round(temperature),
         humidity: Math.round(humidity),
         isCalibrated: false,

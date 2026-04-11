@@ -143,10 +143,12 @@ export class MeteocatProvider {
         }
       })
 
-      // Si no hi ha ratxa, estimar-la
+      // Si no hi ha ratxa, estimar-la. Sempre assegurar que windGust >= windSpeed
       if (windGust === 0 && windSpeed > 0) {
         windGust = Math.round(windSpeed * 1.4)
       }
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      windGust = Math.max(windGust, windSpeed)
 
       return {
         timestamp: now,
@@ -202,13 +204,15 @@ export class MeteocatProvider {
 
           // Convertir velocitat de vent de km/h a nusos
           const windSpeedKnots = Math.round((velocitat_vent / 1.852))
+          // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+          const windGust = Math.round(Math.max(windSpeedKnots * 1.4, windSpeedKnots))
 
           results.push({
             timestamp: `${data_prediccio}T${hour.toString().padStart(2, '0')}:00:00.000Z`,
             temperature: Math.round(temperature),
             windSpeed: windSpeedKnots,
             windDirection: direccio_vent,
-            windGust: Math.round(windSpeedKnots * 1.4),
+            windGust,
             humidity: 70, // Valor estimat
             precipitation: precipitacio / 13, // Distribuir precipitació entre les hores
             source: "Meteocat (Predicció)",

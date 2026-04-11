@@ -51,17 +51,24 @@ export class OpenMeteoProvider implements WeatherProvider {
   private processData(data: any): WeatherData[] {
     const { time, temperature_2m, relative_humidity_2m, wind_speed_10m, wind_direction_10m, wind_gusts_10m, surface_pressure } = data.hourly
     
-    return time.map((timestamp: string, index: number) => ({
-      timestamp,
-      windSpeed: wind_speed_10m[index] || 0,
-      windDirection: wind_direction_10m[index] || 0,
-      windGust: wind_gusts_10m[index] || wind_speed_10m[index] * 1.3,
-      temperature: temperature_2m[index] || 20,
-      humidity: relative_humidity_2m[index] || 70,
-      pressure: surface_pressure[index],
-      source: this.name,
-      confidence: 0.8
-    }))
+    return time.map((timestamp: string, index: number) => {
+      const windSpeed = wind_speed_10m[index] || 0
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const rawGust = wind_gusts_10m[index] || windSpeed * 1.3
+      const windGust = Math.max(rawGust, windSpeed)
+      
+      return {
+        timestamp,
+        windSpeed,
+        windDirection: wind_direction_10m[index] || 0,
+        windGust,
+        temperature: temperature_2m[index] || 20,
+        humidity: relative_humidity_2m[index] || 70,
+        pressure: surface_pressure[index],
+        source: this.name,
+        confidence: 0.8
+      }
+    })
   }
 }
 
@@ -98,11 +105,15 @@ export class WeatherAPIProvider implements WeatherProvider {
     
     data.forecast.forecastday.forEach((day: any) => {
       day.hour.forEach((hour: any) => {
+        const windSpeed = Math.round(hour.wind_kph / 1.852) // Convert km/h to knots
+        // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+        const windGust = Math.round(Math.max(hour.gust_kph / 1.852, windSpeed))
+        
         results.push({
           timestamp: hour.time,
-          windSpeed: Math.round(hour.wind_kph / 1.852), // Convert km/h to knots
+          windSpeed,
           windDirection: hour.wind_degree,
-          windGust: Math.round(hour.gust_kph / 1.852),
+          windGust,
           temperature: hour.temp_c,
           humidity: hour.humidity,
           pressure: hour.pressure_mb,
@@ -145,18 +156,25 @@ export class OpenWeatherMapProvider implements WeatherProvider {
   }
 
   private processData(data: any): WeatherData[] {
-    return data.list.map((item: any) => ({
-      timestamp: new Date(item.dt * 1000).toISOString(),
-      windSpeed: Math.round(item.wind.speed * 1.944), // Convert m/s to knots
-      windDirection: item.wind.deg,
-      windGust: Math.round((item.wind.gust || item.wind.speed * 1.3) * 1.944),
-      temperature: item.main.temp,
-      humidity: item.main.humidity,
-      pressure: item.main.pressure,
-      precipitation: item.rain?.['3h'] || 0,
-      source: this.name,
-      confidence: 0.75
-    }))
+    return data.list.map((item: any) => {
+      const windSpeed = Math.round(item.wind.speed * 1.944) // Convert m/s to knots
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const rawGust = (item.wind.gust || item.wind.speed * 1.3) * 1.944
+      const windGust = Math.round(Math.max(rawGust, windSpeed))
+      
+      return {
+        timestamp: new Date(item.dt * 1000).toISOString(),
+        windSpeed,
+        windDirection: item.wind.deg,
+        windGust,
+        temperature: item.main.temp,
+        humidity: item.main.humidity,
+        pressure: item.main.pressure,
+        precipitation: item.rain?.['3h'] || 0,
+        source: this.name,
+        confidence: 0.75
+      }
+    })
   }
 }
 
