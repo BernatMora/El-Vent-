@@ -122,11 +122,16 @@ function processOpenMeteoData(data: any): any[] {
         dayGroups[dateKey] = []
       }
 
+      const windSpeed = Math.round(wind_speed_10m[index] ?? 0)
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const rawGust = wind_gusts_10m[index] ?? (wind_speed_10m[index] ?? 0) * 1.3
+      const windGust = Math.round(Math.max(rawGust, windSpeed))
+
       dayGroups[dateKey].push({
         time: `${hour.toString().padStart(2, '0')}:00`,
-        windSpeed: Math.round(wind_speed_10m[index] ?? 0),
+        windSpeed,
         windDirection: Math.round(wind_direction_10m[index] ?? 0),
-        windGust: Math.round(wind_gusts_10m[index] ?? (wind_speed_10m[index] ?? 0) * 1.3),
+        windGust,
         temperature: Math.round(temperature_2m[index] ?? 20),
         humidity: Math.round(relative_humidity_2m[index] ?? 70),
         precipitation: precipitation ? Math.round((precipitation[index] ?? 0) * 10) / 10 : 0,
