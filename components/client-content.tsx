@@ -16,6 +16,7 @@ import { WindDirectionLegend } from "@/components/wind-direction-legend"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { WaveInfo } from "@/components/wave-info"
+import { TideInfo } from "@/components/tide-info"
 import { SpotComparison } from "@/components/spot-comparison"
 import { WindAlerts } from "@/components/wind-alerts"
 import { useSpotStore } from "@/lib/store"
@@ -161,8 +162,9 @@ export function ClientContent() {
         <SpotComparison key={`comparison-${refreshKey}`} />
       </div>
 
-      <div className="mb-4 sm:mb-8">
+      <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
         <WaveInfo key={`wave-${refreshKey}`} />
+        <TideInfo />
       </div>
 
       <div className="mb-4 sm:mb-8">

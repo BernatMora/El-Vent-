@@ -8,9 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
 import { WindReportDialog } from "@/components/wind-report-dialog"
 import { UserReportsPanel } from "@/components/user-reports-panel"
-import { Badge } from "@/components/ui/badge"
 import { windCalibration } from "@/lib/calibration"
-import { Info, RefreshCw, CheckCircle } from "lucide-react"
+import { RefreshCw, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function CurrentConditions() {
@@ -146,23 +145,10 @@ export function CurrentConditions() {
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     {loading ? "Carregant..." : `Previsió per les ${currentData?.time || "00:00"}`}
                   </p>
-                  {currentData?.source && (
-                    <Badge variant="secondary" className="text-xs">
-                      Font: {currentData.source}
-                    </Badge>
-                  )}
                   {lastUpdated && (
                     <span className="text-xs text-muted-foreground">
-                      Actualitzat a les {lastUpdated}
+                      · Actualitzat a les {lastUpdated}
                     </span>
-                  )}
-                  {currentData?.isCalibrated && (
-                    <Badge variant="outline" className={`text-xs transition-colors duration-300 ${
-                      justUpdated ? 'bg-green-100 border-green-300 text-green-700' : ''
-                    }`}>
-                      <Info className="mr-1 h-3 w-3" />
-                      Calibrat
-                    </Badge>
                   )}
                 </div>
               </div>
@@ -254,24 +240,7 @@ export function CurrentConditions() {
               </div>
             )}
 
-            {currentData?.isCalibrated && (
-              <div className={`mt-4 rounded-lg border p-3 transition-colors duration-500 ${
-                justUpdated 
-                  ? 'border-green-200 bg-green-50' 
-                  : 'border-blue-200 bg-blue-50'
-              }`}>
-                <div className={`text-xs sm:text-sm ${
-                  justUpdated ? 'text-green-800' : 'text-blue-800'
-                }`}>
-                  <strong>Dades calibrades:</strong> Aquests valors s'han ajustat a partir de reports d'usuaris recents per millorar la precisió local.
-                  {justUpdated && (
-                    <span className="block mt-1 font-medium">
-                      ✓ Acabat d'actualitzar amb el teu report!
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+
           </CardContent>
         </Card>
 

@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+
 import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Brain, CloudRain, RefreshCw, Thermometer, Wifi, Users } from "lucide-react"
+import { Brain, CloudRain, RefreshCw } from "lucide-react"
 
 export function WindForecast() {
   const { selectedSpot } = useSpotStore()
@@ -75,74 +75,17 @@ export function WindForecast() {
     )
   }
 
-  // Condicions útils per al kiter
+  // Condicions útils per al kiter (12 kn mínim, 15-20 kn ideal)
   const getFlowDescription = (windSpeed: number) => {
-    if (windSpeed <= 3) return "Calma"
-    if (windSpeed <= 7) return "Fluix"
-    if (windSpeed <= 12) return "Moderat"
-    if (windSpeed <= 18) return "Fort"
-    if (windSpeed <= 24) return "Molt fort"
-    return "Extrem"
+    if (windSpeed < 8) return "Calma"
+    if (windSpeed < 12) return "Fluix"
+    if (windSpeed < 15) return "Moderat"
+    if (windSpeed < 20) return "Ideal"
+    if (windSpeed < 25) return "Fort"
+    return "Molt fort"
   }
 
-  // Obtenir la icona i color segons el tipus de predicció
-  const getPredictionBadge = (hour: ForecastHour) => {
-    if (hour.isReal) {
-      return (
-        <Badge variant="outline" className="text-xs px-1 py-0 bg-green-50 border-green-200 text-green-700">
-          <Wifi className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-          <span className="hidden sm:inline">Real</span>
-          <span className="sm:hidden">R</span>
-        </Badge>
-      )
-    }
 
-    if (hour.isMLEnhanced && (hour.mlConfidence ?? 0) > 0.7) {
-      return (
-        <Badge variant="outline" className="text-xs px-1 py-0 bg-purple-50 border-purple-200 text-purple-700">
-          <Brain className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-          <span className="hidden sm:inline">Model+</span>
-          <span className="sm:hidden">M+</span>
-        </Badge>
-      )
-    }
-    
-    if (hour.isCalibrated) {
-      return (
-        <Badge variant="outline" className="text-xs px-1 py-0 bg-green-50 border-green-200 text-green-700">
-          <Users className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-          <span className="hidden sm:inline">Calibrat</span>
-          <span className="sm:hidden">Cal</span>
-        </Badge>
-      )
-    }
-
-    if (hour.source && hour.source.includes('Agregat')) {
-      return (
-        <Badge variant="outline" className="text-xs px-1 py-0 bg-blue-50 border-blue-200 text-blue-700">
-          <Wifi className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
-          <span className="hidden sm:inline">Multi-API</span>
-          <span className="sm:hidden">API</span>
-        </Badge>
-      )
-    }
-
-    if (hour.source && hour.source.includes('Simulat')) {
-      return (
-        <Badge variant="outline" className="text-xs px-1 py-0 bg-amber-50 border-amber-200 text-amber-700">
-          <span className="hidden sm:inline">Simulat</span>
-          <span className="sm:hidden">Sim</span>
-        </Badge>
-      )
-    }
-
-    return (
-      <Badge variant="secondary" className="text-xs px-1 py-0">
-        <span className="hidden sm:inline">Model</span>
-        <span className="sm:hidden">Mod</span>
-      </Badge>
-    )
-  }
 
   return (
     <Card>
@@ -205,7 +148,7 @@ export function WindForecast() {
                 
                 <div className="space-y-2">
                   {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-8 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-purple-50 to-blue-50 p-2 text-center text-xs sm:text-sm font-medium text-purple-900">
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-blue-50 to-cyan-50 p-2 text-center text-xs sm:text-sm font-medium text-blue-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
@@ -214,7 +157,6 @@ export function WindForecast() {
                     <div className="sm:hidden">🏖️</div>
                     <div>🌡️</div>
                     <div>🌧️</div>
-                    <div className="hidden sm:block">Tipus</div>
                   </div>
                   
                   {day.hours && day.hours.length > 0 ? (
@@ -226,7 +168,7 @@ export function WindForecast() {
                       .map((hour: ForecastHour) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-8 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-7 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
@@ -275,10 +217,6 @@ export function WindForecast() {
                               <span className="text-slate-400">—</span>
                             )}
                           </div>
-
-                          <div className="flex justify-center hidden sm:flex">
-                            {getPredictionBadge(hour)}
-                          </div>
                         </div>
                       ))
                   ) : (
@@ -295,46 +233,7 @@ export function WindForecast() {
           <div className="rounded-lg border p-4 text-center text-gray-500">No hi ha dades de previsió disponibles</div>
         )}
         
-        {/* Informació sobre les millores */}
-        {forecast.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {forecast[0].hours.some((h: ForecastHour) => h.isMLEnhanced) && (
-              <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Brain className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-800">Prediccions millorades amb IA</span>
-                </div>
-                <div className="text-xs text-purple-700">
-                  Alguns valors han estat optimitzats pel nostre model de Machine Learning basat en observacions locals.
-                </div>
-              </div>
-            )}
-            
-            {forecast[0].hours.some((h: ForecastHour) => h.source && h.source.includes('Agregat')) && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Wifi className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Dades multi-font</span>
-                </div>
-                <div className="text-xs text-blue-700">
-                  Prediccions combinant múltiples APIs meteorològiques per màxima precisió.
-                </div>
-              </div>
-            )}
-            
-            {forecast[0].hours.some((h: ForecastHour) => h.isCalibrated) && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Users className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">Calibració d'usuaris</span>
-                </div>
-                <div className="text-xs text-green-700">
-                  Valors ajustats a partir de reports reals de la comunitat local de kiters.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+
       </CardContent>
     </Card>
   )
