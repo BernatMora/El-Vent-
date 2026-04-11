@@ -29,8 +29,24 @@ type DaySummary = {
   decisionText: string
 }
 
+// Offshore per Sant Pere Pescador: vents de terra cap a mar
+// Tramuntana (N), Mestral (NW), Ponent (W), i part de Llebeig (SW)
 function isOffshore(direction: number) {
-  return direction >= 315 || direction <= 45
+  // N: 315-360° i 0-45°
+  // NW (Mestral): 292.5-337.5°
+  // W (Ponent): 247.5-292.5°
+  // SW (Llebeig/Garbí): 202.5-247.5°
+  return direction >= 202.5 || direction <= 45
+}
+
+// Detectar el nom del vent offshore
+function getOffshoreWindName(direction: number): string {
+  if (direction >= 337.5 || direction < 22.5) return "Tramuntana"
+  if (direction >= 22.5 && direction < 45) return "Gregal"
+  if (direction >= 292.5 && direction < 337.5) return "Mestral"
+  if (direction >= 247.5 && direction < 292.5) return "Ponent"
+  if (direction >= 202.5 && direction < 247.5) return "Garbí"
+  return "offshore"
 }
 
 function isFavorable(direction: number) {
@@ -79,23 +95,27 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     : 0
   const gustQuality = gustSpread <= 3 ? "Molt estable" : gustSpread <= 6 ? "Moderat" : "Ratxejat"
 
-  // Detectar si és un dia de tramuntana (vent del nord fort amb ràfegues)
-  const isTramuntanaDay = offshoreRiskHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND
+  // Detectar si és un dia de vent offshore (tramuntana, garbí, mestral, ponent)
+  const isOffshoreDay = offshoreRiskHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND
   const hasStrongGusts = gustSpread > 4
+  // Trobar el vent offshore predominant
+  const offshoreWindName = offshoreRiskHours.length > 0 
+    ? getOffshoreWindName(offshoreRiskHours[0].windDirection)
+    : "offshore"
 
   // "good": enough rideable hours with decent avg wind
-  // Tramuntana també és "good" perquè hi ha vent fort, però amb avís
+  // Vent offshore (tramuntana, garbí, etc.) també és "good" perquè hi ha vent fort, però amb avís
   const isGood =
     (idealHours.length >= 3 && offshoreRiskHours.length <= 1) ||
     (rideableHours.length >= 4 && avgWind >= IDEAL_MIN_WIND && offshoreRiskHours.length <= 1) ||
-    (isTramuntanaDay && avgWind >= IDEAL_MIN_WIND) // Tramuntana amb bon vent
+    (isOffshoreDay && avgWind >= IDEAL_MIN_WIND) // Offshore amb bon vent
 
-  // "maybe": some rideable hours but not great (no tramuntana forte)
-  const isMaybe = rideableHours.length >= 2 && !isTramuntanaDay
+  // "maybe": some rideable hours but not great (no offshore fort)
+  const isMaybe = rideableHours.length >= 2 && !isOffshoreDay
 
   if (isGood) {
-    // Si és tramuntana, avisar que és offshore i amb ràfegues
-    if (isTramuntanaDay) {
+    // Si és vent offshore (tramuntana, garbí, mestral, ponent), avisar
+    if (isOffshoreDay) {
       return {
         label: getDayLabel(index),
         tone: "good",
@@ -106,8 +126,8 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
         bestWindowAvg,
         gustQuality,
         reason: `Hi ha ${rideableHours.length} hores navegables amb ${Math.round(avgWind)} kn de mitjana.`,
-        decisionTitle: "Sí, però alerta: Tramuntana!",
-        decisionText: `Vent del nord (offshore) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució perquè el vent t'allunya de la costa.`,
+        decisionTitle: `Sí, però alerta: ${offshoreWindName}!`,
+        decisionText: `Vent offshore (${offshoreWindName}) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució perquè el vent t'allunya de la costa.`,
       }
     }
     
