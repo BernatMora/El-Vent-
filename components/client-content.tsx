@@ -76,7 +76,6 @@ export function ClientContent() {
 
   return (
     <>
-      <PwaInstallBanner />
 
       <div className="sticky top-2 z-20 mb-4 rounded-2xl border bg-slate-50/90 p-2 shadow-sm backdrop-blur sm:mb-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
         <div className="grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2">
@@ -122,6 +121,10 @@ export function ClientContent() {
         <SpotSelector />
       </div>
 
+      <div className="mb-4 sm:mb-8">
+        <SpotComparison key={`comparison-${refreshKey}`} />
+      </div>
+
       <AlertsBanner />
       <SessionOverview key={`session-${refreshKey}`} />
 
@@ -157,10 +160,6 @@ export function ClientContent() {
         <SpotDetails />
       </div>
 
-      <div className="mb-4 sm:mb-8">
-        <SpotComparison key={`comparison-${refreshKey}`} />
-      </div>
-
       <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
         <WaveInfo key={`wave-${refreshKey}`} />
         <TideInfo />
@@ -169,6 +168,8 @@ export function ClientContent() {
       <div className="mb-4 sm:mb-8">
         <TrendChart key={`trend-${refreshKey}`} />
       </div>
+
+      <PwaInstallBanner />
 
       <div id="wind-guide" className="mb-4 sm:mb-8">
         <WindGuide />

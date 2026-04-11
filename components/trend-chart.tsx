@@ -54,7 +54,7 @@ export function TrendChart() {
   if (loading) {
     return (
       <Card>
-        <CardHeader><CardTitle>Tendència 3 dies</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Tendència 7 dies</CardTitle></CardHeader>
         <CardContent><Skeleton className="h-[200px] w-full" /></CardContent>
       </Card>
     )
@@ -65,7 +65,7 @@ export function TrendChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tendència 3 dies</CardTitle>
+        <CardTitle>Tendència 7 dies</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[200px]">
