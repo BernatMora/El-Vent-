@@ -19,12 +19,12 @@ const SPOT_LABELS: Record<string, string> = {
   "la-rubina": "La Rubina",
 }
 
-// Posicions relatives dels spots al mapa (percentatges)
+// Posicions relatives dels spots al mapa (a la franja de platja)
 const SPOT_POSITIONS: Record<string, { x: number; y: number }> = {
-  "la-rubina": { x: 25, y: 20 },
-  "can-martinet": { x: 45, y: 40 },
-  "kitesurf-point": { x: 65, y: 55 },
-  "la-ballena": { x: 80, y: 75 },
+  "la-rubina": { x: 62, y: 15 },
+  "can-martinet": { x: 58, y: 38 },
+  "kitesurf-point": { x: 60, y: 60 },
+  "la-ballena": { x: 56, y: 82 },
 }
 
 type SpotSummary = {
@@ -161,31 +161,81 @@ export function SpotComparison() {
       </CardHeader>
       <CardContent>
         {/* Mapa visual */}
-        <div className="relative mb-4 h-48 overflow-hidden rounded-xl bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 sm:h-64">
-          {/* Representacio de la costa */}
-          <div className="absolute inset-0">
-            {/* Mar */}
-            <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-blue-300/50 to-transparent"></div>
-            {/* Linia de costa */}
-            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <path
-                d="M 75 0 Q 70 25, 72 50 Q 74 75, 70 100"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="0.5"
-                strokeDasharray="2,2"
-              />
-            </svg>
-            {/* Etiqueta mar */}
-            <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-blue-200/70 px-2 py-0.5 text-[10px] text-blue-700">
-              <Waves className="h-3 w-3" />
-              Mar
-            </div>
-            {/* Nord */}
-            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] text-slate-600">
-              <Navigation className="h-3 w-3" />
-              N
-            </div>
+        <div className="relative mb-4 h-56 overflow-hidden rounded-xl sm:h-72">
+          {/* Fons: Terra (verd) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-green-100 to-amber-100"></div>
+          
+          {/* Platja (sorra) - franja diagonal */}
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#fef3c7" />
+                <stop offset="50%" stopColor="#fde68a" />
+                <stop offset="100%" stopColor="#fcd34d" />
+              </linearGradient>
+            </defs>
+            {/* Franja de platja */}
+            <path
+              d="M 60 0 Q 55 20, 58 40 Q 62 60, 58 80 Q 55 95, 52 100 L 68 100 Q 72 80, 70 60 Q 68 40, 72 20 Q 75 5, 76 0 Z"
+              fill="url(#sandGradient)"
+            />
+          </svg>
+          
+          {/* Mar (blau) */}
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="seaGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.8" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 68 0 Q 72 20, 70 40 Q 68 60, 72 80 Q 75 95, 72 100 L 100 100 L 100 0 Z"
+              fill="url(#seaGradient)"
+            />
+            {/* Onades */}
+            <path
+              d="M 70 15 Q 75 12, 80 15 Q 85 18, 90 15"
+              fill="none"
+              stroke="white"
+              strokeWidth="0.5"
+              strokeOpacity="0.6"
+            />
+            <path
+              d="M 72 35 Q 77 32, 82 35 Q 87 38, 92 35"
+              fill="none"
+              stroke="white"
+              strokeWidth="0.5"
+              strokeOpacity="0.5"
+            />
+            <path
+              d="M 70 55 Q 75 52, 80 55 Q 85 58, 90 55"
+              fill="none"
+              stroke="white"
+              strokeWidth="0.5"
+              strokeOpacity="0.6"
+            />
+            <path
+              d="M 73 75 Q 78 72, 83 75 Q 88 78, 93 75"
+              fill="none"
+              stroke="white"
+              strokeWidth="0.5"
+              strokeOpacity="0.5"
+            />
+          </svg>
+          
+          {/* Etiquetes */}
+          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-blue-500/80 px-2 py-1 text-[10px] font-medium text-white shadow-sm">
+            <Waves className="h-3 w-3" />
+            Mar Mediterrani
+          </div>
+          <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/80 px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm">
+            <Navigation className="h-3 w-3" />
+            Nord
+          </div>
+          <div className="absolute bottom-3 left-3 rounded-full bg-green-600/80 px-2 py-1 text-[10px] font-medium text-white shadow-sm">
+            Sant Pere Pescador
           </div>
 
           {/* Spots */}
