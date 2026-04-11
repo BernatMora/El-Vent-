@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 import { type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
@@ -12,8 +11,9 @@ import { windCalibration } from "@/lib/calibration"
 import { RefreshCw, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+const SPOT = "sant-pere-pescador"
+
 export function CurrentConditions() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState<(ForecastHour & { date: string }) | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -25,7 +25,7 @@ export function CurrentConditions() {
     try {
       setLoading(true)
       setError(null)
-      const data = await getForecastData(selectedSpot, { forceRefresh })
+      const data = await getForecastData(SPOT, { forceRefresh })
 
       if (data && data.length > 0) {
         const now = new Date()

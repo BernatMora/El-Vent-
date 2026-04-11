@@ -4,15 +4,15 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Brain, CloudRain, RefreshCw } from "lucide-react"
 
+const SPOT = "sant-pere-pescador"
+
 export function WindForecast() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -21,8 +21,7 @@ export function WindForecast() {
     try {
       setLoading(true)
       setError(null)
-      console.log("Carregant previsió millorada per:", selectedSpot)
-      const data = await getForecastData(selectedSpot)
+      const data = await getForecastData(SPOT)
       console.log("Dades rebudes:", data)
 
       if (!data || data.length === 0) {

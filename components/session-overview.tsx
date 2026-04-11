@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
-import { useSpotStore } from "@/lib/store"
 import { knotsToKmh } from "@/lib/utils"
+
+const SPOT = "sant-pere-pescador"
 
 const MIN_RIDEABLE_WIND = 12
 const IDEAL_MIN_WIND = 15
@@ -178,7 +179,6 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
 }
 
 export function SessionOverview() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
 
@@ -186,7 +186,7 @@ export function SessionOverview() {
     async function loadForecast() {
       try {
         setLoading(true)
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
         setForecast(data)
       } catch (error) {
         console.error(error)
@@ -196,7 +196,7 @@ export function SessionOverview() {
     }
 
     loadForecast()
-  }, [selectedSpot])
+  }, [])
 
   const daySummaries = useMemo(
     () => forecast.slice(0, 7).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),

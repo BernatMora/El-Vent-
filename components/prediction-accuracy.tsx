@@ -5,15 +5,15 @@ import { BarChart3, CheckCircle, TrendingUp, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { predictionHistory, AccuracyStats } from "@/lib/prediction-history"
-import { useSpotStore } from "@/lib/store"
+
+const SPOT = "sant-pere-pescador"
 
 export function PredictionAccuracy() {
-  const { selectedSpot } = useSpotStore()
   const [stats, setStats] = useState<AccuracyStats | null>(null)
 
   useEffect(() => {
     const loadStats = () => {
-      const data = predictionHistory.getAccuracyStats(selectedSpot)
+      const data = predictionHistory.getAccuracyStats(SPOT)
       setStats(data)
     }
     
@@ -21,7 +21,7 @@ export function PredictionAccuracy() {
     // Actualitzar cada minut
     const interval = setInterval(loadStats, 60000)
     return () => clearInterval(interval)
-  }, [selectedSpot])
+  }, [])
 
   if (!stats || stats.verifiedPredictions === 0) {
     return (

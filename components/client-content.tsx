@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { RefreshCw } from "lucide-react"
-import { SpotSelector } from "@/components/spot-selector"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SpotDetails } from "@/components/spot-details"
 import { KiteRecommendation } from "@/components/kite-recommendation"
 import { TrendChart } from "@/components/trend-chart"
 import { AlertsBanner } from "@/components/alerts-banner"
@@ -18,22 +16,20 @@ import { WaveInfo } from "@/components/wave-info"
 import { TideInfo } from "@/components/tide-info"
 import { NotificationSettings } from "@/components/notification-settings"
 import { PredictionAccuracy } from "@/components/prediction-accuracy"
-import { SpotComparison } from "@/components/spot-comparison"
 import { WindAlerts } from "@/components/wind-alerts"
-import { useSpotStore } from "@/lib/store"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
+const SPOT = "sant-pere-pescador"
+
 export function ClientContent() {
-  const { selectedSpot, hydrateStore } = useSpotStore()
   const [refreshKey, setRefreshKey] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
-    hydrateStore()
     setIsHydrated(true)
-  }, [hydrateStore])
+  }, [])
 
   const handleRefresh = async () => {
     if (isRefreshing) return
@@ -41,7 +37,7 @@ export function ClientContent() {
     setIsRefreshing(true)
 
     try {
-      const data = await getForecastData(selectedSpot, { forceRefresh: true })
+      const data = await getForecastData(SPOT, { forceRefresh: true })
 
       if (!data || data.length === 0) {
         throw new Error("No hi ha dades disponibles")
@@ -50,7 +46,7 @@ export function ClientContent() {
       setRefreshKey((prev) => prev + 1)
       toast({
         title: "Dades actualitzades",
-        description: `La previsió per ${selectedSpot} s'ha refrescat correctament.`,
+        description: "La previsió s'ha refrescat correctament.",
       })
     } catch (error) {
       console.error("Error actualitzant dades meteorològiques:", error)
@@ -117,14 +113,6 @@ export function ClientContent() {
         </p>
       </div>
 
-      <div className="mb-4 sm:mb-8">
-        <SpotSelector />
-      </div>
-
-      <div className="mb-4 sm:mb-8">
-        <SpotComparison key={`comparison-${refreshKey}`} />
-      </div>
-
       <AlertsBanner />
       <SessionOverview key={`session-${refreshKey}`} />
 
@@ -155,10 +143,6 @@ export function ClientContent() {
           <KiteRecommendation key={`kite-${refreshKey}`} />
         </TabsContent>
       </Tabs>
-
-      <div className="mb-4 sm:mb-8">
-        <SpotDetails />
-      </div>
 
       <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
         <WaveInfo key={`wave-${refreshKey}`} />

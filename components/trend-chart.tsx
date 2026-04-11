@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, getForecastData } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 
+const SPOT = "sant-pere-pescador"
+
 export function TrendChart() {
-  const { selectedSpot } = useSpotStore()
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -17,7 +17,7 @@ export function TrendChart() {
     async function load() {
       try {
         setLoading(true)
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
         setForecast(data)
       } catch (e) {
         console.error(e)
@@ -26,7 +26,7 @@ export function TrendChart() {
       }
     }
     load()
-  }, [selectedSpot])
+  }, [])
 
   const trendData = useMemo(() => {
     return forecast.slice(0, 7).map((day, index) => {

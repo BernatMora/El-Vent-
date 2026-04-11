@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindDirectionName, knotsToKmh } from "@/lib/utils"
@@ -17,12 +16,12 @@ type ChartPoint = {
   directionName: string
 }
 
-const MIN_RIDEABLE_WIND = 10
-const IDEAL_WIND_START = 12
+const SPOT = "sant-pere-pescador"
+const MIN_RIDEABLE_WIND = 12
+const IDEAL_WIND_START = 15
 const IDEAL_WIND_END = 20
 
 export function WindChart() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [activeTab, setActiveTab] = useState("")
@@ -37,7 +36,7 @@ export function WindChart() {
     async function loadForecast() {
       try {
         setLoading(true)
-        const data = await getForecastData(selectedSpot)
+        const data = await getForecastData(SPOT)
         setForecast(data)
 
         // Establir la pestanya activa al primer dia quan es carreguen les dades
@@ -52,7 +51,7 @@ export function WindChart() {
     }
 
     loadForecast()
-  }, [selectedSpot])
+  }, [])
 
   // Preparar dades per la gràfica
   const prepareChartData = (dayIndex: number): ChartPoint[] => {
