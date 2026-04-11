@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { WindForecast } from "@/components/wind-forecast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { KiteRecommendation } from "@/components/kite-recommendation"
 import { TrendChart } from "@/components/trend-chart"
 import { AlertsBanner } from "@/components/alerts-banner"
 import { CurrentConditions } from "@/components/current-conditions"
@@ -125,22 +124,18 @@ export function ClientContent() {
       </div>
 
       <Tabs defaultValue="previsio" className="mb-4 sm:mb-8">
-        <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-slate-100 p-1">
+        <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
           <TabsTrigger value="previsio" className="px-2 py-2 text-[11px] leading-tight sm:text-sm">
-            <span className="hidden sm:inline">Previsió avançada</span>
-            <span className="sm:hidden">Previsió</span>
+            <span className="hidden sm:inline">Previsio avancada</span>
+            <span className="sm:hidden">Previsio</span>
           </TabsTrigger>
           <TabsTrigger value="condicions" className="px-2 py-2 text-[11px] sm:text-sm">Condicions</TabsTrigger>
-          <TabsTrigger value="mida" className="px-2 py-2 text-[11px] sm:text-sm">Mida d'estel</TabsTrigger>
         </TabsList>
         <TabsContent value="previsio" className="mt-4">
           <WindForecast key={`forecast-${refreshKey}`} />
         </TabsContent>
         <TabsContent value="condicions" className="mt-4">
           <WindChart key={`chart-${refreshKey}`} />
-        </TabsContent>
-        <TabsContent value="mida" className="mt-4">
-          <KiteRecommendation key={`kite-${refreshKey}`} />
         </TabsContent>
       </Tabs>
 
