@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useSpotStore } from "@/lib/store"
 import { type ForecastDay, getForecastData } from "@/lib/api"
 
-const WIND_THRESHOLD = 12 // kn
+const WIND_THRESHOLD = 12 // kn - llindar mínim per navegar
 
 function getNotificationPermission(): boolean {
   if (typeof window === "undefined") return false

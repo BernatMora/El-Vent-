@@ -18,7 +18,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useSpotStore } from "@/lib/store"
 import { windCalibration } from "@/lib/calibration"
 import { addUserObservation } from "@/lib/api"
-import { Wind, CheckCircle, Brain } from "lucide-react"
+import { predictionHistory } from "@/lib/prediction-history"
+import { Wind, CheckCircle, Brain, BarChart3 } from "lucide-react"
 
 interface WindReportDialogProps {
   currentModelData?: {
@@ -69,7 +70,7 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
         userId: `user-${Date.now()}`
       })
 
-      // 2. Añadir observación al sistema de Machine Learning (NUEVO)
+      // 2. Añadir observación al sistema de Machine Learning
       if (currentModelData) {
         addUserObservation(selectedSpot, {
           reportedWindSpeed: windSpeedNum,
@@ -79,7 +80,16 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
         })
       }
 
-      console.log("Observación añadida a ambos sistemas:", observation)
+      // 3. Registrar a l'historic de precisio per calcular accuracy
+      const gustEstimate = Math.round(windSpeedNum * 1.3)
+      predictionHistory.reportActualConditions(
+        selectedSpot,
+        windSpeedNum,
+        directionDegrees,
+        gustEstimate
+      )
+
+      console.log("Observacio afegida a tots els sistemes:", observation)
 
       // Mostrar éxito
       setSuccess(true)
@@ -134,14 +144,15 @@ export function WindReportDialog({ currentModelData, onReportSubmitted }: WindRe
             <div className="flex items-center gap-2">
               <CheckCircle className="h-8 w-8 text-green-600" />
               <Brain className="h-6 w-6 text-purple-600" />
+              <BarChart3 className="h-6 w-6 text-blue-600" />
             </div>
             <div className="text-center">
               <h3 className="text-lg font-medium text-green-800">Report enviat!</h3>
               <p className="mt-1 text-sm text-green-600">
-                Gràcies. L'ajust local tindrà en compte aquesta observació.
+                Gracies. L'ajust local tindra en compte aquesta observacio.
               </p>
-              <div className="mt-2 rounded-lg bg-purple-50 p-2 text-xs text-purple-600">
-                <strong>Nou:</strong> aquesta dada ajuda a afinar la previsió d'aquest spot.
+              <div className="mt-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-600">
+                Aquesta dada s'ha afegit a l'historic de precisio per mesurar la qualitat de les prediccions.
               </div>
             </div>
           </div>

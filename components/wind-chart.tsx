@@ -66,13 +66,18 @@ export function WindChart() {
           const hourNum = Number.parseInt(hour.time.split(":")[0])
           return hourNum >= 9 && hourNum <= 21
         })
-        .map((hour: ForecastHour) => ({
-          time: dayIndex === -1 ? `${formatTabDate(day.date)} · ${hour.time}` : hour.time,
-          windSpeed: hour.windSpeed,
-          windGust: hour.windGust || hour.windSpeed * 1.2,
-          windDirection: hour.windDirection,
-          directionName: getWindDirectionName(hour.windDirection),
-        })),
+        .map((hour: ForecastHour) => {
+          const windSpeed = hour.windSpeed
+          // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+          const windGust = Math.max(hour.windGust || hour.windSpeed * 1.2, windSpeed)
+          return {
+            time: dayIndex === -1 ? `${formatTabDate(day.date)} · ${hour.time}` : hour.time,
+            windSpeed,
+            windGust,
+            windDirection: hour.windDirection,
+            directionName: getWindDirectionName(hour.windDirection),
+          }
+        }),
     )
   }
 

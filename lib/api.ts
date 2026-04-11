@@ -2,6 +2,7 @@ import { protectedWeatherAPI } from "./protected-api"
 import { getOpenMeteoForecast } from "./open-meteo-api"
 import { getMeteocatForecast } from "./meteocat-api"
 import { enhancedWeatherService } from "./enhanced-api"
+import { predictionHistory } from "./prediction-history"
 
 export interface ForecastHour {
   time: string
@@ -69,10 +70,37 @@ function storeForecastInCache(spot: string, data: ForecastDay[]) {
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(getStoredForecastKey(spot), JSON.stringify(entry))
+      
+      // Guardar prediccions per a l'historic de precisio
+      savePredictionsToHistory(spot, data)
     } catch (error) {
-      console.warn("⚠️ No s'ha pogut desar la previsió al dispositiu:", error)
+      console.warn("No s'ha pogut desar la previsio al dispositiu:", error)
     }
   }
+}
+
+// Guardar prediccions a l'historic per poder comparar-les amb les condicions reals
+function savePredictionsToHistory(spot: string, data: ForecastDay[]) {
+  const today = new Date().toISOString().split("T")[0]
+  
+  data.forEach(day => {
+    // Nomes guardar prediccions d'avui i dema (mes rellevants)
+    if (day.date === today || day.date === getNextDay(today)) {
+      day.hours.forEach(hour => {
+        predictionHistory.savePrediction(spot, day.date, hour.time, {
+          windSpeed: hour.windSpeed,
+          windDirection: hour.windDirection,
+          windGust: hour.windGust
+        })
+      })
+    }
+  })
+}
+
+function getNextDay(dateStr: string): string {
+  const date = new Date(dateStr)
+  date.setDate(date.getDate() + 1)
+  return date.toISOString().split("T")[0]
 }
 
 function getCachedForecast(spot: string): ForecastDay[] | null {
@@ -268,11 +296,15 @@ function generateSimulatedData() {
 
       const humidity = Math.max(50, Math.min(95, 85 - (temperature - 15) * 2 + Math.random() * 10))
 
+      const roundedWindSpeed = Math.max(1, Math.round(baseWindSpeed))
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const windGust = Math.round(Math.max(baseWindSpeed * (1.3 + Math.random() * 0.4), baseWindSpeed))
+
       hours.push({
         time: `${hour.toString().padStart(2, "0")}:00`,
-        windSpeed: Math.max(1, Math.round(baseWindSpeed)),
+        windSpeed: roundedWindSpeed,
         windDirection: Math.round(windDirection) % 360,
-        windGust: Math.round(baseWindSpeed * (1.3 + Math.random() * 0.4)),
+        windGust,
         temperature: Math.round(temperature),
         humidity: Math.round(humidity),
         isCalibrated: false,

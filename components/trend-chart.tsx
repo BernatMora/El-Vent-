@@ -29,7 +29,7 @@ export function TrendChart() {
   }, [selectedSpot])
 
   const trendData = useMemo(() => {
-    return forecast.slice(0, 3).map((day, index) => {
+    return forecast.slice(0, 7).map((day, index) => {
       const hours = day.hours.filter(h => {
         const hr = parseInt(h.time.split(":")[0])
         return hr >= 9 && hr <= 21

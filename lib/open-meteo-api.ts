@@ -23,7 +23,7 @@ export async function getMarineForecast(spot?: string): Promise<MarineDay[]> {
     const url = `https://marine-api.open-meteo.com/v1/marine?` +
       `latitude=${coords.lat}&longitude=${coords.lon}&` +
       `hourly=wave_height,wave_period,wave_direction&` +
-      `timezone=Europe/Madrid&forecast_days=3`
+      `timezone=Europe/Madrid&forecast_days=7`
 
     const response = await fetch(url)
     if (!response.ok) throw new Error(`Marine API error: ${response.status}`)
@@ -49,7 +49,7 @@ export async function getMarineForecast(spot?: string): Promise<MarineDay[]> {
       }
     })
 
-    return Object.entries(dayGroups).slice(0, 3).map(([date, hours]) => ({
+    return Object.entries(dayGroups).slice(0, 7).map(([date, hours]) => ({
       date,
       hours: hours.sort((a, b) => a.time.localeCompare(b.time)),
     }))
@@ -72,7 +72,7 @@ export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
       `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&` +
       `wind_speed_unit=kn&` +
       `timezone=Europe/Madrid&` +
-      `forecast_days=3`
+      `forecast_days=7`
 
     console.log("🔗 URL d'Open-Meteo:", url)
 
@@ -122,11 +122,18 @@ function processOpenMeteoData(data: any): any[] {
         dayGroups[dateKey] = []
       }
 
+      const rawWindSpeed = wind_speed_10m[index] ?? 0
+      const windSpeed = Math.round(rawWindSpeed)
+      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+      const rawGust = wind_gusts_10m[index] ?? rawWindSpeed * 1.3
+      // Primer fem el màxim amb els valors sense arrodonir, després arrodonim
+      const windGust = Math.round(Math.max(rawGust, rawWindSpeed))
+
       dayGroups[dateKey].push({
         time: `${hour.toString().padStart(2, '0')}:00`,
-        windSpeed: Math.round(wind_speed_10m[index] ?? 0),
+        windSpeed,
         windDirection: Math.round(wind_direction_10m[index] ?? 0),
-        windGust: Math.round(wind_gusts_10m[index] ?? (wind_speed_10m[index] ?? 0) * 1.3),
+        windGust,
         temperature: Math.round(temperature_2m[index] ?? 20),
         humidity: Math.round(relative_humidity_2m[index] ?? 70),
         precipitation: precipitation ? Math.round((precipitation[index] ?? 0) * 10) / 10 : 0,
@@ -139,7 +146,7 @@ function processOpenMeteoData(data: any): any[] {
 
   // Convertir a format esperat
   const result = Object.entries(dayGroups)
-    .slice(0, 3) // Només 3 dies
+    .slice(0, 7) // 7 dies de previsio
     .map(([date, hours]) => ({
       date,
       hours: hours.sort((a, b) => a.time.localeCompare(b.time))

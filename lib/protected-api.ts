@@ -103,11 +103,15 @@ export class ProtectedWeatherAPI {
         const baseDirection = 90 + (Math.random() - 0.5) * 60 // E ± 30°
         const windDirection = Math.max(45, Math.min(135, baseDirection))
 
+        const roundedWindSpeed = Math.round(windSpeed)
+        // Assegurar que les ràfegues sempre siguin >= al vent sostingut
+        const windGust = Math.round(Math.max(windSpeed * (1.2 + Math.random() * 0.3), windSpeed))
+
         hours.push({
           time: `${hour.toString().padStart(2, "0")}:00`,
-          windSpeed: Math.round(windSpeed),
+          windSpeed: roundedWindSpeed,
           windDirection: Math.round(windDirection),
-          windGust: Math.round(windSpeed * (1.2 + Math.random() * 0.3)),
+          windGust,
           temperature: Math.round(18 + (hour - 9) * 0.8 + dayOffset * 1.5),
           humidity: Math.round(65 + Math.random() * 20),
           source: "Dades simulades intel·ligents",

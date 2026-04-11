@@ -12,11 +12,12 @@ import { AlertsBanner } from "@/components/alerts-banner"
 import { CurrentConditions } from "@/components/current-conditions"
 import { WindGuide } from "@/components/wind-guide"
 import { WindChart } from "@/components/wind-chart"
-import { WindDirectionLegend } from "@/components/wind-direction-legend"
-import { EnhancedApiStatus } from "@/components/enhanced-api-status"
 import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { WaveInfo } from "@/components/wave-info"
+import { TideInfo } from "@/components/tide-info"
+import { NotificationSettings } from "@/components/notification-settings"
+import { PredictionAccuracy } from "@/components/prediction-accuracy"
 import { SpotComparison } from "@/components/spot-comparison"
 import { WindAlerts } from "@/components/wind-alerts"
 import { useSpotStore } from "@/lib/store"
@@ -75,7 +76,6 @@ export function ClientContent() {
 
   return (
     <>
-      <EnhancedApiStatus />
       <PwaInstallBanner />
 
       <div className="sticky top-2 z-20 mb-4 rounded-2xl border bg-slate-50/90 p-2 shadow-sm backdrop-blur sm:mb-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
@@ -133,8 +133,6 @@ export function ClientContent() {
         <CurrentConditions key={`conditions-${refreshKey}`} />
       </div>
 
-      <WindDirectionLegend />
-
       <Tabs defaultValue="previsio" className="mb-4 sm:mb-8">
         <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-slate-100 p-1">
           <TabsTrigger value="previsio" className="px-2 py-2 text-[11px] leading-tight sm:text-sm">
@@ -163,8 +161,9 @@ export function ClientContent() {
         <SpotComparison key={`comparison-${refreshKey}`} />
       </div>
 
-      <div className="mb-4 sm:mb-8">
+      <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
         <WaveInfo key={`wave-${refreshKey}`} />
+        <TideInfo />
       </div>
 
       <div className="mb-4 sm:mb-8">
@@ -173,6 +172,11 @@ export function ClientContent() {
 
       <div id="wind-guide" className="mb-4 sm:mb-8">
         <WindGuide />
+      </div>
+
+      <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
+        <NotificationSettings />
+        <PredictionAccuracy />
       </div>
     </>
   )

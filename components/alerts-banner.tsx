@@ -40,27 +40,28 @@ export function AlertsBanner() {
             })
           }
 
-          // CORRECCIÓ: Vents offshore per Sant Pere Pescador
+          // Vents offshore per Sant Pere Pescador
           // Offshore = vents de terra cap a mar
-          // Per Sant Pere (costa orientada al sud-est):
-          // - Offshore: N, NW, W (315°-45° aprox) - PERILLOSOS
-          // - Onshore: E, SE, S (45°-225° aprox) - SEGURS
-          // - Side-shore: NE, SW - ACCEPTABLES
+          // Per Sant Pere (costa orientada a l'est):
+          // - Offshore: N, NW, W, SW (202.5°-45°) - PERILLOSOS
+          // - Onshore: E, SE (67.5°-157.5°) - SEGURS
+          // - Side-shore: NE, S - ACCEPTABLES
           const offshoreHours = today.hours.filter((h: ForecastHour) => {
             const dir = h.windDirection
             const speed = h.windSpeed
-            // Offshore: direccions entre 315° i 45° (N, NW, W) Y amb vent > 8 kn
-            return speed > 8 && (dir >= 315 || dir <= 45)
+            // Offshore: direccions entre 202.5° i 45° (N, NW, W, SW) amb vent > 8 kn
+            return speed > 8 && (dir >= 202.5 || dir <= 45)
           })
 
           if (offshoreHours.length > 0) {
             const maxOffshoreWind = Math.max(...offshoreHours.map((h: ForecastHour) => h.windSpeed))
             const offshoreDirection = offshoreHours[0].windDirection
             let directionName = "Nord"
-            if (offshoreDirection >= 315 || offshoreDirection <= 15) directionName = "Tramuntana (N)"
-            else if (offshoreDirection > 15 && offshoreDirection <= 45) directionName = "Gregal (NE)"
-            else if (offshoreDirection >= 270 && offshoreDirection < 315) directionName = "Mestral (NW)"
-            else if (offshoreDirection >= 225 && offshoreDirection < 270) directionName = "Ponent (W)"
+            if (offshoreDirection >= 337.5 || offshoreDirection < 22.5) directionName = "Tramuntana (N)"
+            else if (offshoreDirection >= 22.5 && offshoreDirection < 45) directionName = "Gregal (NE)"
+            else if (offshoreDirection >= 292.5 && offshoreDirection < 337.5) directionName = "Mestral (NW)"
+            else if (offshoreDirection >= 247.5 && offshoreDirection < 292.5) directionName = "Ponent (W)"
+            else if (offshoreDirection >= 202.5 && offshoreDirection < 247.5) directionName = "Garbí (SW)"
 
             newAlerts.push({
               type: "danger",
@@ -69,23 +70,23 @@ export function AlertsBanner() {
             })
           }
 
-          // Alerta de poc vent: per sota de 10 kn no sol ser suficient per fer kitesurf amb comoditat
+          // Alerta de poc vent: per sota de 12 kn no sol ser suficient per fer kitesurf amb comoditat
           const avgWind = today.hours.reduce((sum: number, h: ForecastHour) => sum + h.windSpeed, 0) / today.hours.length
-          if (avgWind < 10) {
+          if (avgWind < 12) {
             newAlerts.push({
               type: "info",
               title: "Condicions de poc vent",
-              description: `S'esperen vents fluixos avui (mitjana ${Math.round(avgWind)} kn). Amb menys de 10 kn no acostuma a haver-hi prou tracció per navegar bé amb la cometa.`,
+              description: `S'esperen vents fluixos avui (mitjana ${Math.round(avgWind)} kn). Amb menys de 12 kn no acostuma a haver-hi prou tracció per navegar bé amb la cometa.`,
             })
           }
 
           // Alerta de condiciones perfectas para kitesurf
-          // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 12-20 kn
+          // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 15-20 kn
           const perfectHours = today.hours.filter((h: ForecastHour) => {
             const speed = h.windSpeed
             const dir = h.windDirection
-            // Condicions perfectes: 12-20 kn, vent onshore (E, SE) o side-onshore (NE)
-            return speed >= 12 && speed <= 20 && 
+            // Condicions perfectes: 15-20 kn, vent onshore (E, SE) o side-onshore (NE)
+            return speed >= 15 && speed <= 20 && 
                    ((dir >= 45 && dir <= 135) || // E, SE
                     (dir >= 15 && dir <= 75))    // NE inclòs
           })
@@ -145,7 +146,7 @@ export function AlertsBanner() {
               }
 
               // Només mostrar si és informatiu (no repetir alertes de perill)
-              if (windType === "onshore" && currentSpeed >= 10) {
+              if (windType === "onshore" && currentSpeed >= 12) {
                 newAlerts.push({
                   type: "info",
                   title: "Vent favorable detectat",
