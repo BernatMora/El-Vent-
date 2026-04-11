@@ -17,6 +17,8 @@ import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { SessionOverview } from "@/components/session-overview"
 import { WaveInfo } from "@/components/wave-info"
 import { TideInfo } from "@/components/tide-info"
+import { NotificationSettings } from "@/components/notification-settings"
+import { PredictionAccuracy } from "@/components/prediction-accuracy"
 import { SpotComparison } from "@/components/spot-comparison"
 import { WindAlerts } from "@/components/wind-alerts"
 import { useSpotStore } from "@/lib/store"
@@ -173,6 +175,11 @@ export function ClientContent() {
 
       <div id="wind-guide" className="mb-4 sm:mb-8">
         <WindGuide />
+      </div>
+
+      <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
+        <NotificationSettings />
+        <PredictionAccuracy />
       </div>
     </>
   )

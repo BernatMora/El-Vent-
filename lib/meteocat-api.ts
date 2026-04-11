@@ -174,7 +174,7 @@ export class MeteocatProvider {
     try {
       const dies = data.dies || []
 
-      dies.slice(0, 3).forEach((dia: any) => {
+      dies.slice(0, 7).forEach((dia: any) => {
         const data_prediccio = dia.data_prediccio
         const variables = dia.variables || {}
 
@@ -294,7 +294,7 @@ export async function getMeteocatForecast(): Promise<any[]> {
 
     // Convertir a format esperat
     const result = Object.entries(dayGroups)
-      .slice(0, 3)
+      .slice(0, 7)
       .map(([date, hours]) => ({
         date,
         hours: hours.sort((a, b) => a.time.localeCompare(b.time))

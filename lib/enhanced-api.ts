@@ -103,7 +103,7 @@ export class EnhancedWeatherService {
 
     // Convertir a format esperat
     return Array.from(dayGroups.entries())
-      .slice(0, 3)
+      .slice(0, 7)
       .map(([date, hours]) => ({
         date,
         hours: hours.sort((a, b) => a.time.localeCompare(b.time))
@@ -176,7 +176,7 @@ export class EnhancedWeatherService {
     const now = new Date()
     const days = []
 
-    for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
       const date = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000)
       const dateString = date.toISOString().split("T")[0]
       const hours = []

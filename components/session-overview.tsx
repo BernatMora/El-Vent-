@@ -199,7 +199,7 @@ export function SessionOverview() {
   }, [selectedSpot])
 
   const daySummaries = useMemo(
-    () => forecast.slice(0, 3).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),
+    () => forecast.slice(0, 7).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),
     [forecast],
   )
 

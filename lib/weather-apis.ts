@@ -39,7 +39,7 @@ export class OpenMeteoProvider implements WeatherProvider {
     const url = `https://api.open-meteo.com/v1/forecast?` +
       `latitude=${lat}&longitude=${lon}&` +
       `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&` +
-      `wind_speed_unit=kn&timezone=Europe/Madrid&forecast_days=3`
+      `wind_speed_unit=kn&timezone=Europe/Madrid&forecast_days=7`
 
     const response = await fetch(url)
     if (!response.ok) throw new Error(`Error d'Open-Meteo: ${response.status}`)
