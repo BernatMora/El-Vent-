@@ -100,27 +100,6 @@ export function AlertsBanner() {
             })
           }
 
-          // Alerta de spot específico (solo si es relevante)
-          if (selectedSpot === "kitesurf-point" && maxWind > 12) {
-            newAlerts.push({
-              type: "info",
-              title: "Informació de Kitesurf Point",
-              description: "Recorda que aquesta zona és més adequada per a principiants. Respecta les zones de navegació.",
-            })
-          } else if (selectedSpot === "can-martinet" && maxWind > 15) {
-            newAlerts.push({
-              type: "info",
-              title: "Informació de Can Martinet",
-              description: "Aquesta zona pot tenir corrents més forts. Recomanat per a riders amb experiència.",
-            })
-          } else if (selectedSpot === "la-rubina" && maxWind > 10) {
-            newAlerts.push({
-              type: "info",
-              title: "Informació de La Rubina",
-              description: "Spot menys massificat entre Sant Pere i Roses. Platja àmplia ideal per sessions llargues.",
-            })
-          }
-
           // Informació sobre direcció del vent actual
           if (today.hours.length > 0) {
             const currentHour = today.hours[Math.floor(today.hours.length / 2)] // Hora del migdia aprox
