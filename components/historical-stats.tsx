@@ -1,40 +1,14 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 
 export function HistoricalStats() {
-  const { selectedSpot } = useSpotStore()
-
-  // Estadísticas históricas para cada spot
-  const spotStats: Record<string, { avgWind: number; maxWind: number; windyDays: number; bestMonth: string }> = {
-    "la-ballena": {
-      avgWind: 16,
-      maxWind: 28,
-      windyDays: 210,
-      bestMonth: "Juliol",
-    },
-    "kitesurf-point": {
-      avgWind: 15,
-      maxWind: 26,
-      windyDays: 200,
-      bestMonth: "Agost",
-    },
-    "can-martinet": {
-      avgWind: 17,
-      maxWind: 30,
-      windyDays: 220,
-      bestMonth: "Juny",
-    },
-    "la-rubina": {
-      avgWind: 16,
-      maxWind: 29,
-      windyDays: 215,
-      bestMonth: "Juliol",
-    },
+  const stats = {
+    avgWind: 16,
+    maxWind: 30,
+    windyDays: 215,
+    bestMonth: "Juliol",
   }
-
-  const stats = spotStats[selectedSpot] || spotStats["kitesurf-point"]
 
   return (
     <Card>

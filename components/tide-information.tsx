@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSpotStore } from "@/lib/store"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Waves } from "lucide-react"
@@ -26,7 +25,6 @@ type TideData = {
 }
 
 export function TideInformation() {
-  const { selectedSpot } = useSpotStore()
   const [loading, setLoading] = useState(true)
   const [tideData, setTideData] = useState<TideData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -40,9 +38,9 @@ export function TideInformation() {
         // En una implementación real, esto vendría de una API
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        // Datos simulados basados en la ubicación
+        // Datos simulados
         const data: TideData = {
-          location: selectedSpot === "roses" ? "Roses" : selectedSpot === "lescala" ? "L'Escala" : "Sant Pere Pescador",
+          location: "Sant Pere Pescador",
           updatedAt: new Date().toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" }),
           currentHeight: 0.13,
           nextHigh: {
@@ -59,18 +57,6 @@ export function TideInformation() {
           source: "Ports de l'Estat",
         }
 
-        // Ajustar datos según el spot
-        if (selectedSpot === "kitesurf-point") {
-          data.waveHeight = 0.9
-          data.wavePeriod = 5
-        } else if (selectedSpot === "la-ballena") {
-          data.waveHeight = 0.8
-          data.wavePeriod = 4
-        } else if (selectedSpot === "can-martinet") {
-          data.waveHeight = 0.6
-          data.wavePeriod = 3
-        }
-
         setTideData(data)
     } catch (error) {
       console.error("Error carregant dades de marees:", error)
@@ -82,7 +68,7 @@ export function TideInformation() {
 
   useEffect(() => {
     loadTideData()
-  }, [selectedSpot])
+  }, [])
 
   // Función para determinar la descripción del estado del mar
   const getWaveDescription = (height: number): string => {
