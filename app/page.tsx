@@ -1,9 +1,8 @@
 import { ClientContent } from "@/components/client-content"
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
-import { Gauge, Waves, Wind } from "lucide-react"
+import { Gauge, Waves } from "lucide-react"
 
 const highlights = [
-  { value: "12 kn", label: "mínim útil", Icon: Wind },
   { value: "7 dies", label: "previsió", Icon: Gauge },
   { value: "Offline", label: "consulta ràpida", Icon: Waves },
 ]
@@ -24,7 +23,7 @@ export default function Home() {
               Bernat Mora
             </div>
 
-            <div className="mx-auto grid max-w-md grid-cols-3 gap-2 text-left">
+            <div className="mx-auto grid max-w-xs grid-cols-2 gap-2 text-left">
               {highlights.map((item) => (
                 <div key={item.label} className="rounded-xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-lg">
                   <item.Icon className="mb-2 h-4 w-4 text-cyan-200" />
