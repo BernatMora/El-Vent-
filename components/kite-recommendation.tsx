@@ -29,7 +29,7 @@ type KiteRecommendationRow = {
   kiteSize: string
 }
 
-const MIN_KITESURF_WIND = 10
+const MIN_KITESURF_WIND = 12
 
 export function KiteRecommendation() {
   const { selectedSpot, userPreferences, setUserPreferences } = useSpotStore()
@@ -169,7 +169,7 @@ export function KiteRecommendation() {
             </DialogContent>
           </Dialog>
         </div>
-        <CardDescription>Segons el teu pes ({weight} kg) i nivell · menys de 10 kn: no recomanat</CardDescription>
+        <CardDescription>Segons el teu pes ({weight} kg) i nivell · menys de 12 kn: no recomanat</CardDescription>
       </CardHeader>
       <CardContent>
         {loading || forecast.length === 0 ? (

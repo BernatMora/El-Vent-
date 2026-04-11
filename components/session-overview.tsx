@@ -9,8 +9,8 @@ import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
 import { useSpotStore } from "@/lib/store"
 import { knotsToKmh } from "@/lib/utils"
 
-const MIN_RIDEABLE_WIND = 10
-const IDEAL_MIN_WIND = 12
+const MIN_RIDEABLE_WIND = 12
+const IDEAL_MIN_WIND = 15
 const IDEAL_MAX_WIND = 20
 
 type SummaryTone = "good" | "maybe" | "bad"
@@ -79,15 +79,38 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     : 0
   const gustQuality = gustSpread <= 3 ? "Molt estable" : gustSpread <= 6 ? "Moderat" : "Ratxejat"
 
-  // "good": enough rideable hours with decent avg wind, not dominated by offshore
+  // Detectar si és un dia de tramuntana (vent del nord fort amb ràfegues)
+  const isTramuntanaDay = offshoreRiskHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND
+  const hasStrongGusts = gustSpread > 4
+
+  // "good": enough rideable hours with decent avg wind
+  // Tramuntana també és "good" perquè hi ha vent fort, però amb avís
   const isGood =
     (idealHours.length >= 3 && offshoreRiskHours.length <= 1) ||
-    (rideableHours.length >= 4 && avgWind >= IDEAL_MIN_WIND && offshoreRiskHours.length <= 1)
+    (rideableHours.length >= 4 && avgWind >= IDEAL_MIN_WIND && offshoreRiskHours.length <= 1) ||
+    (isTramuntanaDay && avgWind >= IDEAL_MIN_WIND) // Tramuntana amb bon vent
 
-  // "maybe": some rideable hours but not great
-  const isMaybe = rideableHours.length >= 2
+  // "maybe": some rideable hours but not great (no tramuntana forte)
+  const isMaybe = rideableHours.length >= 2 && !isTramuntanaDay
 
   if (isGood) {
+    // Si és tramuntana, avisar que és offshore i amb ràfegues
+    if (isTramuntanaDay) {
+      return {
+        label: getDayLabel(index),
+        tone: "good",
+        statusLabel: "Bones condicions",
+        score,
+        scoreLabel: hasStrongGusts ? "bon vent però ratxejat" : "bon vent offshore",
+        bestWindow,
+        bestWindowAvg,
+        gustQuality,
+        reason: `Hi ha ${rideableHours.length} hores navegables amb ${Math.round(avgWind)} kn de mitjana.`,
+        decisionTitle: "Sí, però alerta: Tramuntana!",
+        decisionText: `Vent del nord (offshore) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució perquè el vent t'allunya de la costa.`,
+      }
+    }
+    
     return {
       label: getDayLabel(index),
       tone: "good",

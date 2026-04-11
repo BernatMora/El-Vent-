@@ -69,23 +69,23 @@ export function AlertsBanner() {
             })
           }
 
-          // Alerta de poc vent: per sota de 10 kn no sol ser suficient per fer kitesurf amb comoditat
+          // Alerta de poc vent: per sota de 12 kn no sol ser suficient per fer kitesurf amb comoditat
           const avgWind = today.hours.reduce((sum: number, h: ForecastHour) => sum + h.windSpeed, 0) / today.hours.length
-          if (avgWind < 10) {
+          if (avgWind < 12) {
             newAlerts.push({
               type: "info",
               title: "Condicions de poc vent",
-              description: `S'esperen vents fluixos avui (mitjana ${Math.round(avgWind)} kn). Amb menys de 10 kn no acostuma a haver-hi prou tracció per navegar bé amb la cometa.`,
+              description: `S'esperen vents fluixos avui (mitjana ${Math.round(avgWind)} kn). Amb menys de 12 kn no acostuma a haver-hi prou tracció per navegar bé amb la cometa.`,
             })
           }
 
           // Alerta de condiciones perfectas para kitesurf
-          // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 12-20 kn
+          // Condicions ideals: vent onshore/side-onshore (E, SE, NE) entre 15-20 kn
           const perfectHours = today.hours.filter((h: ForecastHour) => {
             const speed = h.windSpeed
             const dir = h.windDirection
-            // Condicions perfectes: 12-20 kn, vent onshore (E, SE) o side-onshore (NE)
-            return speed >= 12 && speed <= 20 && 
+            // Condicions perfectes: 15-20 kn, vent onshore (E, SE) o side-onshore (NE)
+            return speed >= 15 && speed <= 20 && 
                    ((dir >= 45 && dir <= 135) || // E, SE
                     (dir >= 15 && dir <= 75))    // NE inclòs
           })
@@ -145,7 +145,7 @@ export function AlertsBanner() {
               }
 
               // Només mostrar si és informatiu (no repetir alertes de perill)
-              if (windType === "onshore" && currentSpeed >= 10) {
+              if (windType === "onshore" && currentSpeed >= 12) {
                 newAlerts.push({
                   type: "info",
                   title: "Vent favorable detectat",
