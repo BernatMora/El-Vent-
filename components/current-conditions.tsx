@@ -5,10 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
-import { WindReportDialog } from "@/components/wind-report-dialog"
-import { UserReportsPanel } from "@/components/user-reports-panel"
-import { windCalibration } from "@/lib/calibration"
-import { RefreshCw, CheckCircle } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const SPOT = "sant-pere-pescador"
@@ -17,7 +14,6 @@ export function CurrentConditions() {
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState<(ForecastHour & { date: string }) | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [justUpdated, setJustUpdated] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,30 +59,7 @@ export function CurrentConditions() {
 
   useEffect(() => {
     loadCurrentData()
-
-    // Subscriure's a canvis en el sistema de calibració
-    const unsubscribe = windCalibration.subscribe(() => {
-      console.log("Calibració actualitzada, recarregant dades...")
-      loadCurrentData()
-    })
-
-    return () => { unsubscribe() }
   }, [refreshKey])
-
-  const handleReportSubmitted = () => {
-    // Mostrar indicador visual d'actualització
-    setJustUpdated(true)
-    
-    // Forçar recàrrega de dades després d'enviar un report
-    setTimeout(() => {
-      setRefreshKey(prev => prev + 1)
-    }, 500)
-
-    // Amagar indicador després de 3 segons
-    setTimeout(() => {
-      setJustUpdated(false)
-    }, 3000)
-  }
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1)
@@ -98,9 +71,7 @@ export function CurrentConditions() {
     const rotationDegree = (direction + 180) % 360
 
     return (
-      <div className={`flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full transition-all duration-500 ${
-        justUpdated ? 'bg-green-100 ring-2 ring-green-300' : 'bg-blue-100'
-      }`}>
+      <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-100">
         <svg
           width="32"
           height="32"
@@ -112,8 +83,8 @@ export function CurrentConditions() {
         >
           <path
             d="M12 4L4 20L12 17L20 20L12 4Z"
-            fill={justUpdated ? "#059669" : "#1d4ed8"}
-            stroke={justUpdated ? "#059669" : "#1d4ed8"}
+            fill="#1d4ed8"
+            stroke="#1d4ed8"
             strokeWidth="1"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -124,55 +95,34 @@ export function CurrentConditions() {
   }
 
   return (
-    <div>
-      <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className={`col-span-1 xl:col-span-2 transition-all duration-500 ${
-          justUpdated ? 'ring-2 ring-green-300 bg-green-50/30' : ''
-        }`}>
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
-              <div className="flex flex-col items-center md:items-start">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
-                  {justUpdated && (
-                    <div className="flex items-center gap-1 animate-pulse">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-600 font-medium">Actualitzat!</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {loading ? "Carregant..." : `Previsió per les ${currentData?.time || "00:00"}`}
-                  </p>
-                  {lastUpdated && (
-                    <span className="text-xs text-muted-foreground">
-                      · Actualitzat a les {lastUpdated}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline ml-2">Actualitzar</span>
-                </Button>
-                <WindReportDialog 
-                  currentModelData={currentData ? {
-                    windSpeed: currentData.originalWindSpeed || currentData.windSpeed,
-                    windDirection: currentData.originalWindDirection || currentData.windDirection
-                  } : undefined}
-                  onReportSubmitted={handleReportSubmitted}
-                />
-              </div>
+    <Card>
+      <CardContent className="p-3 sm:p-6">
+        <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
+          <div className="flex flex-col items-center md:items-start">
+            <h2 className="text-lg sm:text-xl font-bold mb-1">Condicions Actuals</h2>
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {loading ? "Carregant..." : `Previsio per les ${currentData?.time || "00:00"}`}
+              </p>
+              {lastUpdated && (
+                <span className="text-xs text-muted-foreground">
+                  · Actualitzat a les {lastUpdated}
+                </span>
+              )}
             </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline ml-2">Actualitzar</span>
+          </Button>
+        </div>
 
             {loading ? (
               <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
@@ -204,48 +154,27 @@ export function CurrentConditions() {
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className={`text-3xl sm:text-5xl font-bold transition-colors duration-500 ${
-                    justUpdated ? 'text-green-600' : 'text-blue-600'
-                  }`}>
+                  <div className="text-3xl sm:text-5xl font-bold text-blue-600">
                     {Math.round(currentData?.windSpeed || 0)}
                     <span className="text-lg sm:text-2xl">kn</span>
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                    Velocitat del vent
-                    <br className="sm:hidden" />
-                    <span className="hidden sm:inline"> </span>
-                    ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
+                    Velocitat del vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
                   </div>
-                  {currentData?.isCalibrated && currentData?.originalWindSpeed && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Model original: {currentData.originalWindSpeed} kn
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className={`text-2xl sm:text-3xl font-bold transition-colors duration-500 ${
-                    justUpdated ? 'text-green-500' : 'text-amber-500'
-                  }`}>
+                  <div className="text-2xl sm:text-3xl font-bold text-amber-500">
                     {Math.round(currentData?.windGust || 0)}
                     <span className="text-lg sm:text-xl">kn</span>
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                    Ràfegues
-                    <br className="sm:hidden" />
-                    <span className="hidden sm:inline"> </span>
-                    ({knotsToKmh(currentData?.windGust || 0)} km/h)
+                    Rafegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
                   </div>
                 </div>
               </div>
             )}
-
-
-          </CardContent>
-        </Card>
-
-        <UserReportsPanel key={refreshKey} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
