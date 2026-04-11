@@ -135,16 +135,15 @@ export function WindForecast() {
               {forecast.map((day, dayIndex) => (
                 <TabsContent key={day.date} value={dayIndex.toString()}>
                 <div className="space-y-2">
-                  {/* Header per mòbil - més compacte */}
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-blue-50 to-cyan-50 p-2 text-center text-xs sm:text-sm font-medium text-blue-900">
+                  {/* Header - compacte per mobil */}
+                  <div className="grid grid-cols-5 sm:grid-cols-7 gap-1 sm:gap-2 rounded-md bg-gradient-to-r from-blue-50 to-cyan-50 p-2 text-center text-[10px] sm:text-sm font-medium text-blue-900">
                     <div>Hora</div>
                     <div>Vent</div>
                     <div>Dir.</div>
-                    <div>Ràf.</div>
+                    <div>Raf.</div>
                     <div className="hidden sm:block">Shore</div>
-                    <div className="sm:hidden">🏖️</div>
-                    <div>🌡️</div>
-                    <div>🌧️</div>
+                    <div className="hidden sm:block">Temp</div>
+                    <div className="hidden sm:block">Pluja</div>
                   </div>
                   
                   {day.hours && day.hours.length > 0 ? (
@@ -156,46 +155,42 @@ export function WindForecast() {
                       .map((hour: ForecastHour) => (
                         <div
                           key={hour.time}
-                          className="grid grid-cols-7 items-center gap-1 sm:gap-2 rounded-md border p-2 text-center text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-5 sm:grid-cols-7 items-center gap-1 sm:gap-2 rounded-md border p-1.5 sm:p-2 text-center text-[10px] sm:text-sm hover:bg-gray-50 transition-colors"
                         >
                           <div className="font-medium">{hour.time}</div>
                           
                           <div className="font-semibold text-blue-700">
-                            {Math.round(hour.windSpeed)} kn
-                            <div className="text-xs text-gray-500 hidden sm:block">
-                              ({knotsToKmh(hour.windSpeed)} km/h)
-                            </div>
+                            {Math.round(hour.windSpeed)}
+                            <span className="text-[8px] sm:text-xs"> kn</span>
                           </div>
                           
                           <div className="flex flex-col items-center">
                             {renderWindArrow(hour.windDirection)}
-                            <span className="text-xs mt-1">{getWindDirectionName(hour.windDirection)}</span>
+                            <span className="text-[8px] sm:text-xs mt-0.5">{getWindDirectionName(hour.windDirection)}</span>
                           </div>
                           
                           <div className="font-medium text-amber-600">
-                            {Math.round(hour.windGust)} kn
-                            <div className="text-xs text-gray-500 hidden sm:block">
-                              ({knotsToKmh(hour.windGust)} km/h)
-                            </div>
+                            {Math.round(hour.windGust)}
+                            <span className="text-[8px] sm:text-xs"> kn</span>
                           </div>
                           
-                          <div className="text-xs sm:text-sm">
+                          <div className="hidden sm:block text-xs">
                             {(() => {
                               const shore = getShoreType(hour.windDirection)
                               return (
-                                <span className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] sm:text-xs font-medium ${shore.color}`}>
+                                <span className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs font-medium ${shore.color}`}>
                                   <span>{shore.emoji}</span>
-                                  <span className="hidden sm:inline">{shore.label}</span>
+                                  <span>{shore.label}</span>
                                 </span>
                               )
                             })()}
                           </div>
                           
-                          <div className="text-xs text-slate-700">
+                          <div className="hidden sm:block text-xs text-slate-700">
                             {hour.temperature != null ? `${hour.temperature}°` : "—"}
                           </div>
 
-                          <div className="text-xs">
+                          <div className="hidden sm:block text-xs">
                             {(hour.precipitation ?? 0) > 0 ? (
                               <span className="inline-flex items-center gap-0.5 text-blue-600 font-medium">
                                 <CloudRain className="h-3 w-3" />
