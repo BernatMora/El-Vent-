@@ -63,10 +63,12 @@ export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
   const coords = getSpotCoords(spot)
 
   try {
-    console.log(`🌐 Obtenint dades d'Open-Meteo (GFS) per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)
+    console.log(`🌐 Obtenint dades d'Open-Meteo per ${spot ?? "default"} (${coords.lat}, ${coords.lon})...`)
 
-    // Usem l'endpoint GFS per coincidir amb el model que usa Windguru
-    const url = `${OPEN_METEO_BASE}/gfs?` +
+    // Utilitzem l'endpoint general "forecast" que selecciona automaticament
+    // el millor model per la ubicacio (ICON per Europa, GFS per EUA, etc.)
+    // Aixo proporciona rafegues reals i mes precises per Catalunya
+    const url = `${OPEN_METEO_BASE}/forecast?` +
       `latitude=${coords.lat}&` +
       `longitude=${coords.lon}&` +
       `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&` +
@@ -83,7 +85,6 @@ export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
     }
 
     const data = await response.json()
-    console.log("📊 Dades rebudes d'Open-Meteo:", data)
 
     return processOpenMeteoData(data)
   } catch (error) {
