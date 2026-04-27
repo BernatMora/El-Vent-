@@ -261,36 +261,51 @@ export function SessionOverview() {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
+            {/* Versió mòbil: scroll horitzontal amb 3 dies visibles */}
+            <div className="flex gap-2 overflow-x-auto pb-2 sm:hidden">
               {daySummaries.map((day, idx) => {
                 const dayTone = toneStyles[day.tone]
                 const DayIcon = dayTone.Icon
-                // Format curt per mòbil
-                const shortLabel = idx === 0 ? "Avui" : idx === 1 ? "Demà" : day.label.replace("Dia ", "D")
+                const shortLabel = idx === 0 ? "Avui" : idx === 1 ? "Demà" : `D${idx + 1}`
+                // Obtenir el dia de la setmana
+                const dayOfWeek = new Date(Date.now() + idx * 24 * 60 * 60 * 1000).toLocaleDateString('ca-ES', { weekday: 'short' })
 
                 return (
                   <div
                     key={day.label}
-                    className={`rounded-xl border p-1.5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:rounded-2xl sm:p-4 sm:text-left ${dayTone.panel}`}
+                    className={`min-w-[100px] flex-shrink-0 rounded-xl border p-2.5 text-center transition-all duration-300 ${dayTone.panel}`}
                   >
-                    {/* Versió mòbil: compacta */}
-                    <div className="sm:hidden">
-                      <DayIcon className="mx-auto h-4 w-4" />
-                      <div className="mt-1 text-[10px] font-semibold leading-tight">{shortLabel}</div>
-                      <div className="mt-0.5 text-sm font-bold">{day.score}</div>
+                    <div className="flex items-center justify-center gap-1">
+                      <DayIcon className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase">{dayOfWeek}</span>
                     </div>
-                    {/* Versió tablet/desktop: completa */}
-                    <div className="hidden sm:block">
-                      <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
-                        <div className="flex items-center gap-2">
-                          <DayIcon className="h-4 w-4" />
-                          <span>{day.label}</span>
-                        </div>
-                        <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
+                    <div className="mt-1 text-lg font-bold">{day.statusLabel}</div>
+                    <div className="text-xs opacity-80">{day.scoreLabel}</div>
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* Versió tablet/desktop: graella */}
+            <div className="hidden sm:grid sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
+              {daySummaries.map((day) => {
+                const dayTone = toneStyles[day.tone]
+                const DayIcon = dayTone.Icon
+
+                return (
+                  <div
+                    key={day.label}
+                    className={`rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${dayTone.panel}`}
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
+                      <div className="flex items-center gap-2">
+                        <DayIcon className="h-4 w-4" />
+                        <span>{day.label}</span>
                       </div>
-                      <div className="text-lg font-bold">{day.statusLabel}</div>
-                      <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
+                      <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
                     </div>
+                    <div className="text-lg font-bold">{day.statusLabel}</div>
+                    <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
                   </div>
                 )
               })}
