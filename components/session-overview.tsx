@@ -10,9 +10,10 @@ import { knotsToKmh } from "@/lib/utils"
 
 const SPOT = "sant-pere-pescador"
 
-const MIN_RIDEABLE_WIND = 12
-const IDEAL_MIN_WIND = 15
-const IDEAL_MAX_WIND = 20
+// Llindars de vent en nusos
+const MIN_JUSTETA_WIND = 11  // A partir d'11 kn ja es pot navegar (justeta)
+const MIN_GOOD_WIND = 14     // A partir de 14 kn és bona sessió
+const IDEAL_MAX_WIND = 25    // Per sobre de 25 kn pot ser massa fort per alguns
 
 type SummaryTone = "good" | "maybe" | "bad"
 
@@ -81,24 +82,25 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
 
   // Utilitzem el vent efectiu (mitjana vent/ràfegues) per als càlculs
   const avgEffectiveWind = hours.reduce((sum, hour) => sum + getEffectiveWind(hour), 0) / hours.length
-  const avgWind = avgEffectiveWind // Ara avgWind és el vent efectiu
-  const maxWind = Math.max(...hours.map((hour) => getEffectiveWind(hour)))
-  const rideableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND)
-  const idealHours = hours.filter(
-    (hour) => getEffectiveWind(hour) >= IDEAL_MIN_WIND && getEffectiveWind(hour) <= IDEAL_MAX_WIND && isFavorable(hour.windDirection),
-  )
-  const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND && isOffshore(hour.windDirection))
+  const maxEffectiveWind = Math.max(...hours.map((hour) => getEffectiveWind(hour)))
+  
+  // Hores amb vent suficient per navegar
+  const goodWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_GOOD_WIND) // 14+ kn
+  const justejaWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && getEffectiveWind(hour) < MIN_GOOD_WIND) // 11-13 kn
+  const navigableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND) // 11+ kn
+  
+  const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && isOffshore(hour.windDirection))
   const gustSpread = hours.reduce((sum, hour) => sum + Math.max(0, (hour.windGust || hour.windSpeed) - hour.windSpeed), 0) / hours.length
 
+  // Puntuació basada directament en vent efectiu
   const scoreBase =
-    Math.min(40, rideableHours.length * 7) +
-    Math.min(35, idealHours.length * 9) +
-    Math.max(0, 18 - offshoreRiskHours.length * 8) +
-    Math.max(0, 14 - Math.abs(avgWind - 15) * 1.8) -
-    Math.max(0, gustSpread - 6) * 2
+    Math.min(50, goodWindHours.length * 10) +        // Hores amb 14+ kn (màx 50 punts)
+    Math.min(25, justejaWindHours.length * 5) +      // Hores amb 11-13 kn (màx 25 punts)
+    Math.min(25, Math.max(0, avgEffectiveWind - 10) * 2.5) - // Bonus per mitjana alta
+    Math.max(0, gustSpread - 6) * 2                  // Penalització per ràfegues irregulars
 
   const score = Math.max(0, Math.min(100, Math.round(scoreBase)))
-  const targetHours = idealHours.length > 0 ? idealHours : rideableHours
+  const targetHours = goodWindHours.length > 0 ? goodWindHours : navigableHours
   const bestWindow =
     targetHours.length > 0 ? `${targetHours[0].time}–${targetHours[targetHours.length - 1].time}` : "Cap franja clara"
   const bestWindowAvg = targetHours.length > 0
@@ -107,23 +109,20 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const gustQuality = gustSpread <= 3 ? "Molt estable" : gustSpread <= 6 ? "Moderat" : "Ratxejat"
 
   // Detectar si és un dia de vent offshore (tramuntana, garbí, mestral, ponent)
-  const isOffshoreDay = offshoreRiskHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND
+  const isOffshoreDay = offshoreRiskHours.length >= 3 && avgEffectiveWind >= MIN_JUSTETA_WIND
   const hasStrongGusts = gustSpread > 4
   // Trobar el vent offshore predominant
   const offshoreWindName = offshoreRiskHours.length > 0 
     ? getOffshoreWindName(offshoreRiskHours[0].windDirection)
     : "offshore"
 
-  // "good": enough rideable hours with decent avg wind
-  // Criteri principal: si hi ha 3+ hores amb vent suficient, és bon dia
-  const isGood =
-    (idealHours.length >= 2 && offshoreRiskHours.length <= 2) || // 2+ hores ideals
-    (rideableHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND) || // 3+ hores navegables amb bona mitjana
-    (rideableHours.length >= 4) || // 4+ hores navegables (encara que sigui just)
-    (isOffshoreDay && avgWind >= MIN_RIDEABLE_WIND) // Offshore amb vent suficient
-
-  // "maybe": algunes hores però no gaire consistent
-  const isMaybe = rideableHours.length >= 1 && !isGood
+  // LÒGICA SIMPLE basada en vent efectiu:
+  // - VERD (good): 14+ kn de mitjana O 2+ hores amb 14+ kn
+  // - GROC (maybe/justeta): 11-13 kn de mitjana O alguna hora amb 11+ kn
+  // - VERMELL (bad): < 11 kn
+  
+  const isGood = avgEffectiveWind >= MIN_GOOD_WIND || goodWindHours.length >= 2
+  const isJusteta = !isGood && (avgEffectiveWind >= MIN_JUSTETA_WIND || navigableHours.length >= 2)
 
   if (isGood) {
     // Si és vent offshore (tramuntana, garbí, mestral, ponent), avisar
@@ -131,61 +130,61 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
       return {
         label: getDayLabel(index),
         tone: "good",
-        statusLabel: "Bones condicions",
+        statusLabel: "Bona",
         score,
-        scoreLabel: hasStrongGusts ? "bon vent però ratxejat" : "bon vent offshore",
+        scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
         bestWindow,
         bestWindowAvg,
         gustQuality,
-        reason: `Hi ha ${rideableHours.length} hores navegables amb ${Math.round(avgWind)} kn de mitjana.`,
+        reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn amb ${goodWindHours.length} hores de bon vent (14+ kn).`,
         decisionTitle: `Sí, però alerta: ${offshoreWindName}!`,
-        decisionText: `Vent offshore (${offshoreWindName}) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució perquè el vent t'allunya de la costa.`,
+        decisionText: `Vent offshore (${offshoreWindName}) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució.`,
       }
     }
     
     return {
       label: getDayLabel(index),
       tone: "good",
-      statusLabel: "Bona per sortir",
+      statusLabel: "Bona",
       score,
-      scoreLabel: "molt bona pinta",
+      scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
       bestWindow,
       bestWindowAvg,
       gustQuality,
-      reason: `Hi ha ${rideableHours.length} hores navegables amb ${Math.round(avgWind)} kn de mitjana.`,
-      decisionTitle: "Sí, val la pena anar-hi!",
-      decisionText: `La millor finestra és ${bestWindow}, amb vent prou sòlid per a la majoria de kitesurfistes.`,
+      reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn amb ${goodWindHours.length} hores de bon vent (14+ kn).`,
+      decisionTitle: "Sí, val la pena!",
+      decisionText: `La millor franja és ${bestWindow}, bon vent per navegar.`,
     }
   }
 
-  if (isMaybe) {
+  if (isJusteta) {
     return {
       label: getDayLabel(index),
       tone: "maybe",
       statusLabel: "Justeta",
       score,
-      scoreLabel: "sessió aprofitable però al límit",
+      scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
       bestWindow,
       bestWindowAvg,
       gustQuality,
-      reason: `Hi ha algunes hores per sobre dels ${MIN_RIDEABLE_WIND} kn, però no serà un dia rodó per a tothom.`,
-      decisionTitle: "Potser, però serà justeta.",
-      decisionText: `Si hi vas, apunta a la franja ${bestWindow} i no esperis una tracció constant tot el dia.`,
+      reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn (entre 11-13 kn).`,
+      decisionTitle: "Potser, serà justeta.",
+      decisionText: `Vent entre 11-13 kn. Si hi vas, millor franja: ${bestWindow}.`,
     }
   }
 
   return {
     label: getDayLabel(index),
     tone: "bad",
-    statusLabel: "No val la pena",
+    statusLabel: "Fluixa",
     score,
-    scoreLabel: "massa fluix o irregular",
+    scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
     bestWindow,
     bestWindowAvg,
     gustQuality,
-    reason: `La major part del dia queda per sota dels ${MIN_RIDEABLE_WIND} kn (màxim ${Math.round(maxWind)} kn).`,
-    decisionTitle: "No, avui pinta massa fluix.",
-    decisionText: `Amb menys de ${MIN_RIDEABLE_WIND} kn costa molt que la cometa treballi bé per a la majoria de riders.`,
+    reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn, per sota dels 11 kn necessaris.`,
+    decisionTitle: "No, massa fluix.",
+    decisionText: `Amb menys de 11 kn costa molt navegar. Màxim previst: ${Math.round(maxEffectiveWind)} kn.`,
   }
 }
 
@@ -254,11 +253,11 @@ export function SessionOverview() {
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Wind className="h-3.5 w-3.5" />
-                Llindar mínim útil: {MIN_RIDEABLE_WIND} kn
+                Justeta: {MIN_JUSTETA_WIND}-13 kn
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Waves className="h-3.5 w-3.5" />
-                Òptim general: {IDEAL_MIN_WIND}-{IDEAL_MAX_WIND} kn
+                Bona: {MIN_GOOD_WIND}+ kn
               </Badge>
             </div>
 
@@ -329,7 +328,7 @@ export function SessionOverview() {
               <div className="text-lg font-bold text-sky-950">{summary.decisionTitle}</div>
               <p className="mt-1 text-sm text-sky-900">{summary.decisionText}</p>
               <p className="mt-2 text-xs text-sky-700">
-                Referència ràpida: {MIN_RIDEABLE_WIND} kn són uns {knotsToKmh(MIN_RIDEABLE_WIND)} km/h.
+                Referència: 11 kn = {knotsToKmh(11)} km/h | 14 kn = {knotsToKmh(14)} km/h
               </p>
             </div>
 
