@@ -40,12 +40,11 @@ export async function GET(request: Request) {
                 )
                 
                 if (calibrated.calibrated) {
-                  hour.windSpeedOriginal = hour.windSpeed
-                  hour.windGustOriginal = hour.windGust
+                  hour.originalWindSpeed = hour.windSpeed
                   hour.windSpeed = calibrated.windSpeed
                   hour.windGust = calibrated.windGust
-                  hour.calibrated = true
-                  hour.calibrationConfidence = calibrated.confidence
+                  hour.isCalibrated = true
+                  hour.confidence = calibrated.confidence
                   calibrationApplied = true
                 }
               }
