@@ -21,13 +21,11 @@ export function ApiStatus() {
         if (response.ok) {
           setApiStatus("real")
 
-          // Verificar si Meteocat també està disponible com a font addicional
+          // Verificar si Meteocat també està disponible via API interna
           try {
-            const meteocatResponse = await fetch(
-              "https://api.meteo.cat/xema/v1/estacions/CG"
-            )
+            const meteocatResponse = await fetch("/api/current")
             if (meteocatResponse.ok) {
-              setDataSource("Open-Meteo + Meteocat")
+              setDataSource("Open-Meteo + Meteocat (Sant Pere Pescador)")
             } else {
               setDataSource("Open-Meteo (Gratuït)")
             }
@@ -35,14 +33,12 @@ export function ApiStatus() {
             setDataSource("Open-Meteo (Gratuït)")
           }
         } else {
-          // Si Open-Meteo falla, provar Meteocat
+          // Si Open-Meteo falla, provar Meteocat via API interna
           try {
-            const meteocatResponse = await fetch(
-              "https://api.meteo.cat/xema/v1/estacions/CG"
-            )
+            const meteocatResponse = await fetch("/api/current")
             if (meteocatResponse.ok) {
               setApiStatus("real")
-              setDataSource("Meteocat (Alternativa)")
+              setDataSource("Meteocat (Sant Pere Pescador)")
             } else {
               setApiStatus("fallback")
               setDataSource("Dades simulades")
@@ -53,14 +49,12 @@ export function ApiStatus() {
           }
         }
       } catch (error) {
-        // Si Open-Meteo falla, provar Meteocat
+        // Si Open-Meteo falla, provar Meteocat via API interna
         try {
-          const meteocatResponse = await fetch(
-            "https://api.meteo.cat/xema/v1/estacions/CG"
-          )
+          const meteocatResponse = await fetch("/api/current")
           if (meteocatResponse.ok) {
             setApiStatus("real")
-            setDataSource("Meteocat (Alternativa)")
+            setDataSource("Meteocat (Sant Pere Pescador)")
           } else {
             setApiStatus("fallback")
             setDataSource("Dades simulades")
