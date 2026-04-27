@@ -178,7 +178,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
   }
 }
 
-// Meteocat (Servei Meteorològic de Catalunya) - Dades oficials
+// Meteocat (Servei Meteorològic de Catalunya) - Dades oficials en temps real
 export class MeteocatWeatherProvider implements WeatherProvider {
   name = "Meteocat"
   priority = 1 // Font de suport
@@ -189,19 +189,23 @@ export class MeteocatWeatherProvider implements WeatherProvider {
   }
 
   async getWeatherData(lat: number, lon: number): Promise<WeatherData[]> {
-    const forecast = await this.meteocatProvider.getForecast()
+    // Meteocat dona dades actuals, no forecast - retornem un sol punt de dades
+    const current = await this.meteocatProvider.getCurrentWeather()
 
-    return forecast.map((item) => ({
-      timestamp: item.timestamp,
-      windSpeed: item.windSpeed,
-      windDirection: item.windDirection,
-      windGust: item.windGust,
-      temperature: item.temperature,
-      humidity: item.humidity || 70,
-      precipitation: item.precipitation,
-      source: item.source,
-      confidence: item.confidence
-    }))
+    if (!current) {
+      return []
+    }
+
+    return [{
+      timestamp: current.lastUpdate,
+      windSpeed: current.windSpeed,
+      windDirection: current.windDirection,
+      windGust: current.windGust,
+      temperature: current.temperature,
+      humidity: current.humidity,
+      source: "Meteocat XEMA",
+      confidence: 0.95 // Dades reals tenen alta confianca
+    }]
   }
 }
 
