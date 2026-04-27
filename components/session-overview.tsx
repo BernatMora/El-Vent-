@@ -61,6 +61,14 @@ function getDayLabel(index: number) {
   return `Dia ${index + 1}`
 }
 
+// Calcula el vent efectiu: mitjana entre vent sostingut i ràfegues
+// Això representa millor el que realment notes quan fas kite
+function getEffectiveWind(hour: ForecastHour): number {
+  const gust = hour.windGust || hour.windSpeed
+  // Ponderat: 60% vent sostingut + 40% ràfegues (el vent sostingut és més representatiu)
+  return hour.windSpeed * 0.6 + gust * 0.4
+}
+
 function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const hours = day.hours.filter((hour: ForecastHour) => {
     const hourNum = Number.parseInt(hour.time.split(":")[0])
@@ -71,13 +79,15 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     return null
   }
 
-  const avgWind = hours.reduce((sum, hour) => sum + hour.windSpeed, 0) / hours.length
-  const maxWind = Math.max(...hours.map((hour) => hour.windSpeed))
-  const rideableHours = hours.filter((hour) => hour.windSpeed >= MIN_RIDEABLE_WIND)
+  // Utilitzem el vent efectiu (mitjana vent/ràfegues) per als càlculs
+  const avgEffectiveWind = hours.reduce((sum, hour) => sum + getEffectiveWind(hour), 0) / hours.length
+  const avgWind = avgEffectiveWind // Ara avgWind és el vent efectiu
+  const maxWind = Math.max(...hours.map((hour) => getEffectiveWind(hour)))
+  const rideableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND)
   const idealHours = hours.filter(
-    (hour) => hour.windSpeed >= IDEAL_MIN_WIND && hour.windSpeed <= IDEAL_MAX_WIND && isFavorable(hour.windDirection),
+    (hour) => getEffectiveWind(hour) >= IDEAL_MIN_WIND && getEffectiveWind(hour) <= IDEAL_MAX_WIND && isFavorable(hour.windDirection),
   )
-  const offshoreRiskHours = hours.filter((hour) => hour.windSpeed >= MIN_RIDEABLE_WIND && isOffshore(hour.windDirection))
+  const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND && isOffshore(hour.windDirection))
   const gustSpread = hours.reduce((sum, hour) => sum + Math.max(0, (hour.windGust || hour.windSpeed) - hour.windSpeed), 0) / hours.length
 
   const scoreBase =
