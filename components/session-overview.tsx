@@ -261,25 +261,36 @@ export function SessionOverview() {
               </Badge>
             </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-              {daySummaries.map((day) => {
+            <div className="grid grid-cols-7 gap-1 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
+              {daySummaries.map((day, idx) => {
                 const dayTone = toneStyles[day.tone]
                 const DayIcon = dayTone.Icon
+                // Format curt per mòbil
+                const shortLabel = idx === 0 ? "Avui" : idx === 1 ? "Demà" : day.label.replace("Dia ", "D")
 
                 return (
                   <div
                     key={day.label}
-                    className={`min-w-[140px] flex-shrink-0 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:min-w-0 sm:flex-shrink ${dayTone.panel}`}
+                    className={`rounded-xl border p-1.5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:rounded-2xl sm:p-4 sm:text-left ${dayTone.panel}`}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
-                      <div className="flex items-center gap-2">
-                        <DayIcon className="h-4 w-4" />
-                        <span>{day.label}</span>
-                      </div>
-                      <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
+                    {/* Versió mòbil: compacta */}
+                    <div className="sm:hidden">
+                      <DayIcon className="mx-auto h-4 w-4" />
+                      <div className="mt-1 text-[10px] font-semibold leading-tight">{shortLabel}</div>
+                      <div className="mt-0.5 text-sm font-bold">{day.score}</div>
                     </div>
-                    <div className="text-lg font-bold">{day.statusLabel}</div>
-                    <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
+                    {/* Versió tablet/desktop: completa */}
+                    <div className="hidden sm:block">
+                      <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
+                        <div className="flex items-center gap-2">
+                          <DayIcon className="h-4 w-4" />
+                          <span>{day.label}</span>
+                        </div>
+                        <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
+                      </div>
+                      <div className="text-lg font-bold">{day.statusLabel}</div>
+                      <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
+                    </div>
                   </div>
                 )
               })}
