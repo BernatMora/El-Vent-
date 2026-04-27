@@ -1,10 +1,11 @@
 import { ClientContent } from "@/components/client-content"
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
-import { Gauge, Waves } from "lucide-react"
+import { Gauge, Waves, Settings2 } from "lucide-react"
+import Link from "next/link"
 
 const highlights = [
-  { value: "7 dies", label: "previsió", Icon: Gauge },
-  { value: "Offline", label: "consulta ràpida", Icon: Waves },
+  { value: "7 dies", label: "previsio", Icon: Gauge },
+  { value: "Calibrat", label: "dades reals", Icon: Settings2 },
 ]
 
 export default function Home() {
@@ -12,7 +13,14 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-2 pb-safe sm:p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         <section className="relative mb-4 overflow-hidden rounded-3xl bg-gradient-to-r from-sky-900 via-blue-800 to-cyan-700 p-4 text-white shadow-xl animate-in fade-in-50 slide-in-from-top-2 duration-500 sm:mb-8 sm:p-6 md:p-8">
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <Link 
+              href="/calibratge" 
+              className="rounded-full bg-white/15 p-2 text-sky-100 transition-colors hover:bg-white/25"
+              title="Calibratge"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Link>
             <DarkModeToggle />
           </div>
           <div className="text-center">
