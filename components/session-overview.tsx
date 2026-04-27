@@ -115,14 +115,15 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     : "offshore"
 
   // "good": enough rideable hours with decent avg wind
-  // Vent offshore (tramuntana, garbí, etc.) també és "good" perquè hi ha vent fort, però amb avís
+  // Criteri principal: si hi ha 3+ hores amb vent suficient, és bon dia
   const isGood =
-    (idealHours.length >= 3 && offshoreRiskHours.length <= 1) ||
-    (rideableHours.length >= 4 && avgWind >= IDEAL_MIN_WIND && offshoreRiskHours.length <= 1) ||
-    (isOffshoreDay && avgWind >= IDEAL_MIN_WIND) // Offshore amb bon vent
+    (idealHours.length >= 2 && offshoreRiskHours.length <= 2) || // 2+ hores ideals
+    (rideableHours.length >= 3 && avgWind >= MIN_RIDEABLE_WIND) || // 3+ hores navegables amb bona mitjana
+    (rideableHours.length >= 4) || // 4+ hores navegables (encara que sigui just)
+    (isOffshoreDay && avgWind >= MIN_RIDEABLE_WIND) // Offshore amb vent suficient
 
-  // "maybe": some rideable hours but not great (no offshore fort)
-  const isMaybe = rideableHours.length >= 2 && !isOffshoreDay
+  // "maybe": algunes hores però no gaire consistent
+  const isMaybe = rideableHours.length >= 1 && !isGood
 
   if (isGood) {
     // Si és vent offshore (tramuntana, garbí, mestral, ponent), avisar
