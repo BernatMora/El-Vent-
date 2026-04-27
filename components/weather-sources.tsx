@@ -59,9 +59,9 @@ export function WeatherSources() {
         updatedSources[0].status = "unavailable"
       }
 
-      // Verificar Meteocat
+      // Verificar Meteocat via API interna (que gestiona la clau API)
       try {
-        const meteocatResponse = await fetch("https://api.meteo.cat/xema/v1/estacions/CG")
+        const meteocatResponse = await fetch("/api/current")
         updatedSources[1].status = meteocatResponse.ok ? "available" : "unavailable"
       } catch {
         updatedSources[1].status = "unavailable"

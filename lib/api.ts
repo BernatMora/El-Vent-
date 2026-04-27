@@ -1,6 +1,5 @@
 import { protectedWeatherAPI } from "./protected-api"
 import { getOpenMeteoForecast } from "./open-meteo-api"
-import { getMeteocatForecast } from "./meteocat-api"
 import { enhancedWeatherService } from "./enhanced-api"
 import { predictionHistory } from "./prediction-history"
 
@@ -137,33 +136,14 @@ export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay
       const realData = await getOpenMeteoForecast(spot)
       console.log("✅ Dades d'Open-Meteo obtingudes:", realData.length, "dies")
 
-      // Intentar enriquir amb dades de Meteocat com a font addicional
-      try {
-        const meteocatData = await getMeteocatForecast()
-        if (meteocatData.length > 0) {
-          console.log("📊 Dades addicionals de Meteocat disponibles:", meteocatData.length, "dies")
-          // Les dades de Meteocat estan disponibles però Open-Meteo és la font principal
-        }
-      } catch (meteocatError) {
-        console.log("ℹ️ Meteocat no disponible com a font addicional")
-      }
+      // Nota: Meteocat s'usa per condicions actuals reals, no per forecast
+      // Vegeu /api/current per dades en temps real
 
       return realData
     } catch (apiError) {
       console.warn("⚠️ Open-Meteo no disponible:", apiError)
 
-      // Si Open-Meteo falla, intentar Meteocat com a alternativa
-      try {
-        const meteocatData = await getMeteocatForecast()
-        if (meteocatData.length > 0) {
-          console.log("✅ Utilitzant Meteocat com a font alternativa:", meteocatData.length, "dies")
-          return meteocatData
-        }
-      } catch (meteocatError) {
-        console.warn("⚠️ Meteocat tampoc disponible:", meteocatError)
-      }
-
-      // Si tot falla, usar sistema protegit
+      // Si Open-Meteo falla, usar sistema protegit
       const protectedData = await protectedWeatherAPI.getForecastData(spot)
       console.log("✅ Dades protegides obtingudes:", protectedData.length, "dies")
       return protectedData

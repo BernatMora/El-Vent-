@@ -1,309 +1,279 @@
-// Integració amb l'API de Meteocat (Servei Meteorològic de Catalunya)
-// API pública: https://apidocs.meteocat.gencat.cat/
+// API Meteocat XEMA - Dades reals de l'estació de Sant Pere Pescador
+// Documentació: https://apidocs.meteocat.gencat.cat/documentacio/dades-mesurades/
 
-const METEOCAT_BASE = "https://api.meteo.cat"
+const METEOCAT_BASE = "https://api.meteo.cat/xema/v1"
 
-// Estació meteorològica més propera a Sant Pere Pescador
-// Utilitzarem l'estació de Roses (CG) - Codi: CG
-const METEOCAT_STATION = "CG" // Roses, la més propera a Sant Pere Pescador
-
-// Coordenades de Sant Pere Pescador per buscar estacions properes
-const SANT_PERE_COORDS = {
-  lat: 42.1833,
-  lon: 3.0833,
+// Codis de variables Meteocat (oficials)
+const VARIABLE_CODES = {
+  WIND_SPEED_10M: 30,      // Velocitat del vent a 10m (m/s)
+  WIND_DIRECTION_10M: 31,  // Direcció del vent a 10m (°)
+  WIND_GUST_10M: 50,       // Ratxa màxima del vent a 10m (m/s)
+  TEMPERATURE: 32,         // Temperatura (°C)
+  HUMIDITY: 33,            // Humitat relativa (%)
 }
 
-function getMeteocatHeaders(): HeadersInit {
-  const headers: HeadersInit = { 'Accept': 'application/json' }
-  const apiKey = typeof window !== "undefined"
-    ? undefined
-    : process.env.METEOCAT_API_KEY
-  if (apiKey) {
-    headers['x-api-key'] = apiKey
-  }
-  return headers
+// Estació de Sant Pere Pescador
+const STATION_CODE = "U2"  // Sant Pere Pescador (3m altitud, operativa des de 1989)
+
+export interface MeteocatCurrentConditions {
+  windSpeed: number        // en nusos
+  windDirection: number    // en graus
+  windGust: number         // en nusos
+  temperature: number      // en °C
+  humidity: number         // en %
+  lastUpdate: string
+  stationName: string
+  isReal: true
+  source: "Meteocat XEMA"
 }
 
-export interface MeteocatWeatherData {
-  timestamp: string
+export interface MeteocatReading {
+  time: string
   windSpeed: number
   windDirection: number
   windGust: number
   temperature: number
-  humidity?: number
-  precipitation: number
-  source: string
-  confidence: number
+  humidity: number
+  isReal: true
+  source: "Meteocat XEMA"
 }
 
-export class MeteocatProvider {
-  name = "Meteocat"
-  priority = 1 // Alta prioritat per ser dades locals de Catalunya
+// Convertir m/s a nusos
+function msToKnots(ms: number): number {
+  return Math.round(ms * 1.94384)
+}
 
-  // Obtenir dades meteorològiques actuals
-  async getCurrentWeather(): Promise<MeteocatWeatherData | null> {
-    try {
-      console.log("🌐 Obtenint dades actuals de Meteocat...")
+// Headers amb API key
+function getHeaders(): HeadersInit {
+  const apiKey = process.env.METEOCAT_API_KEY
+  if (!apiKey) {
+    throw new Error("METEOCAT_API_KEY no configurada")
+  }
+  return {
+    "X-Api-Key": apiKey,
+    "Accept": "application/json"
+  }
+}
 
-      // API de Meteocat per observacions actuals
-      const url = `${METEOCAT_BASE}/xema/v1/estacions/${METEOCAT_STATION}/variables/mesurades?estat=ope`
+// Obtenir les últimes lectures d'una variable (últimes 4 hores)
+async function getLatestReading(variableCode: number): Promise<{ value: number; time: string } | null> {
+  try {
+    const url = `${METEOCAT_BASE}/variables/mesurades/${variableCode}/ultimes?codiEstacio=${STATION_CODE}`
+    
+    const response = await fetch(url, {
+      headers: getHeaders(),
+      next: { revalidate: 300 } // Cache 5 minuts
+    })
 
-      const response = await fetch(url, {
-        headers: getMeteocatHeaders(),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error HTTP de Meteocat: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("📊 Dades rebudes de Meteocat:", data)
-
-      return this.processCurrentData(data)
-    } catch (error) {
-      console.error("❌ Error obtenint dades de Meteocat:", error)
+    if (!response.ok) {
+      console.error(`Error Meteocat variable ${variableCode}: ${response.status}`)
       return null
     }
-  }
 
-  // Obtenir predicció meteorològica
-  async getForecast(): Promise<MeteocatWeatherData[]> {
-    try {
-      console.log("🌐 Obtenint predicció de Meteocat...")
-
-      // Per Sant Pere Pescador, utilitzarem el municipi 170138
-      // Alt Empordà - Sant Pere Pescador
-      const municipiCode = "170138"
-
-      const url = `${METEOCAT_BASE}/prediccio/v1/municipal/${municipiCode}`
-
-      const response = await fetch(url, {
-        headers: getMeteocatHeaders(),
-      })
-
-      if (!response.ok) {
-        console.warn(`⚠️ Error HTTP de Meteocat predicció: ${response.status}`)
-        // Retornar array buit si falla
-        return []
+    const data = await response.json()
+    
+    if (data.lectures && data.lectures.length > 0) {
+      // Agafar l'última lectura
+      const lastReading = data.lectures[data.lectures.length - 1]
+      return {
+        value: lastReading.valor,
+        time: lastReading.data
       }
+    }
+    
+    return null
+  } catch (error) {
+    console.error(`Error obtenint variable ${variableCode}:`, error)
+    return null
+  }
+}
 
-      const data = await response.json()
-      console.log("📊 Predicció rebuda de Meteocat")
+// Obtenir totes les dades d'un dia per una estació
+async function getDayReadings(date: Date): Promise<any | null> {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
 
-      return this.processForecastData(data)
-    } catch (error) {
-      console.error("❌ Error obtenint predicció de Meteocat:", error)
+  try {
+    const url = `${METEOCAT_BASE}/estacions/mesurades/${STATION_CODE}/${year}/${month}/${day}`
+    
+    const response = await fetch(url, {
+      headers: getHeaders(),
+      next: { revalidate: 300 }
+    })
+
+    if (!response.ok) {
+      console.error(`Error Meteocat dia: ${response.status}`)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error obtenint dades del dia:", error)
+    return null
+  }
+}
+
+// Obtenir condicions actuals de Sant Pere Pescador
+export async function getMeteocatCurrentConditions(): Promise<MeteocatCurrentConditions | null> {
+  console.log(`🌡️ Obtenint dades reals de Meteocat (estació ${STATION_CODE} - Sant Pere Pescador)...`)
+
+  try {
+    // Obtenir totes les variables en paral·lel
+    const [windSpeed, windDirection, windGust, temperature, humidity] = await Promise.all([
+      getLatestReading(VARIABLE_CODES.WIND_SPEED_10M),
+      getLatestReading(VARIABLE_CODES.WIND_DIRECTION_10M),
+      getLatestReading(VARIABLE_CODES.WIND_GUST_10M),
+      getLatestReading(VARIABLE_CODES.TEMPERATURE),
+      getLatestReading(VARIABLE_CODES.HUMIDITY),
+    ])
+
+    if (!windSpeed) {
+      console.error("No s'han pogut obtenir les dades de vent de Meteocat")
+      return null
+    }
+
+    // Convertir m/s a nusos
+    const windSpeedKnots = msToKnots(windSpeed.value)
+    const windGustKnots = windGust ? msToKnots(windGust.value) : Math.round(windSpeedKnots * 1.3)
+
+    const result: MeteocatCurrentConditions = {
+      windSpeed: windSpeedKnots,
+      windDirection: Math.round(windDirection?.value ?? 0),
+      windGust: Math.max(windGustKnots, windSpeedKnots), // Assegurar que ràfega >= vent
+      temperature: Math.round(temperature?.value ?? 20),
+      humidity: Math.round(humidity?.value ?? 70),
+      lastUpdate: windSpeed.time,
+      stationName: "Sant Pere Pescador",
+      isReal: true,
+      source: "Meteocat XEMA"
+    }
+
+    console.log(`✅ Dades reals Meteocat: ${result.windSpeed} kts, ràfega ${result.windGust} kts, dir ${result.windDirection}°`)
+    
+    return result
+  } catch (error) {
+    console.error("Error obtenint condicions Meteocat:", error)
+    return null
+  }
+}
+
+// Obtenir històric del dia actual (per mostrar evolució real)
+export async function getMeteocatTodayHistory(): Promise<MeteocatReading[]> {
+  console.log(`📊 Obtenint històric real d'avui de Meteocat...`)
+
+  try {
+    const today = new Date()
+    const dayData = await getDayReadings(today)
+    
+    if (!dayData || !Array.isArray(dayData) || dayData.length === 0) {
+      console.log("No hi ha dades del dia")
       return []
     }
-  }
 
-  // Processar dades actuals
-  private processCurrentData(data: any): MeteocatWeatherData | null {
-    try {
-      const now = new Date().toISOString()
-
-      // Buscar variables meteorològiques
-      const variables = data.variables || []
-
-      let temperature = 20
-      let windSpeed = 0
-      let windDirection = 0
-      let windGust = 0
-      let humidity = 70
-      let precipitation = 0
-
-      variables.forEach((variable: any) => {
-        const codi = variable.codi
-        const lectures = variable.lectures || []
-
-        if (lectures.length > 0) {
-          const ultimaLectura = lectures[lectures.length - 1]
-          const valor = ultimaLectura.valor
-
-          switch (codi) {
-            case 32: // Temperatura
-              temperature = parseFloat(valor) || 20
-              break
-            case 30: // Humitat relativa
-              humidity = parseFloat(valor) || 70
-              break
-            case 35: // Velocitat del vent (m/s)
-              windSpeed = Math.round((parseFloat(valor) || 0) * 1.944) // Convertir m/s a nusos
-              break
-            case 36: // Direcció del vent
-              windDirection = Math.round(parseFloat(valor) || 0)
-              break
-            case 81: // Ratxa màxima de vent
-              windGust = Math.round((parseFloat(valor) || 0) * 1.944)
-              break
-            case 6: // Precipitació acumulada
-              precipitation = parseFloat(valor) || 0
-              break
-          }
-        }
-      })
-
-      // Si no hi ha ratxa, estimar-la. Sempre assegurar que windGust >= windSpeed
-      if (windGust === 0 && windSpeed > 0) {
-        windGust = Math.round(windSpeed * 1.4)
-      }
-      // Assegurar que les ràfegues sempre siguin >= al vent sostingut
-      windGust = Math.max(windGust, windSpeed)
-
-      return {
-        timestamp: now,
-        temperature,
-        windSpeed,
-        windDirection,
-        windGust,
-        humidity,
-        precipitation,
-        source: "Meteocat (Oficial)",
-        confidence: 0.95 // Alta confiança per ser dades oficials
-      }
-    } catch (error) {
-      console.error("❌ Error processant dades actuals de Meteocat:", error)
-      return null
-    }
-  }
-
-  // Processar dades de predicció
-  private processForecastData(data: any): MeteocatWeatherData[] {
-    const results: MeteocatWeatherData[] = []
-
-    try {
-      const dies = data.dies || []
-
-      dies.slice(0, 7).forEach((dia: any) => {
-        const data_prediccio = dia.data_prediccio
-        const variables = dia.variables || {}
-
-        // Obtenir temperatures
-        const temp_min = variables.temperatura?.min || 15
-        const temp_max = variables.temperatura?.max || 25
-
-        // Obtenir vent
-        const vent = variables.vent || {}
-        const velocitat_vent = vent.velocitat || 0 // km/h
-        const direccio_vent = vent.direccio || 0
-
-        // Obtenir precipitació
-        const precipitacio = variables.precipitacio?.suma || 0
-
-        // Generar dades horàries simulades per al dia (9:00 - 21:00)
-        for (let hour = 9; hour <= 21; hour++) {
-          // Interpolar temperatura segons l'hora
-          let temperature = temp_min
-          if (hour >= 8 && hour <= 16) {
-            const progress = (hour - 8) / 8
-            temperature = temp_min + (temp_max - temp_min) * Math.sin(progress * Math.PI)
-          } else if (hour > 16) {
-            const progress = (hour - 16) / 8
-            temperature = temp_max - (temp_max - temp_min) * progress
-          }
-
-          // Convertir velocitat de vent de km/h a nusos
-          const windSpeedKnots = Math.round((velocitat_vent / 1.852))
-          // Assegurar que les ràfegues sempre siguin >= al vent sostingut
-          const windGust = Math.round(Math.max(windSpeedKnots * 1.4, windSpeedKnots))
-
-          results.push({
-            timestamp: `${data_prediccio}T${hour.toString().padStart(2, '0')}:00:00.000Z`,
-            temperature: Math.round(temperature),
-            windSpeed: windSpeedKnots,
-            windDirection: direccio_vent,
-            windGust,
-            humidity: 70, // Valor estimat
-            precipitation: precipitacio / 13, // Distribuir precipitació entre les hores
-            source: "Meteocat (Predicció)",
-            confidence: 0.85
-          })
-        }
-      })
-
-      console.log("📈 Dades de predicció processades:", results.length, "hores")
-    } catch (error) {
-      console.error("❌ Error processant predicció de Meteocat:", error)
+    const stationData = dayData[0]
+    if (!stationData.variables) {
+      return []
     }
 
-    return results
+    // Organitzar dades per hora
+    const hourlyData: { [time: string]: Partial<MeteocatReading> } = {}
+
+    for (const variable of stationData.variables) {
+      const code = variable.codi
+      
+      for (const lecture of variable.lectures || []) {
+        const time = lecture.data
+        const lectureDate = new Date(time)
+        const hour = lectureDate.getUTCHours() + 2 // UTC a hora local (CEST)
+        
+        // Només hores de navegació (9:00 - 21:00)
+        if (hour < 9 || hour > 21) continue
+        
+        const hourKey = `${String(hour).padStart(2, '0')}:00`
+        
+        if (!hourlyData[hourKey]) {
+          hourlyData[hourKey] = {
+            time: hourKey,
+            isReal: true,
+            source: "Meteocat XEMA"
+          }
+        }
+
+        switch (code) {
+          case VARIABLE_CODES.WIND_SPEED_10M:
+            hourlyData[hourKey].windSpeed = msToKnots(lecture.valor)
+            break
+          case VARIABLE_CODES.WIND_DIRECTION_10M:
+            hourlyData[hourKey].windDirection = Math.round(lecture.valor)
+            break
+          case VARIABLE_CODES.WIND_GUST_10M:
+            hourlyData[hourKey].windGust = msToKnots(lecture.valor)
+            break
+          case VARIABLE_CODES.TEMPERATURE:
+            hourlyData[hourKey].temperature = Math.round(lecture.valor)
+            break
+          case VARIABLE_CODES.HUMIDITY:
+            hourlyData[hourKey].humidity = Math.round(lecture.valor)
+            break
+        }
+      }
+    }
+
+    // Convertir a array i completar dades faltants
+    const readings = Object.values(hourlyData)
+      .filter(r => r.windSpeed !== undefined)
+      .map(r => ({
+        time: r.time!,
+        windSpeed: r.windSpeed!,
+        windDirection: r.windDirection ?? 0,
+        windGust: Math.max(r.windGust ?? Math.round(r.windSpeed! * 1.3), r.windSpeed!),
+        temperature: r.temperature ?? 20,
+        humidity: r.humidity ?? 70,
+        isReal: true as const,
+        source: "Meteocat XEMA" as const
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time))
+
+    console.log(`✅ Obtingudes ${readings.length} lectures reals d'avui`)
+    
+    return readings
+  } catch (error) {
+    console.error("Error obtenint històric Meteocat:", error)
+    return []
+  }
+}
+
+// Funció legacy per compatibilitat (retorna array buit - usar getMeteocatCurrentConditions)
+export async function getMeteocatForecast(): Promise<any[]> {
+  console.log("⚠️ getMeteocatForecast() és legacy - usant getMeteocatCurrentConditions()")
+  return []
+}
+
+// Classe legacy per compatibilitat
+export class MeteocatProvider {
+  name = "Meteocat XEMA"
+  priority = 1
+
+  async getCurrentWeather() {
+    return getMeteocatCurrentConditions()
   }
 
-  // Comprovar si l'API està disponible
   async isAvailable(): Promise<boolean> {
+    // Retornar false directament si no hi ha clau API configurada
+    // Això evita fer crides innecessàries a l'API
+    const apiKey = process.env.METEOCAT_API_KEY
+    if (!apiKey) {
+      return false
+    }
+    
+    // Només verificar disponibilitat si tenim clau
     try {
-      const response = await fetch(`${METEOCAT_BASE}/xema/v1/estacions/${METEOCAT_STATION}`, {
-        headers: getMeteocatHeaders(),
-      })
+      const url = `${METEOCAT_BASE}/variables/mesurades/${VARIABLE_CODES.WIND_SPEED_10M}/ultimes?codiEstacio=${STATION_CODE}`
+      const response = await fetch(url, { headers: getHeaders() })
       return response.ok
     } catch {
       return false
     }
-  }
-}
-
-// Funció auxiliar per obtenir dades de Meteocat
-export async function getMeteocatForecast(): Promise<any[]> {
-  const provider = new MeteocatProvider()
-
-  try {
-    // Comprovar disponibilitat
-    const available = await provider.isAvailable()
-    if (!available) {
-      console.warn("⚠️ API de Meteocat no disponible")
-      return []
-    }
-
-    // Obtenir predicció
-    const forecast = await provider.getForecast()
-
-    if (forecast.length === 0) {
-      console.warn("⚠️ No s'han pogut obtenir dades de predicció de Meteocat")
-      return []
-    }
-
-    // Agrupar per dies
-    const dayGroups: { [key: string]: any[] } = {}
-
-    forecast.forEach((data) => {
-      const date = new Date(data.timestamp)
-      const hour = date.getHours()
-
-      // Només incloure hores de navegació (9:00 - 21:00)
-      if (hour >= 9 && hour <= 21) {
-        const dateKey = data.timestamp.split('T')[0]
-
-        if (!dayGroups[dateKey]) {
-          dayGroups[dateKey] = []
-        }
-
-        dayGroups[dateKey].push({
-          time: `${hour.toString().padStart(2, '0')}:00`,
-          windSpeed: data.windSpeed,
-          windDirection: data.windDirection,
-          windGust: data.windGust,
-          temperature: data.temperature,
-          humidity: data.humidity || 70,
-          precipitation: Math.round(data.precipitation * 10) / 10,
-          source: data.source,
-          confidence: data.confidence,
-          isReal: false
-        })
-      }
-    })
-
-    // Convertir a format esperat
-    const result = Object.entries(dayGroups)
-      .slice(0, 7)
-      .map(([date, hours]) => ({
-        date,
-        hours: hours.sort((a, b) => a.time.localeCompare(b.time))
-      }))
-
-    console.log("✅ Dades de Meteocat processades:", result.length, "dies")
-    return result
-  } catch (error) {
-    console.error("❌ Error en getMeteocatForecast:", error)
-    return []
   }
 }

@@ -61,6 +61,14 @@ function getDayLabel(index: number) {
   return `Dia ${index + 1}`
 }
 
+// Calcula el vent efectiu: mitjana entre vent sostingut i ràfegues
+// Això representa millor el que realment notes quan fas kite
+function getEffectiveWind(hour: ForecastHour): number {
+  const gust = hour.windGust || hour.windSpeed
+  // Ponderat: 60% vent sostingut + 40% ràfegues (el vent sostingut és més representatiu)
+  return hour.windSpeed * 0.6 + gust * 0.4
+}
+
 function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const hours = day.hours.filter((hour: ForecastHour) => {
     const hourNum = Number.parseInt(hour.time.split(":")[0])
@@ -71,13 +79,15 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     return null
   }
 
-  const avgWind = hours.reduce((sum, hour) => sum + hour.windSpeed, 0) / hours.length
-  const maxWind = Math.max(...hours.map((hour) => hour.windSpeed))
-  const rideableHours = hours.filter((hour) => hour.windSpeed >= MIN_RIDEABLE_WIND)
+  // Utilitzem el vent efectiu (mitjana vent/ràfegues) per als càlculs
+  const avgEffectiveWind = hours.reduce((sum, hour) => sum + getEffectiveWind(hour), 0) / hours.length
+  const avgWind = avgEffectiveWind // Ara avgWind és el vent efectiu
+  const maxWind = Math.max(...hours.map((hour) => getEffectiveWind(hour)))
+  const rideableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND)
   const idealHours = hours.filter(
-    (hour) => hour.windSpeed >= IDEAL_MIN_WIND && hour.windSpeed <= IDEAL_MAX_WIND && isFavorable(hour.windDirection),
+    (hour) => getEffectiveWind(hour) >= IDEAL_MIN_WIND && getEffectiveWind(hour) <= IDEAL_MAX_WIND && isFavorable(hour.windDirection),
   )
-  const offshoreRiskHours = hours.filter((hour) => hour.windSpeed >= MIN_RIDEABLE_WIND && isOffshore(hour.windDirection))
+  const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_RIDEABLE_WIND && isOffshore(hour.windDirection))
   const gustSpread = hours.reduce((sum, hour) => sum + Math.max(0, (hour.windGust || hour.windSpeed) - hour.windSpeed), 0) / hours.length
 
   const scoreBase =
@@ -251,25 +261,36 @@ export function SessionOverview() {
               </Badge>
             </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-              {daySummaries.map((day) => {
+            <div className="grid grid-cols-7 gap-1 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
+              {daySummaries.map((day, idx) => {
                 const dayTone = toneStyles[day.tone]
                 const DayIcon = dayTone.Icon
+                // Format curt per mòbil
+                const shortLabel = idx === 0 ? "Avui" : idx === 1 ? "Demà" : day.label.replace("Dia ", "D")
 
                 return (
                   <div
                     key={day.label}
-                    className={`min-w-[140px] flex-shrink-0 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:min-w-0 sm:flex-shrink ${dayTone.panel}`}
+                    className={`rounded-xl border p-1.5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:rounded-2xl sm:p-4 sm:text-left ${dayTone.panel}`}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
-                      <div className="flex items-center gap-2">
-                        <DayIcon className="h-4 w-4" />
-                        <span>{day.label}</span>
-                      </div>
-                      <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
+                    {/* Versió mòbil: compacta */}
+                    <div className="sm:hidden">
+                      <DayIcon className="mx-auto h-4 w-4" />
+                      <div className="mt-1 text-[10px] font-semibold leading-tight">{shortLabel}</div>
+                      <div className="mt-0.5 text-sm font-bold">{day.score}</div>
                     </div>
-                    <div className="text-lg font-bold">{day.statusLabel}</div>
-                    <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
+                    {/* Versió tablet/desktop: completa */}
+                    <div className="hidden sm:block">
+                      <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
+                        <div className="flex items-center gap-2">
+                          <DayIcon className="h-4 w-4" />
+                          <span>{day.label}</span>
+                        </div>
+                        <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
+                      </div>
+                      <div className="text-lg font-bold">{day.statusLabel}</div>
+                      <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
+                    </div>
                   </div>
                 )
               })}
