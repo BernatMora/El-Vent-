@@ -23,13 +23,13 @@ export async function GET(request: Request) {
     
     // Aplicar calibratge si hi ha factors disponibles
     let calibrationApplied = false
-    if (!skipCalibration && data.forecast) {
+    if (!skipCalibration && Array.isArray(data) && data.length > 0) {
       try {
         const factors = await getCalibrationFactors()
         
         if (Object.keys(factors).length > 0) {
           // Aplicar calibratge a cada hora de cada dia
-          for (const day of data.forecast) {
+          for (const day of data) {
             if (day.hours) {
               for (const hour of day.hours) {
                 const calibrated = applyCalibration(
@@ -57,10 +57,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({
-      ...data,
-      calibrationApplied
-    }, {
+    return NextResponse.json(data, {
       status: 200,
       headers: {
         "Cache-Control": "no-store, max-age=0",
