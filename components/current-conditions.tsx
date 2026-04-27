@@ -2,56 +2,69 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { type ForecastHour, getForecastData } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const SPOT = "sant-pere-pescador"
+interface MeteocatConditions {
+  windSpeed: number
+  windDirection: number
+  windGust: number
+  temperature: number
+  humidity: number
+  lastUpdate: string
+  stationName: string
+  isReal: boolean
+  source: string
+}
+
+interface CurrentResponse {
+  current: MeteocatConditions
+  source: string
+  station: string
+}
 
 export function CurrentConditions() {
   const [loading, setLoading] = useState(true)
-  const [currentData, setCurrentData] = useState<(ForecastHour & { date: string }) | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [currentData, setCurrentData] = useState<MeteocatConditions | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [stationInfo, setStationInfo] = useState<string | null>(null)
 
   const loadCurrentData = async (forceRefresh = false) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await getForecastData(SPOT, { forceRefresh })
-
-      if (data && data.length > 0) {
-        const now = new Date()
-        const hour = now.getHours()
-
-        // Trobar l'hora més propera a les dades
-        let closestHour = data[0].hours[0]
-        data[0].hours.forEach((h: ForecastHour) => {
-          const hourNum = Number.parseInt(h.time.split(":")[0])
-          if (Math.abs(hourNum - hour) < Math.abs(Number.parseInt(closestHour.time.split(":")[0]) - hour)) {
-            closestHour = h
-          }
-        })
-
-        setCurrentData({
-          ...closestHour,
-          date: data[0].date,
-        })
-        setLastUpdated(
-          new Date().toLocaleTimeString("ca-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        )
+      
+      const response = await fetch(`/api/current${forceRefresh ? '?nocache=' + Date.now() : ''}`)
+      
+      if (!response.ok) {
+        throw new Error("No s'han pogut obtenir les dades reals")
+      }
+      
+      const data: CurrentResponse = await response.json()
+      
+      if (data.current) {
+        setCurrentData(data.current)
+        setStationInfo(data.station)
+        
+        // Formatar l'hora de l'última actualització de l'estació
+        if (data.current.lastUpdate) {
+          const updateDate = new Date(data.current.lastUpdate)
+          setLastUpdated(
+            updateDate.toLocaleTimeString("ca-ES", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          )
+        }
       } else {
         setError("No hi ha condicions actuals disponibles.")
       }
     } catch (err) {
       console.error(err)
-      setError("No s'han pogut carregar les condicions actuals.")
+      setError("No s'han pogut carregar les dades reals de l'estació.")
     } finally {
       setLoading(false)
     }
@@ -59,10 +72,13 @@ export function CurrentConditions() {
 
   useEffect(() => {
     loadCurrentData()
-  }, [refreshKey])
+    
+    // Actualitzar cada 5 minuts
+    const interval = setInterval(() => loadCurrentData(), 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1)
     loadCurrentData(true)
   }
 
@@ -99,14 +115,22 @@ export function CurrentConditions() {
       <CardContent className="p-3 sm:p-6">
         <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
           <div className="flex flex-col items-center md:items-start">
-            <h2 className="text-lg sm:text-xl font-bold mb-1">Condicions Actuals</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
+              {currentData?.isReal && (
+                <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  <Radio className="h-3 w-3" />
+                  En directe
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {loading ? "Carregant..." : `Previsio per les ${currentData?.time || "00:00"}`}
+                {loading ? "Carregant dades reals..." : stationInfo || "Estació Meteocat"}
               </p>
               {lastUpdated && (
                 <span className="text-xs text-muted-foreground">
-                  · Actualitzat a les {lastUpdated}
+                  · Mesurat a les {lastUpdated}
                 </span>
               )}
             </div>
@@ -124,56 +148,72 @@ export function CurrentConditions() {
           </Button>
         </div>
 
-            {loading ? (
-              <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
-                <Skeleton className="h-12 w-12 sm:h-16 sm:w-16 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
-                  <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
-                  <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
-                </div>
+        {loading ? (
+          <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
+            <Skeleton className="h-12 w-12 sm:h-16 sm:w-16 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
+              <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 sm:h-8 w-32 sm:w-40" />
+              <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+            </div>
+          </div>
+        ) : error ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-medium">{error}</p>
+            <p className="mt-1 text-xs">Assegureu-vos que la clau API de Meteocat esta configurada correctament.</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => loadCurrentData(true)}>
+              Torna-ho a provar
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">
+            <div className="flex flex-col items-center">
+              {renderWindArrow(currentData?.windDirection || 0)}
+              <div className="mt-2 text-center">
+                <div className="text-xs sm:text-sm font-medium">{currentData?.windDirection}°</div>
+                <div className="text-xs text-muted-foreground">{getWindName(currentData?.windDirection || 0)}</div>
               </div>
-            ) : error ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                <p className="font-medium">{error}</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => loadCurrentData(true)}>
-                  Torna-ho a provar
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">
-                <div className="flex flex-col items-center">
-                  {renderWindArrow(currentData?.windDirection || 0)}
-                  <div className="mt-2 text-center">
-                    <div className="text-xs sm:text-sm font-medium">{currentData?.windDirection}°</div>
-                    <div className="text-xs text-muted-foreground">{getWindName(currentData?.windDirection || 0)}</div>
-                  </div>
-                </div>
+            </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="text-3xl sm:text-5xl font-bold text-blue-600">
-                    {Math.round(currentData?.windSpeed || 0)}
-                    <span className="text-lg sm:text-2xl">kn</span>
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                    Velocitat del vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-amber-500">
-                    {Math.round(currentData?.windGust || 0)}
-                    <span className="text-lg sm:text-xl">kn</span>
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                    Rafegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
-                  </div>
-                </div>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl sm:text-5xl font-bold text-blue-600">
+                {Math.round(currentData?.windSpeed || 0)}
+                <span className="text-lg sm:text-2xl">kn</span>
               </div>
-            )}
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
+                Velocitat del vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="text-2xl sm:text-3xl font-bold text-amber-500">
+                {Math.round(currentData?.windGust || 0)}
+                <span className="text-lg sm:text-xl">kn</span>
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
+                Rafegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="text-xl sm:text-2xl font-semibold text-gray-700">
+                {currentData?.temperature || 0}°C
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Temperatura
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {currentData?.isReal && (
+          <div className="mt-4 text-center text-xs text-muted-foreground">
+            Font: {currentData.source} - Dades reals actualitzades cada 30 minuts
+          </div>
+        )}
       </CardContent>
     </Card>
   )
