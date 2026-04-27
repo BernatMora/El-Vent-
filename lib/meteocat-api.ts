@@ -260,10 +260,15 @@ export class MeteocatProvider {
   }
 
   async isAvailable(): Promise<boolean> {
+    // Retornar false directament si no hi ha clau API configurada
+    // Això evita fer crides innecessàries a l'API
+    const apiKey = process.env.METEOCAT_API_KEY
+    if (!apiKey) {
+      return false
+    }
+    
+    // Només verificar disponibilitat si tenim clau
     try {
-      const apiKey = process.env.METEOCAT_API_KEY
-      if (!apiKey) return false
-      
       const url = `${METEOCAT_BASE}/variables/mesurades/${VARIABLE_CODES.WIND_SPEED_10M}/ultimes?codiEstacio=${STATION_CODE}`
       const response = await fetch(url, { headers: getHeaders() })
       return response.ok

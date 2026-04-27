@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createApiClient } from "@/lib/supabase/api"
 
 // Categoritzar la direcció del vent
 export function getWindDirectionCategory(degrees: number): string {
@@ -40,7 +40,7 @@ export async function saveCalibrationEntry(data: {
   forecastTimestamp: string
   notes?: string
 }) {
-  const supabase = await createClient()
+  const supabase = createApiClient()
   
   const directionCategory = getWindDirectionCategory(data.forecastDirection)
   const measurementHour = new Date(data.forecastTimestamp).getHours()
@@ -74,7 +74,7 @@ export async function saveCalibrationEntry(data: {
 
 // Recalcular els factors de calibratge basant-se en l'historial
 export async function recalculateCalibrationFactors() {
-  const supabase = await createClient()
+  const supabase = createApiClient()
   
   // Obtenir totes les entrades de calibratge
   const { data: entries, error } = await supabase
@@ -139,7 +139,7 @@ export async function getCalibrationFactors(): Promise<Record<string, {
   confidence: number
   sampleCount: number
 }>> {
-  const supabase = await createClient()
+  const supabase = createApiClient()
   
   const { data, error } = await supabase
     .from("calibration_factors")
@@ -189,7 +189,7 @@ export function applyCalibration(
 
 // Obtenir historial de calibratge
 export async function getCalibrationHistory(limit = 20) {
-  const supabase = await createClient()
+  const supabase = createApiClient()
   
   const { data, error } = await supabase
     .from("wind_calibration")

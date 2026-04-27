@@ -213,7 +213,8 @@ export class MeteocatWeatherProvider implements WeatherProvider {
 export class MultiWeatherService {
   private providers: WeatherProvider[] = [
     new OpenMeteoProvider(), // Prioritat màxima
-    new MeteocatWeatherProvider(), // Font de suport
+    // MeteocatWeatherProvider desactivat temporalment - necessita clau API vàlida
+    // new MeteocatWeatherProvider(),
     new WeatherAPIProvider(),
     new OpenWeatherMapProvider()
   ]
