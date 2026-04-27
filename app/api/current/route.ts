@@ -1,37 +1,51 @@
 import { NextResponse } from "next/server"
-import { getMeteocatCurrentConditions, getMeteocatTodayHistory } from "@/lib/meteocat-api"
+import { getMultiModelForecast } from "@/lib/open-meteo-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const includeHistory = searchParams.get("history") === "true"
-
+export async function GET() {
   try {
-    console.log("🌡️ API /api/current - Obtenint dades reals de Meteocat...")
+    // Obtenir dades multi-model d'Open-Meteo
+    const forecast = await getMultiModelForecast("sant-pere-pescador")
     
-    // Obtenir condicions actuals
-    const currentConditions = await getMeteocatCurrentConditions()
-    
-    if (!currentConditions) {
+    if (!forecast || forecast.length === 0) {
       return NextResponse.json(
-        { error: "No s'han pogut obtenir les dades de Meteocat. Comproveu la clau API." },
+        { error: "No s'han pogut obtenir les dades meteorologiques" },
         { status: 503 }
       )
     }
 
-    // Opcionalment incloure històric del dia
-    let todayHistory = null
-    if (includeHistory) {
-      todayHistory = await getMeteocatTodayHistory()
+    // Agafar l'hora actual o la més propera del dia d'avui
+    const today = forecast[0]
+    const now = new Date()
+    const currentHour = now.getHours()
+    
+    // Trobar l'hora més propera
+    let currentConditions = today.hours[0]
+    for (const hour of today.hours) {
+      const hourNum = parseInt(hour.time.split(":")[0])
+      if (hourNum <= currentHour) {
+        currentConditions = hour
+      }
     }
 
     return NextResponse.json({
-      current: currentConditions,
-      history: todayHistory,
-      source: "Meteocat XEMA",
-      station: "Sant Pere Pescador (U2)"
+      current: {
+        windSpeed: currentConditions.windSpeed,
+        windDirection: currentConditions.windDirection,
+        windGust: currentConditions.windGust,
+        temperature: currentConditions.temperature,
+        humidity: currentConditions.humidity || 70,
+        lastUpdate: new Date().toISOString(),
+        stationName: "Sant Pere Pescador",
+        isReal: false, // No son dades d'estació real, són previsió multi-model
+        source: currentConditions.source || "Multi-model (AROME, ICON, GFS)"
+      },
+      source: "Open-Meteo Multi-model",
+      station: "Sant Pere Pescador",
+      modelsUsed: currentConditions.modelsUsed || 5,
+      confidence: currentConditions.confidence || 0.8
     }, {
       status: 200,
       headers: {
@@ -42,7 +56,7 @@ export async function GET(request: Request) {
     console.error("Error a l'API /api/current:", error)
 
     return NextResponse.json(
-      { error: "No es poden obtenir dades meteorològiques reals" },
+      { error: "No es poden obtenir dades meteorologiques" },
       { status: 500 }
     )
   }

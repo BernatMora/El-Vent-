@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
-import { RefreshCw, Radio } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface MeteocatConditions {
@@ -117,20 +117,17 @@ export function CurrentConditions() {
           <div className="flex flex-col items-center md:items-start">
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
-              {currentData?.isReal && (
-                <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                  <Radio className="h-3 w-3" />
-                  En directe
-                </span>
-              )}
+              <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                Multi-model
+              </span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {loading ? "Carregant dades reals..." : stationInfo || "Estació Meteocat"}
+                {loading ? "Carregant dades..." : stationInfo || "Sant Pere Pescador"}
               </p>
               {lastUpdated && (
                 <span className="text-xs text-muted-foreground">
-                  · Mesurat a les {lastUpdated}
+                  · Actualitzat a les {lastUpdated}
                 </span>
               )}
             </div>
@@ -163,7 +160,7 @@ export function CurrentConditions() {
         ) : error ? (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <p className="font-medium">{error}</p>
-            <p className="mt-1 text-xs">Assegureu-vos que la clau API de Meteocat esta configurada correctament.</p>
+            <p className="mt-1 text-xs">Problema temporal obtenint dades meteorologiques.</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => loadCurrentData(true)}>
               Torna-ho a provar
             </Button>
@@ -209,11 +206,9 @@ export function CurrentConditions() {
           </div>
         )}
         
-        {currentData?.isReal && (
-          <div className="mt-4 text-center text-xs text-muted-foreground">
-            Font: {currentData.source} - Dades reals actualitzades cada 30 minuts
-          </div>
-        )}
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          Font: {currentData?.source || "Multi-model"} - Previsio combinada AROME + ICON + GFS
+        </div>
       </CardContent>
     </Card>
   )
