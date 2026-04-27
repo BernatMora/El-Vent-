@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getMeteocatCurrentConditions, getMeteocatTodayHistory } from "@/lib/meteocat-api"
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
