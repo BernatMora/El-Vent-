@@ -39,14 +39,21 @@ export function CalibrationForm() {
         if (!response.ok) return
         
         const data = await response.json()
-        if (data.forecast && data.forecast.length > 0) {
+        // L'API retorna directament un array de dies, no un objecte amb .forecast
+        const forecastData = Array.isArray(data) ? data : (data.forecast || data)
+        
+        if (forecastData && forecastData.length > 0) {
           // Buscar l'hora actual o la més propera
           const now = new Date()
           const currentHour = now.getHours()
           
-          for (const day of data.forecast) {
+          for (const day of forecastData) {
             if (day.hours) {
-              const hourData = day.hours.find((h: any) => h.hour === currentHour)
+              // Buscar per hora exacta o pel camp time "HH:00"
+              const hourData = day.hours.find((h: any) => {
+                const hourNum = h.hour ?? parseInt(h.time?.split(":")[0] || "0")
+                return hourNum === currentHour
+              })
               if (hourData) {
                 setForecast({
                   windSpeed: hourData.windSpeed,
@@ -60,7 +67,7 @@ export function CalibrationForm() {
           }
           
           // Si no trobem l'hora exacta, agafem la primera disponible
-          const firstDay = data.forecast[0]
+          const firstDay = forecastData[0]
           if (firstDay.hours && firstDay.hours.length > 0) {
             const firstHour = firstDay.hours[0]
             setForecast({

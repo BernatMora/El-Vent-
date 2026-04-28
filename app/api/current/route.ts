@@ -21,11 +21,15 @@ export async function GET() {
     const now = new Date()
     const currentHour = now.getHours()
     
-    // Trobar l'hora més propera
+    // Trobar l'hora més propera (les dades van de 9:00 a 21:00)
     let currentConditions = today.hours[0]
+    let closestDiff = 24
+    
     for (const hour of today.hours) {
       const hourNum = parseInt(hour.time.split(":")[0])
-      if (hourNum <= currentHour) {
+      const diff = Math.abs(hourNum - currentHour)
+      if (diff < closestDiff) {
+        closestDiff = diff
         currentConditions = hour
       }
     }
