@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getMultiModelForecast } from "@/lib/open-meteo-api"
 import { getMeteocatCurrentConditions } from "@/lib/meteocat-api"
+import { getCalibrationFactors, applyCalibration } from "@/lib/calibration-service"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -74,6 +75,31 @@ export async function GET() {
       }
     }
 
+    // Aplicar calibratge per direcció a la previsió actual (només si Open-Meteo)
+    try {
+      const factors = await getCalibrationFactors()
+      if (Object.keys(factors).length > 0) {
+        const calibrated = applyCalibration(
+          currentConditions.windSpeed,
+          currentConditions.windGust,
+          currentConditions.windDirection,
+          factors,
+        )
+        if (calibrated.calibrated) {
+          currentConditions = {
+            ...currentConditions,
+            originalWindSpeed: currentConditions.windSpeed,
+            windSpeed: calibrated.windSpeed,
+            windGust: calibrated.windGust,
+            isCalibrated: true,
+            confidence: calibrated.confidence,
+          }
+        }
+      }
+    } catch (calErr) {
+      console.warn("No s'ha pogut aplicar calibratge a /api/current:", calErr)
+    }
+
     return NextResponse.json({
       current: {
         windSpeed: currentConditions.windSpeed,
@@ -84,7 +110,9 @@ export async function GET() {
         lastUpdate: new Date().toISOString(),
         stationName: "Sant Pere Pescador",
         isReal: false, // No son dades d'estació real, són previsió multi-model
-        source: currentConditions.source || "Multi-model (AROME, ICON, GFS)"
+        source: currentConditions.source || "Multi-model (AROME, ICON, GFS)",
+        isCalibrated: currentConditions.isCalibrated ?? false,
+        originalWindSpeed: currentConditions.originalWindSpeed,
       },
       source: "Open-Meteo Multi-model",
       station: "Sant Pere Pescador",

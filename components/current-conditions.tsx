@@ -114,6 +114,14 @@ export function CurrentConditions() {
     loadCurrentData(true)
   }
 
+  // Calcular antiguitat de la lectura (només si és Meteocat real)
+  const staleMinutes = (() => {
+    if (!currentData?.isReal || !currentData?.lastUpdate) return null
+    const diffMs = Date.now() - new Date(currentData.lastUpdate).getTime()
+    return Math.floor(diffMs / 60000)
+  })()
+  const isStale = staleMinutes !== null && staleMinutes > 30
+
   // Funció per renderitzar la fletxa de direcció del vent
   const renderWindArrow = (direction: number) => {
     const rotationDegree = (direction + 180) % 360
@@ -156,6 +164,14 @@ export function CurrentConditions() {
                 </span>
               ) : (
                 <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              {isStale && (
+                <span
+                  className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800"
+                  title={`L'última lectura té ${staleMinutes} minuts d'antiguitat`}
+                >
+                  Lectura antiga ({staleMinutes} min)
+                </span>
+              )}
                   Multi-model
                 </span>
               )}
