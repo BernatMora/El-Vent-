@@ -10,12 +10,31 @@ import { knotsToKmh } from "@/lib/utils"
 
 const SPOT = "sant-pere-pescador"
 
-// Llindars de vent en nusos
-const MIN_JUSTETA_WIND = 11  // A partir d'11 kn ja es pot navegar (justeta)
-const MIN_GOOD_WIND = 14     // A partir de 14 kn és bona sessió
-const IDEAL_MAX_WIND = 25    // Per sobre de 25 kn pot ser massa fort per alguns
+// Llindars de vent en nusos (5 categories)
+// Molt fluix:      < 10 kn  → no apte (platja)
+// Fluix:           10-12 kn → poc vent, aprenentatge bàsic
+// Bueno:           13-17 kn → ideal principiants
+// Molt bo:         18-22 kn → vent fort, experiència
+// Extremadament bo: ≥ 23 kn → només experts
+const FLUIX_MAX = 10           // < 10 kn → fluix
+const MOLT_FLUIX_MAX = 13      // 10-12 kn → molt fluix
+const BUENO_MAX = 18           // 13-17 kn → bueno
+const MOLT_BO_MAX = 23         // 18-22 kn → molt bo
+                               // ≥ 23 kn → extremadament bo
 
-type SummaryTone = "good" | "maybe" | "bad"
+// Compatibilitat amb la resta del càlcul
+const MIN_JUSTETA_WIND = MOLT_FLUIX_MAX // 13 kn (a partir d'aquí ja navegues bé)
+const MIN_GOOD_WIND = BUENO_MAX         // 18 kn (vent fort)
+
+type SummaryTone = "fluix" | "moltFluix" | "bueno" | "moltBo" | "extrem"
+
+function classifyWind(windKn: number): { tone: SummaryTone; statusLabel: string } {
+  if (windKn < FLUIX_MAX) return { tone: "moltFluix", statusLabel: "Molt fluix" }
+  if (windKn < MOLT_FLUIX_MAX) return { tone: "fluix", statusLabel: "Fluix" }
+  if (windKn < BUENO_MAX) return { tone: "bueno", statusLabel: "Bueno" }
+  if (windKn < MOLT_BO_MAX) return { tone: "moltBo", statusLabel: "Molt bo" }
+  return { tone: "extrem", statusLabel: "Extremadament bo" }
+}
 
 type DaySummary = {
   label: string
@@ -85,17 +104,17 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const maxEffectiveWind = Math.max(...hours.map((hour) => getEffectiveWind(hour)))
   
   // Hores amb vent suficient per navegar
-  const goodWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_GOOD_WIND) // 14+ kn
-  const justejaWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && getEffectiveWind(hour) < MIN_GOOD_WIND) // 11-13 kn
-  const navigableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND) // 11+ kn
+  const goodWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_GOOD_WIND) // 18+ kn (Molt bo / Extrem)
+  const justejaWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && getEffectiveWind(hour) < MIN_GOOD_WIND) // 13-17 kn (Bueno)
+  const navigableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND) // 13+ kn
   
   const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && isOffshore(hour.windDirection))
   const gustSpread = hours.reduce((sum, hour) => sum + Math.max(0, (hour.windGust || hour.windSpeed) - hour.windSpeed), 0) / hours.length
 
   // Puntuació basada directament en vent efectiu
   const scoreBase =
-    Math.min(50, goodWindHours.length * 10) +        // Hores amb 14+ kn (màx 50 punts)
-    Math.min(25, justejaWindHours.length * 5) +      // Hores amb 11-13 kn (màx 25 punts)
+    Math.min(50, goodWindHours.length * 10) +        // Hores amb 18+ kn (màx 50 punts)
+    Math.min(25, justejaWindHours.length * 5) +      // Hores amb 13-17 kn (màx 25 punts)
     Math.min(25, Math.max(0, avgEffectiveWind - 10) * 2.5) - // Bonus per mitjana alta
     Math.max(0, gustSpread - 6) * 2                  // Penalització per ràfegues irregulars
 
@@ -116,75 +135,71 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
     ? getOffshoreWindName(offshoreRiskHours[0].windDirection)
     : "offshore"
 
-  // LÒGICA SIMPLE basada en vent efectiu:
-  // - VERD (good): 14+ kn de mitjana O 2+ hores amb 14+ kn
-  // - GROC (maybe/justeta): 11-13 kn de mitjana O alguna hora amb 11+ kn
-  // - VERMELL (bad): < 11 kn
-  
-  const isGood = avgEffectiveWind >= MIN_GOOD_WIND || goodWindHours.length >= 2
-  const isJusteta = !isGood && (avgEffectiveWind >= MIN_JUSTETA_WIND || navigableHours.length >= 2)
+  // LÒGICA basada en vent efectiu (5 categories):
+  //  Fluix            < 10 kn   → no apte
+  //  Molt fluix       10-12 kn  → poc vent, aprenentatge
+  //  Bueno            13-17 kn  → ideal principiants
+  //  Molt bo          18-22 kn  → vent fort, experiència
+  //  Extremadament bo ≥ 23 kn   → només experts
+  const avgRounded = Math.round(avgEffectiveWind)
+  const { tone, statusLabel } = classifyWind(avgRounded)
+  const label = getDayLabel(index)
+  const scoreLabel = `${avgRounded} kn de mitjana`
+  const baseSummary = { label, score, scoreLabel, bestWindow, bestWindowAvg, gustQuality }
 
-  if (isGood) {
-    // Si és vent offshore (tramuntana, garbí, mestral, ponent), avisar
-    if (isOffshoreDay) {
+  // Avís offshore (només té sentit quan es pot navegar)
+  const offshoreWarning =
+    isOffshoreDay && (tone === "bueno" || tone === "moltBo" || tone === "extrem")
+      ? `Vent offshore (${offshoreWindName})${hasStrongGusts ? " amb ràfegues fortes" : ""}. No naveguis sol i tingues precaució.`
+      : ""
+
+  switch (tone) {
+    case "moltFluix":
       return {
-        label: getDayLabel(index),
-        tone: "good",
-        statusLabel: "Bona",
-        score,
-        scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
-        bestWindow,
-        bestWindowAvg,
-        gustQuality,
-        reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn amb ${goodWindHours.length} hores de bon vent (14+ kn).`,
-        decisionTitle: `Sí, però alerta: ${offshoreWindName}!`,
-        decisionText: `Vent offshore (${offshoreWindName}) amb ${hasStrongGusts ? "ràfegues fortes" : "ràfegues"}. No naveguis sol i tingues precaució.`,
+        ...baseSummary,
+        tone,
+        statusLabel,
+        reason: `Mitjana de ${avgRounded} kn, per sota dels 10 kn.`,
+        decisionTitle: "No és ideal.",
+        decisionText: `Menys de 10 kn: no és ideal per kitesurf. Pots aprofitar per fer sol i gaudir de la platja. Màxim previst: ${Math.round(maxEffectiveWind)} kn.`,
       }
-    }
-    
-    return {
-      label: getDayLabel(index),
-      tone: "good",
-      statusLabel: "Bona",
-      score,
-      scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
-      bestWindow,
-      bestWindowAvg,
-      gustQuality,
-      reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn amb ${goodWindHours.length} hores de bon vent (14+ kn).`,
-      decisionTitle: "Sí, val la pena!",
-      decisionText: `La millor franja és ${bestWindow}, bon vent per navegar.`,
-    }
-  }
-
-  if (isJusteta) {
-    return {
-      label: getDayLabel(index),
-      tone: "maybe",
-      statusLabel: "Justeta",
-      score,
-      scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
-      bestWindow,
-      bestWindowAvg,
-      gustQuality,
-      reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn (entre 11-13 kn).`,
-      decisionTitle: "Potser, serà justeta.",
-      decisionText: `Vent entre 11-13 kn. Si hi vas, millor franja: ${bestWindow}.`,
-    }
-  }
-
-  return {
-    label: getDayLabel(index),
-    tone: "bad",
-    statusLabel: "Fluixa",
-    score,
-    scoreLabel: `${Math.round(avgEffectiveWind)} kn de mitjana`,
-    bestWindow,
-    bestWindowAvg,
-    gustQuality,
-    reason: `Mitjana de ${Math.round(avgEffectiveWind)} kn, per sota dels 11 kn necessaris.`,
-    decisionTitle: "No, massa fluix.",
-    decisionText: `Amb menys de 11 kn costa molt navegar. Màxim previst: ${Math.round(maxEffectiveWind)} kn.`,
+    case "fluix":
+      return {
+        ...baseSummary,
+        tone,
+        statusLabel,
+        reason: `Mitjana de ${avgRounded} kn (entre 10-12 kn).`,
+        decisionTitle: "Just, només per aprendre.",
+        decisionText: `Poc vent (10-12 kn): pot servir per girs suaus o aprenentatge bàsic de kitesurf. Millor franja: ${bestWindow}.`,
+      }
+    case "bueno":
+      return {
+        ...baseSummary,
+        tone,
+        statusLabel,
+        reason: `Mitjana de ${avgRounded} kn (13-17 kn) — ideal principiants.`,
+        decisionTitle: offshoreWarning ? `Bon vent, però alerta: ${offshoreWindName}!` : "Sí, val la pena!",
+        decisionText: offshoreWarning || `Vent moderat (13-17 kn), ideal per practicar tècniques bàsiques. Millor franja: ${bestWindow}.`,
+      }
+    case "moltBo":
+      return {
+        ...baseSummary,
+        tone,
+        statusLabel,
+        reason: `Mitjana de ${avgRounded} kn (18-22 kn) — vent fort.`,
+        decisionTitle: offshoreWarning ? `Molt bon vent, alerta: ${offshoreWindName}!` : "Sí, sessió forta!",
+        decisionText: offshoreWarning || `Vent fort (18-22 kn): requereix experiència. Millor franja: ${bestWindow}.`,
+      }
+    case "extrem":
+    default:
+      return {
+        ...baseSummary,
+        tone: "extrem",
+        statusLabel,
+        reason: `Mitjana de ${avgRounded} kn (≥ 23 kn) — vent intens.`,
+        decisionTitle: offshoreWarning ? `Vent extrem + ${offshoreWindName}!` : "Només per experts.",
+        decisionText: offshoreWarning || `Vent intens (≥ 23 kn): només adequat per experts amb molta experiència. Màxim previst: ${Math.round(maxEffectiveWind)} kn.`,
+      }
   }
 }
 
@@ -216,24 +231,34 @@ export function SessionOverview() {
   const summary = daySummaries[0] ?? null
 
   const toneStyles = {
-    good: {
-      panel: "border-emerald-200 bg-emerald-50 text-emerald-900",
-      badge: "bg-emerald-600 text-white",
-      Icon: CheckCircle2,
-    },
-    maybe: {
-      panel: "border-amber-200 bg-amber-50 text-amber-900",
-      badge: "bg-amber-500 text-white",
-      Icon: AlertTriangle,
-    },
-    bad: {
+    fluix: {
       panel: "border-rose-200 bg-rose-50 text-rose-900",
       badge: "bg-rose-600 text-white",
       Icon: XCircle,
     },
+    moltFluix: {
+      panel: "border-amber-200 bg-amber-50 text-amber-900",
+      badge: "bg-amber-500 text-white",
+      Icon: AlertTriangle,
+    },
+    bueno: {
+      panel: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      badge: "bg-emerald-600 text-white",
+      Icon: CheckCircle2,
+    },
+    moltBo: {
+      panel: "border-green-300 bg-green-100 text-green-900",
+      badge: "bg-green-700 text-white",
+      Icon: CheckCircle2,
+    },
+    extrem: {
+      panel: "border-violet-300 bg-violet-100 text-violet-900",
+      badge: "bg-violet-700 text-white",
+      Icon: AlertTriangle,
+    },
   } as const
 
-  const toneConfig = summary ? toneStyles[summary.tone] : toneStyles.bad
+  const toneConfig = summary ? toneStyles[summary.tone] : toneStyles.fluix
   const ToneIcon = toneConfig.Icon
 
   return (
@@ -253,11 +278,11 @@ export function SessionOverview() {
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Wind className="h-3.5 w-3.5" />
-                Justeta: {MIN_JUSTETA_WIND}-13 kn
+                Bueno: 13-17 kn
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Waves className="h-3.5 w-3.5" />
-                Bona: {MIN_GOOD_WIND}+ kn
+                Molt bo: 18-22 kn · Extrem ≥ 23 kn
               </Badge>
             </div>
 
@@ -343,7 +368,7 @@ export function SessionOverview() {
               <div className="text-lg font-bold text-sky-950">{summary.decisionTitle}</div>
               <p className="mt-1 text-sm text-sky-900">{summary.decisionText}</p>
               <p className="mt-2 text-xs text-sky-700">
-                Referència: 11 kn = {knotsToKmh(11)} km/h | 14 kn = {knotsToKmh(14)} km/h
+                Referència: 13 kn = {knotsToKmh(13)} km/h | 18 kn = {knotsToKmh(18)} km/h | 23 kn = {knotsToKmh(23)} km/h
               </p>
             </div>
 

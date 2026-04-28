@@ -75,14 +75,14 @@ export function WindForecast() {
     )
   }
 
-  // Condicions útils per al kiter (12 kn mínim, 15-20 kn ideal)
+  // Categories de vent per kitesurf (5 nivells)
+  // Molt fluix <10 · Fluix 10-12 · Bueno 13-17 · Molt bo 18-22 · Extrem ≥23
   const getFlowDescription = (windSpeed: number) => {
-    if (windSpeed < 8) return "Calma"
-    if (windSpeed < 12) return "Fluix"
-    if (windSpeed < 15) return "Moderat"
-    if (windSpeed < 20) return "Ideal"
-    if (windSpeed < 25) return "Fort"
-    return "Molt fort"
+    if (windSpeed < 10) return "Molt fluix"
+    if (windSpeed < 13) return "Fluix"
+    if (windSpeed < 18) return "Bueno"
+    if (windSpeed < 23) return "Molt bo"
+    return "Extremadament bo"
   }
 
 
