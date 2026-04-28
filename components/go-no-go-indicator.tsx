@@ -153,18 +153,33 @@ export function GoNoGoIndicator() {
 
   return (
     <Card className={`overflow-hidden ring-2 ${styles.ring}`}>
-      <CardContent className={`p-4 sm:p-6 bg-gradient-to-br ${styles.bg} text-white`}>
+      <CardContent className={`p-3 sm:p-6 bg-gradient-to-br ${styles.bg} text-white`}>
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="text-4xl sm:text-5xl">{styles.emoji}</div>
+          <div className="text-5xl sm:text-6xl drop-shadow-lg">{styles.emoji}</div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs uppercase tracking-wide opacity-90">Puc anar a navegar?</div>
-            <div className="text-xl sm:text-2xl font-bold leading-tight">{verdict.title}</div>
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm opacity-95">
-              {verdict.reasons.map((r) => (
-                <span key={r}>{r}</span>
-              ))}
-            </div>
+            <div className="text-[10px] uppercase tracking-wider opacity-90 sm:text-xs">Puc anar a navegar?</div>
+            <div className="text-2xl font-bold leading-tight sm:text-3xl">{verdict.title}</div>
           </div>
+        </div>
+        {/* Resum dades vitals — gran al mòbil */}
+        <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-white/15 p-2 backdrop-blur-sm sm:mt-4 sm:p-3">
+          <div className="text-center">
+            <div className="text-[10px] uppercase opacity-80 sm:text-xs">Vent</div>
+            <div className="text-base font-bold sm:text-xl">{Math.round(data.windSpeed)}<span className="text-[10px] sm:text-xs"> kn</span></div>
+          </div>
+          <div className="text-center">
+            <div className="text-[10px] uppercase opacity-80 sm:text-xs">Ràfega</div>
+            <div className="text-base font-bold sm:text-xl">{Math.round(data.windGust)}<span className="text-[10px] sm:text-xs"> kn</span></div>
+          </div>
+          <div className="text-center">
+            <div className="text-[10px] uppercase opacity-80 sm:text-xs">Direcció</div>
+            <div className="text-base font-bold sm:text-xl">{getWindDirectionName(data.windDirection)}</div>
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] opacity-95 sm:text-sm">
+          {verdict.reasons.map((r) => (
+            <span key={r}>{r}</span>
+          ))}
         </div>
       </CardContent>
     </Card>

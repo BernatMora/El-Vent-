@@ -252,7 +252,7 @@ export function CurrentConditions() {
             </Button>
           </div>
         ) : (
-          <div className="mt-4 sm:mt-6 flex flex-col items-center gap-4 sm:gap-8 sm:flex-row sm:justify-around">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-6 sm:flex sm:gap-8 sm:flex-row sm:justify-around">
             <div className="flex flex-col items-center">
               {renderWindArrow(currentData?.windDirection || 0)}
               <div className="mt-2 text-center">
@@ -261,31 +261,31 @@ export function CurrentConditions() {
               </div>
             </div>
 
-            <div className="flex flex-col items-center">
-              <div className="text-3xl sm:text-5xl font-bold text-blue-600">
+            <div className="flex flex-col items-center justify-center">
+              <div className="text-3xl sm:text-5xl font-bold text-blue-600 leading-none">
                 {Math.round(currentData?.windSpeed || 0)}
                 <span className="text-lg sm:text-2xl">kn</span>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                Velocitat del vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
+              <div className="mt-1 text-[11px] sm:text-sm text-muted-foreground text-center">
+                Vent ({knotsToKmh(currentData?.windSpeed || 0)} km/h)
               </div>
             </div>
 
-            <div className="flex flex-col items-center">
-              <div className="text-2xl sm:text-3xl font-bold text-amber-500">
+            <div className="flex flex-col items-center justify-center">
+              <div className="text-2xl sm:text-3xl font-bold text-amber-500 leading-none">
                 {Math.round(currentData?.windGust || 0)}
                 <span className="text-lg sm:text-xl">kn</span>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                Rafegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
+              <div className="mt-1 text-[11px] sm:text-sm text-muted-foreground text-center">
+                Ràfegues ({knotsToKmh(currentData?.windGust || 0)} km/h)
               </div>
             </div>
 
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center justify-center">
               <div className="text-xl sm:text-2xl font-semibold text-gray-700">
                 {currentData?.temperature || 0}°C
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
+              <div className="text-[11px] sm:text-sm text-muted-foreground">
                 Temperatura
               </div>
             </div>
