@@ -133,7 +133,34 @@ async function getDayReadings(date: Date): Promise<any | null> {
 }
 
 // Obtenir condicions actuals — prova la cadena d'estacions fins trobar dades vàlides
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minuts
+let conditionsCache: { data: MeteocatCurrentConditions; expires: number } | null = null
+let inflight: Promise<MeteocatCurrentConditions | null> | null = null
+
 export async function getMeteocatCurrentConditions(): Promise<MeteocatCurrentConditions | null> {
+  // 1) Cache encara vàlida
+  if (conditionsCache && Date.now() < conditionsCache.expires) {
+    return conditionsCache.data
+  }
+  // 2) Coalescència de peticions concurrents
+  if (inflight) return inflight
+
+  inflight = (async () => {
+    try {
+      const result = await fetchMeteocatCurrentConditions()
+      if (result) {
+        conditionsCache = { data: result, expires: Date.now() + CACHE_TTL_MS }
+      }
+      return result
+    } finally {
+      inflight = null
+    }
+  })()
+
+  return inflight
+}
+
+async function fetchMeteocatCurrentConditions(): Promise<MeteocatCurrentConditions | null> {
   console.log(`🌡️ Obtenint dades reals de Meteocat (cadena: ${STATION_CHAIN.map(s => s.code).join(" → ")})...`)
 
   for (let i = 0; i < STATION_CHAIN.length; i++) {
