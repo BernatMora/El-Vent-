@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Wind, Upload, CheckCircle, AlertCircle, Compass } from "lucide-react"
 import { getWindName, getWindDirectionCategory } from "@/lib/calibration-service"
 
+// Conversions km/h <-> nusos
+const knotsToKmh = (knots: number) => Math.round(knots * 1.852)
+const kmhToKnots = (kmh: number) => kmh / 1.852
+
 interface ForecastData {
   windSpeed: number
   windGust: number
@@ -99,6 +103,10 @@ export function CalibrationForm() {
     }
     
     try {
+      // Convertir km/h a nusos per guardar (el sistema intern treballa en nusos)
+      const realWindSpeedKnots = kmhToKnots(Number(realWindSpeed))
+      const realWindGustKnots = kmhToKnots(Number(realWindGust))
+      
       const response = await fetch("/api/calibration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,8 +114,8 @@ export function CalibrationForm() {
           forecastWindSpeed: forecast.windSpeed,
           forecastWindGust: forecast.windGust,
           forecastDirection: forecast.direction,
-          realWindSpeed: Number(realWindSpeed),
-          realWindGust: Number(realWindGust),
+          realWindSpeed: realWindSpeedKnots,
+          realWindGust: realWindGustKnots,
           realDirection: Number(realDirection),
           forecastTimestamp: forecast.timestamp,
           notes
@@ -168,11 +176,11 @@ export function CalibrationForm() {
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Vent:</span>
-                  <span className="ml-2 font-medium">{forecast.windSpeed} kt</span>
+                  <span className="ml-2 font-medium">{knotsToKmh(forecast.windSpeed)} km/h</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Ràfega:</span>
-                  <span className="ml-2 font-medium">{forecast.windGust} kt</span>
+                  <span className="ml-2 font-medium">{knotsToKmh(forecast.windGust)} km/h</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Direcció:</span>
@@ -195,12 +203,12 @@ export function CalibrationForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="realWindSpeed">Vent mitjà (kt)</Label>
+                <Label htmlFor="realWindSpeed">Vent mitjà (km/h)</Label>
                 <Input
                   id="realWindSpeed"
                   type="number"
-                  step="0.1"
-                  placeholder="Ex: 12"
+                  step="1"
+                  placeholder="Ex: 20"
                   value={realWindSpeed}
                   onChange={(e) => setRealWindSpeed(e.target.value)}
                   required
@@ -208,12 +216,12 @@ export function CalibrationForm() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="realWindGust">Ràfega màxima (kt)</Label>
+                <Label htmlFor="realWindGust">Ràfega màxima (km/h)</Label>
                 <Input
                   id="realWindGust"
                   type="number"
-                  step="0.1"
-                  placeholder="Ex: 18"
+                  step="1"
+                  placeholder="Ex: 30"
                   value={realWindGust}
                   onChange={(e) => setRealWindGust(e.target.value)}
                   required
