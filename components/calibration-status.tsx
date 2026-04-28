@@ -16,13 +16,14 @@ interface CalibrationFactor {
 interface HistoryEntry {
   id: string
   created_at: string
-  direction_category: string
-  forecast_wind_speed: number
+  predicted_wind_speed: number
+  predicted_wind_gust: number
+  predicted_wind_direction: number
   real_wind_speed: number
-  forecast_wind_gust: number
   real_wind_gust: number
-  wind_speed_error: number
-  wind_gust_error: number
+  real_wind_direction: number
+  wind_speed_factor: number
+  wind_gust_factor: number
   notes?: string
 }
 
@@ -176,44 +177,59 @@ export function CalibrationStatus() {
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {history.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="p-3 border rounded-lg text-sm"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline">{entry.direction_category}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(entry.created_at)}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <div>
-                        <span className="text-muted-foreground">Previst:</span>{" "}
-                        {entry.forecast_wind_speed} kt / {entry.forecast_wind_gust} kt
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Real:</span>{" "}
-                        {entry.real_wind_speed} kt / {entry.real_wind_gust} kt
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">Error:</span>{" "}
-                        <span className={entry.wind_speed_error > 0 ? "text-green-600" : "text-red-600"}>
-                          {entry.wind_speed_error > 0 ? "+" : ""}{entry.wind_speed_error} kt
-                        </span>
-                        {" / "}
-                        <span className={entry.wind_gust_error > 0 ? "text-green-600" : "text-red-600"}>
-                          {entry.wind_gust_error > 0 ? "+" : ""}{entry.wind_gust_error} kt
+                {history.map((entry) => {
+                  // Calcular direcció com a categoria
+                  const getDirectionName = (deg: number) => {
+                    if (deg >= 337.5 || deg < 22.5) return "N"
+                    if (deg >= 22.5 && deg < 67.5) return "NE"
+                    if (deg >= 67.5 && deg < 112.5) return "E"
+                    if (deg >= 112.5 && deg < 157.5) return "SE"
+                    if (deg >= 157.5 && deg < 202.5) return "S"
+                    if (deg >= 202.5 && deg < 247.5) return "SW"
+                    if (deg >= 247.5 && deg < 292.5) return "W"
+                    return "NW"
+                  }
+                  const dirName = getDirectionName(entry.predicted_wind_direction || 0)
+                  
+                  return (
+                    <div
+                      key={entry.id}
+                      className="p-3 border rounded-lg text-sm"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline">{dirName} ({entry.predicted_wind_direction}°)</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(entry.created_at)}
                         </span>
                       </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div>
+                          <span className="text-muted-foreground">Previst:</span>{" "}
+                          {Math.round((entry.predicted_wind_speed || 0) * 1.852)} / {Math.round((entry.predicted_wind_gust || 0) * 1.852)} km/h
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Real:</span>{" "}
+                          {Math.round((entry.real_wind_speed || 0) * 1.852)} / {Math.round((entry.real_wind_gust || 0) * 1.852)} km/h
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Factor:</span>{" "}
+                          <span className={(entry.wind_speed_factor || 1) > 1 ? "text-green-600" : "text-amber-600"}>
+                            x{(entry.wind_speed_factor || 1).toFixed(2)}
+                          </span>
+                          {" / "}
+                          <span className={(entry.wind_gust_factor || 1) > 1 ? "text-green-600" : "text-amber-600"}>
+                            x{(entry.wind_gust_factor || 1).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      {entry.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">
+                          {entry.notes}
+                        </p>
+                      )}
                     </div>
-                    {entry.notes && (
-                      <p className="text-xs text-muted-foreground mt-2 italic">
-                        {entry.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </TabsContent>

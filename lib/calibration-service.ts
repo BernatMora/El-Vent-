@@ -1,5 +1,7 @@
 import { createApiClient } from "@/lib/supabase/api"
 
+// Servei de calibratge - Actualitzat per utilitzar noms de columnes correctes
+
 // Categoritzar la direcció del vent
 export function getWindDirectionCategory(degrees: number): string {
   if (degrees >= 337.5 || degrees < 22.5) return "N"
@@ -42,27 +44,22 @@ export async function saveCalibrationEntry(data: {
 }) {
   const supabase = createApiClient()
   
-  const directionCategory = getWindDirectionCategory(data.forecastDirection)
-  const measurementHour = new Date(data.forecastTimestamp).getHours()
+  // Calcular factors de correcció
+  const windSpeedFactor = data.forecastWindSpeed > 0 ? data.realWindSpeed / data.forecastWindSpeed : 1
+  const windGustFactor = data.forecastWindGust > 0 ? data.realWindGust / data.forecastWindGust : 1
   
-  // Calcular errors
-  const windSpeedError = data.realWindSpeed - data.forecastWindSpeed
-  const windGustError = data.realWindGust - data.forecastWindGust
-  const directionError = Math.abs(data.realDirection - data.forecastDirection)
-  
+  // Utilitzar els noms de columnes reals de la base de dades
   const { error } = await supabase.from("wind_calibration").insert({
-    forecast_wind_speed: data.forecastWindSpeed,
-    forecast_wind_gust: data.forecastWindGust,
-    forecast_direction: data.forecastDirection,
+    predicted_wind_speed: data.forecastWindSpeed,
+    predicted_wind_gust: data.forecastWindGust,
+    predicted_wind_direction: data.forecastDirection,
     real_wind_speed: data.realWindSpeed,
     real_wind_gust: data.realWindGust,
-    real_direction: data.realDirection,
-    direction_category: directionCategory,
-    measurement_hour: measurementHour,
-    forecast_timestamp: data.forecastTimestamp,
-    wind_speed_error: windSpeedError,
-    wind_gust_error: windGustError,
-    direction_error: directionError,
+    real_wind_direction: data.realDirection,
+    wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
+    wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
+    measurement_time: data.forecastTimestamp,
+    source: "camping_aquarius",
     notes: data.notes
   })
   
@@ -83,51 +80,55 @@ export async function recalculateCalibrationFactors() {
     .order("created_at", { ascending: false })
     .limit(100) // Últimes 100 entrades
   
-  if (error || !entries || entries.length < 3) {
-    console.log("No hi ha prou dades per calibrar (mínim 3 entrades)")
+  if (error || !entries || entries.length < 1) {
+    console.log("No hi ha prou dades per calibrar")
     return
   }
   
-  // Agrupar per direcció de vent
+  // Agrupar per direcció de vent (categoria)
   const byDirection: Record<string, typeof entries> = {}
   for (const entry of entries) {
-    const dir = entry.direction_category
+    const dir = getWindDirectionCategory(entry.predicted_wind_direction || 0)
     if (!byDirection[dir]) byDirection[dir] = []
     byDirection[dir].push(entry)
   }
   
   // Calcular factors per cada direcció
   for (const [direction, dirEntries] of Object.entries(byDirection)) {
-    if (dirEntries.length < 2) continue
+    if (dirEntries.length < 1) continue
     
-    // Calcular mitjanes d'error
-    const avgWindSpeedError = dirEntries.reduce((sum, e) => sum + e.wind_speed_error, 0) / dirEntries.length
-    const avgWindGustError = dirEntries.reduce((sum, e) => sum + e.wind_gust_error, 0) / dirEntries.length
+    // Calcular factors mitjans
+    const avgWindSpeedFactor = dirEntries.reduce((sum, e) => sum + (e.wind_speed_factor || 1), 0) / dirEntries.length
+    const avgWindGustFactor = dirEntries.reduce((sum, e) => sum + (e.wind_gust_factor || 1), 0) / dirEntries.length
     
-    // Calcular factors de correcció (ratio real/previst)
-    const avgForecastSpeed = dirEntries.reduce((sum, e) => sum + e.forecast_wind_speed, 0) / dirEntries.length
-    const avgRealSpeed = dirEntries.reduce((sum, e) => sum + e.real_wind_speed, 0) / dirEntries.length
-    const windSpeedFactor = avgForecastSpeed > 0 ? avgRealSpeed / avgForecastSpeed : 1
+    // Calcular confiança basada en el nombre d'entrades
+    const confidence = Math.min(dirEntries.length / 10, 1) // Max confiança amb 10+ entrades
     
-    const avgForecastGust = dirEntries.reduce((sum, e) => sum + e.forecast_wind_gust, 0) / dirEntries.length
-    const avgRealGust = dirEntries.reduce((sum, e) => sum + e.real_wind_gust, 0) / dirEntries.length
-    const windGustFactor = avgForecastGust > 0 ? avgRealGust / avgForecastGust : 1
-    
-    // Calcular confiança basada en el nombre d'entrades i la variància
-    const confidence = Math.min(dirEntries.length / 20, 1) // Max confiança amb 20+ entrades
+    // Obtenir rang de direccions per aquesta categoria
+    const dirRanges: Record<string, { min: number; max: number }> = {
+      "N": { min: 337, max: 22 },
+      "NE": { min: 22, max: 67 },
+      "E": { min: 67, max: 112 },
+      "SE": { min: 112, max: 157 },
+      "S": { min: 157, max: 202 },
+      "SW": { min: 202, max: 247 },
+      "W": { min: 247, max: 292 },
+      "NW": { min: 292, max: 337 }
+    }
+    const range = dirRanges[direction] || { min: 0, max: 360 }
     
     // Upsert del factor
     await supabase.from("calibration_factors").upsert({
-      direction_category: direction,
-      wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
-      wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
+      direction_name: direction,
+      wind_direction_min: range.min,
+      wind_direction_max: range.max,
+      avg_wind_speed_factor: Math.round(avgWindSpeedFactor * 1000) / 1000,
+      avg_wind_gust_factor: Math.round(avgWindGustFactor * 1000) / 1000,
       sample_count: dirEntries.length,
-      avg_speed_error: Math.round(avgWindSpeedError * 10) / 10,
-      avg_gust_error: Math.round(avgWindGustError * 10) / 10,
       confidence: Math.round(confidence * 100) / 100,
       updated_at: new Date().toISOString()
     }, {
-      onConflict: "direction_category"
+      onConflict: "direction_name"
     })
   }
 }
@@ -149,11 +150,11 @@ export async function getCalibrationFactors(): Promise<Record<string, {
   
   const factors: Record<string, any> = {}
   for (const row of data) {
-    factors[row.direction_category] = {
-      windSpeedFactor: row.wind_speed_factor,
-      windGustFactor: row.wind_gust_factor,
-      confidence: row.confidence,
-      sampleCount: row.sample_count
+    factors[row.direction_name] = {
+      windSpeedFactor: row.avg_wind_speed_factor || 1,
+      windGustFactor: row.avg_wind_gust_factor || 1,
+      confidence: row.confidence || 0,
+      sampleCount: row.sample_count || 0
     }
   }
   

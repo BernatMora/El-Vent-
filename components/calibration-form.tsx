@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Wind, Upload, CheckCircle, AlertCircle, Compass } from "lucide-react"
 import { getWindName, getWindDirectionCategory } from "@/lib/calibration-service"
 
+// Conversions km/h <-> nusos
+const knotsToKmh = (knots: number) => Math.round(knots * 1.852)
+const kmhToKnots = (kmh: number) => kmh / 1.852
+
 interface ForecastData {
   windSpeed: number
   windGust: number
@@ -39,14 +43,21 @@ export function CalibrationForm() {
         if (!response.ok) return
         
         const data = await response.json()
-        if (data.forecast && data.forecast.length > 0) {
+        // L'API retorna directament un array de dies, no un objecte amb .forecast
+        const forecastData = Array.isArray(data) ? data : (data.forecast || data)
+        
+        if (forecastData && forecastData.length > 0) {
           // Buscar l'hora actual o la més propera
           const now = new Date()
           const currentHour = now.getHours()
           
-          for (const day of data.forecast) {
+          for (const day of forecastData) {
             if (day.hours) {
-              const hourData = day.hours.find((h: any) => h.hour === currentHour)
+              // Buscar per hora exacta o pel camp time "HH:00"
+              const hourData = day.hours.find((h: any) => {
+                const hourNum = h.hour ?? parseInt(h.time?.split(":")[0] || "0")
+                return hourNum === currentHour
+              })
               if (hourData) {
                 setForecast({
                   windSpeed: hourData.windSpeed,
@@ -60,7 +71,7 @@ export function CalibrationForm() {
           }
           
           // Si no trobem l'hora exacta, agafem la primera disponible
-          const firstDay = data.forecast[0]
+          const firstDay = forecastData[0]
           if (firstDay.hours && firstDay.hours.length > 0) {
             const firstHour = firstDay.hours[0]
             setForecast({
@@ -92,6 +103,10 @@ export function CalibrationForm() {
     }
     
     try {
+      // Convertir km/h a nusos per guardar (el sistema intern treballa en nusos)
+      const realWindSpeedKnots = kmhToKnots(Number(realWindSpeed))
+      const realWindGustKnots = kmhToKnots(Number(realWindGust))
+      
       const response = await fetch("/api/calibration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,8 +114,8 @@ export function CalibrationForm() {
           forecastWindSpeed: forecast.windSpeed,
           forecastWindGust: forecast.windGust,
           forecastDirection: forecast.direction,
-          realWindSpeed: Number(realWindSpeed),
-          realWindGust: Number(realWindGust),
+          realWindSpeed: realWindSpeedKnots,
+          realWindGust: realWindGustKnots,
           realDirection: Number(realDirection),
           forecastTimestamp: forecast.timestamp,
           notes
@@ -161,11 +176,11 @@ export function CalibrationForm() {
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Vent:</span>
-                  <span className="ml-2 font-medium">{forecast.windSpeed} kt</span>
+                  <span className="ml-2 font-medium">{knotsToKmh(forecast.windSpeed)} km/h</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Ràfega:</span>
-                  <span className="ml-2 font-medium">{forecast.windGust} kt</span>
+                  <span className="ml-2 font-medium">{knotsToKmh(forecast.windGust)} km/h</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Direcció:</span>
@@ -188,12 +203,12 @@ export function CalibrationForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="realWindSpeed">Vent mitjà (kt)</Label>
+                <Label htmlFor="realWindSpeed">Vent mitjà (km/h)</Label>
                 <Input
                   id="realWindSpeed"
                   type="number"
-                  step="0.1"
-                  placeholder="Ex: 12"
+                  step="1"
+                  placeholder="Ex: 20"
                   value={realWindSpeed}
                   onChange={(e) => setRealWindSpeed(e.target.value)}
                   required
@@ -201,12 +216,12 @@ export function CalibrationForm() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="realWindGust">Ràfega màxima (kt)</Label>
+                <Label htmlFor="realWindGust">Ràfega màxima (km/h)</Label>
                 <Input
                   id="realWindGust"
                   type="number"
-                  step="0.1"
-                  placeholder="Ex: 18"
+                  step="1"
+                  placeholder="Ex: 30"
                   value={realWindGust}
                   onChange={(e) => setRealWindGust(e.target.value)}
                   required
