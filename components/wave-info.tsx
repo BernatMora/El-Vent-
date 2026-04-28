@@ -21,13 +21,24 @@ const SPOT = "sant-pere-pescador"
 export function WaveInfo() {
   const [loading, setLoading] = useState(true)
   const [marine, setMarine] = useState<MarineDay[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const data = await getMarineForecast(SPOT)
-      setMarine(data)
-      setLoading(false)
+      setError(null)
+      try {
+        const data = await getMarineForecast(SPOT)
+        if (!data || data.length === 0) {
+          setError("Dades d'onades no disponibles ara mateix")
+        }
+        setMarine(data)
+      } catch (e) {
+        console.error(e)
+        setError("Error obtenint dades d'onades")
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
@@ -41,7 +52,23 @@ export function WaveInfo() {
     )
   }
 
-  if (marine.length === 0) return null
+  if (marine.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Waves className="h-5 w-5 text-cyan-600" />
+            Onades i mar
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {error || "No hi ha dades d'onades disponibles."}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
