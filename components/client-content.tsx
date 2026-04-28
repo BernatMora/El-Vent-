@@ -17,6 +17,7 @@ import { NotificationSettings } from "@/components/notification-settings"
 import { PredictionAccuracy } from "@/components/prediction-accuracy"
 import { WindAlerts } from "@/components/wind-alerts"
 import { GoNoGoIndicator } from "@/components/go-no-go-indicator"
+import { TramuntanaAlert } from "@/components/tramuntana-alert"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
@@ -118,6 +119,10 @@ export function ClientContent() {
 
       <div className="mb-4 sm:mb-6">
         <GoNoGoIndicator key={`gonogo-${refreshKey}`} />
+      </div>
+
+      <div className="mb-4 sm:mb-6">
+        <TramuntanaAlert key={`tramuntana-${refreshKey}`} />
       </div>
 
       <div className="mb-4 sm:mb-6">
