@@ -48,22 +48,42 @@ export async function saveCalibrationEntry(data: {
   const windSpeedFactor = data.forecastWindSpeed > 0 ? data.realWindSpeed / data.forecastWindSpeed : 1
   const windGustFactor = data.forecastWindGust > 0 ? data.realWindGust / data.forecastWindGust : 1
   
-  // Utilitzar els noms de columnes reals de la base de dades
-  const { error } = await supabase.from("wind_calibration").insert({
-    predicted_wind_speed: data.forecastWindSpeed,
-    predicted_wind_gust: data.forecastWindGust,
-    predicted_wind_direction: data.forecastDirection,
-    real_wind_speed: data.realWindSpeed,
-    real_wind_gust: data.realWindGust,
-    real_wind_direction: data.realDirection,
-    wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
-    wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
-    measurement_time: data.forecastTimestamp,
-    source: "camping_aquarius",
-    notes: data.notes
+  // Utilitzar SQL raw per evitar problemes de cache d'esquema
+  const { error } = await supabase.rpc('insert_calibration', {
+    p_predicted_wind_speed: data.forecastWindSpeed,
+    p_predicted_wind_gust: data.forecastWindGust,
+    p_predicted_wind_direction: data.forecastDirection,
+    p_real_wind_speed: data.realWindSpeed,
+    p_real_wind_gust: data.realWindGust,
+    p_real_wind_direction: data.realDirection,
+    p_wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
+    p_wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
+    p_source: "camping_aquarius",
+    p_notes: data.notes || null
   })
   
-  if (error) throw error
+  if (error) {
+    // Si la funció RPC no existeix, crear-la automàticament és complicat
+    // Intentem amb insert directe sense cache
+    console.log("RPC no disponible, provant insert directe...")
+    
+    const { error: insertError } = await supabase
+      .from("wind_calibration")
+      .insert([{
+        predicted_wind_speed: data.forecastWindSpeed,
+        predicted_wind_gust: data.forecastWindGust,
+        predicted_wind_direction: data.forecastDirection,
+        real_wind_speed: data.realWindSpeed,
+        real_wind_gust: data.realWindGust,
+        real_wind_direction: data.realDirection,
+        wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
+        wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
+        source: "camping_aquarius",
+        notes: data.notes || null
+      }])
+    
+    if (insertError) throw insertError
+  }
   
   // Recalcular factors de calibratge
   await recalculateCalibrationFactors()
