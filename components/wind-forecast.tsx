@@ -9,6 +9,7 @@ import { formatDate, getWindDirectionName, getShoreType, knotsToKmh } from "@/li
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Brain, CloudRain, RefreshCw } from "lucide-react"
+import { ConfidenceBadge } from "@/components/confidence-badge"
 
 const SPOT = "sant-pere-pescador"
 
@@ -162,6 +163,14 @@ export function WindForecast() {
                           <div className="font-semibold text-blue-700">
                             {Math.round(hour.windSpeed)}
                             <span className="text-[8px] sm:text-xs"> kn</span>
+                            <div className="mt-0.5 flex justify-center">
+                              <ConfidenceBadge
+                                compact
+                                confidence={hour.confidence}
+                                isCalibrated={hour.isCalibrated}
+                                originalWindSpeed={hour.originalWindSpeed}
+                              />
+                            </div>
                           </div>
                           
                           <div className="flex flex-col items-center">

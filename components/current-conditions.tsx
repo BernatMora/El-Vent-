@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getWindName, knotsToKmh } from "@/lib/utils"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfidenceBadge } from "@/components/confidence-badge"
 
 interface MeteocatConditions {
   windSpeed: number
@@ -18,7 +19,9 @@ interface MeteocatConditions {
   stationCode?: string
   isFallback?: boolean
   isReal: boolean
-  source: string
+  isCalibrated?: boolean
+  originalWindSpeed?: number
+  confidence?: number
 }
 
 interface CurrentResponse {
@@ -26,6 +29,8 @@ interface CurrentResponse {
   source: string
   station: string
   stationCode?: string
+  isFallback?: boolean
+  confidence?: number
   isFallback?: boolean
 }
 
@@ -164,6 +169,14 @@ export function CurrentConditions() {
                 </span>
               ) : (
                 <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  Multi-model
+                </span>
+              )}
+              {currentData?.isFallback && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800" title="L'estació primària de Sant Pere Pescador no respon; usant estació propera">
+                  Estació al‧ternativa
+                </span>
+              )}
               {isStale && (
                 <span
                   className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800"
@@ -172,13 +185,12 @@ export function CurrentConditions() {
                   Lectura antiga ({staleMinutes} min)
                 </span>
               )}
-                  Multi-model
-                </span>
-              )}
-              {currentData?.isFallback && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800" title="L'estació primària de Sant Pere Pescador no respon; usant estació propera">
-                  Estació al‧ternativa
-                </span>
+              {!currentData?.isReal && (
+                <ConfidenceBadge
+                  confidence={currentData?.confidence}
+                  isCalibrated={currentData?.isCalibrated}
+                  originalWindSpeed={currentData?.originalWindSpeed}
+                />
               )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
