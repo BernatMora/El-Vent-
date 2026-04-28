@@ -192,6 +192,14 @@ export function CurrentConditions() {
                   originalWindSpeed={currentData?.originalWindSpeed}
                 />
               )}
+              {currentData?.isOffHours && (
+                <span
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+                  title="Fora del rang horari de previsió diürna (9-21h). Es mostra l'hora vàlida més propera."
+                >
+                  Fora d'horari diürn{currentData?.forecastReferenceTime ? ` · ref. ${currentData.forecastReferenceTime}` : ""}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
               <p className="text-xs sm:text-sm text-muted-foreground">

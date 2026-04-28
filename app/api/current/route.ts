@@ -61,6 +61,7 @@ export async function GET() {
     const today = forecast[0]
     const now = new Date()
     const currentHour = now.getHours()
+    const isOffHours = currentHour < 9 || currentHour > 21
     
     // Trobar l'hora més propera (les dades van de 9:00 a 21:00)
     let currentConditions = today.hours[0]
@@ -112,11 +113,14 @@ export async function GET() {
         isReal: false, // No son dades d'estació real, són previsió multi-model
         source: currentConditions.source || "Multi-model (AROME, ICON, GFS)",
         isCalibrated: currentConditions.isCalibrated ?? false,
-        originalWindSpeed: currentConditions.originalWindSpeed,
+        isOffHours,
+        forecastReferenceTime: currentConditions.time,
       },
       source: "Open-Meteo Multi-model",
       station: "Sant Pere Pescador",
       modelsUsed: currentConditions.modelsUsed || 5,
+      confidence: currentConditions.confidence || 0.8,
+      isOffHours,
       confidence: currentConditions.confidence || 0.8
     }, {
       status: 200,
