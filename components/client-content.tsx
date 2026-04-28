@@ -16,6 +16,7 @@ import { TideInfo } from "@/components/tide-info"
 import { NotificationSettings } from "@/components/notification-settings"
 import { PredictionAccuracy } from "@/components/prediction-accuracy"
 import { WindAlerts } from "@/components/wind-alerts"
+import { GoNoGoIndicator } from "@/components/go-no-go-indicator"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
@@ -114,6 +115,10 @@ export function ClientContent() {
 
       <AlertsBanner />
       <SessionOverview key={`session-${refreshKey}`} />
+
+      <div className="mb-4 sm:mb-6">
+        <GoNoGoIndicator key={`gonogo-${refreshKey}`} />
+      </div>
 
       <div className="mb-4 sm:mb-6">
         <WindAlerts />
