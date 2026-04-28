@@ -15,6 +15,8 @@ interface MeteocatConditions {
   humidity: number
   lastUpdate: string
   stationName: string
+  stationCode?: string
+  isFallback?: boolean
   isReal: boolean
   source: string
 }
@@ -23,6 +25,8 @@ interface CurrentResponse {
   current: MeteocatConditions
   source: string
   station: string
+  stationCode?: string
+  isFallback?: boolean
 }
 
 export function CurrentConditions() {
@@ -72,10 +76,38 @@ export function CurrentConditions() {
 
   useEffect(() => {
     loadCurrentData()
-    
-    // Actualitzar cada 5 minuts
-    const interval = setInterval(() => loadCurrentData(), 5 * 60 * 1000)
-    return () => clearInterval(interval)
+
+    // Polling intel·ligent: només refresca quan la pestaña està visible
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    const startPolling = () => {
+      if (interval) return
+      interval = setInterval(() => loadCurrentData(), 5 * 60 * 1000)
+    }
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // En tornar a fer-se visible, refresca immediatament i reactiva el polling
+        loadCurrentData()
+        startPolling()
+      } else {
+        stopPolling()
+      }
+    }
+
+    if (document.visibilityState === "visible") startPolling()
+    document.addEventListener("visibilitychange", handleVisibility)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener("visibilitychange", handleVisibility)
+    }
   }, [])
 
   const handleRefresh = () => {
@@ -115,19 +147,35 @@ export function CurrentConditions() {
       <CardContent className="p-3 sm:p-6">
         <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
           <div className="flex flex-col items-center md:items-start">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
-              <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                Multi-model
-              </span>
+              {currentData?.isReal ? (
+                <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                  Real (Meteocat)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  Multi-model
+                </span>
+              )}
+              {currentData?.isFallback && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800" title="L'estació primària de Sant Pere Pescador no respon; usant estació propera">
+                  Estació al‧ternativa
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:justify-start">
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {loading ? "Carregant dades..." : stationInfo || "Sant Pere Pescador"}
+                {loading
+                  ? "Carregant dades..."
+                  : currentData?.stationName
+                    ? `${currentData.stationName}${currentData.stationCode ? ` (${currentData.stationCode})` : ""}`
+                    : stationInfo || "Sant Pere Pescador"}
               </p>
               {lastUpdated && (
                 <span className="text-xs text-muted-foreground">
-                  · Actualitzat a les {lastUpdated}
+                  · Lectura {lastUpdated}
                 </span>
               )}
             </div>
@@ -207,7 +255,9 @@ export function CurrentConditions() {
         )}
         
         <div className="mt-4 text-center text-xs text-muted-foreground">
-          Font: {currentData?.source || "Multi-model"} - Previsio combinada AROME + ICON + GFS
+          {currentData?.isReal
+            ? `Font: ${currentData.source} · Mesures reals d'estació a 10m`
+            : `Font: ${currentData?.source || "Multi-model"} · Previsió combinada AROME + ICON + GFS`}
         </div>
       </CardContent>
     </Card>

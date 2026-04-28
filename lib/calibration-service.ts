@@ -43,48 +43,36 @@ export async function saveCalibrationEntry(data: {
   notes?: string
 }) {
   const supabase = createApiClient()
-  
-  // Calcular factors de correcció
-  const windSpeedFactor = data.forecastWindSpeed > 0 ? data.realWindSpeed / data.forecastWindSpeed : 1
-  const windGustFactor = data.forecastWindGust > 0 ? data.realWindGust / data.forecastWindGust : 1
-  
-  // Utilitzar SQL raw per evitar problemes de cache d'esquema
-  const { error } = await supabase.rpc('insert_calibration', {
-    p_predicted_wind_speed: data.forecastWindSpeed,
-    p_predicted_wind_gust: data.forecastWindGust,
-    p_predicted_wind_direction: data.forecastDirection,
-    p_real_wind_speed: data.realWindSpeed,
-    p_real_wind_gust: data.realWindGust,
-    p_real_wind_direction: data.realDirection,
-    p_wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
-    p_wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
-    p_source: "camping_aquarius",
-    p_notes: data.notes || null
-  })
-  
-  if (error) {
-    // Si la funció RPC no existeix, crear-la automàticament és complicat
-    // Intentem amb insert directe sense cache
-    console.log("RPC no disponible, provant insert directe...")
-    
-    const { error: insertError } = await supabase
-      .from("wind_calibration")
-      .insert([{
-        predicted_wind_speed: data.forecastWindSpeed,
-        predicted_wind_gust: data.forecastWindGust,
-        predicted_wind_direction: data.forecastDirection,
-        real_wind_speed: data.realWindSpeed,
-        real_wind_gust: data.realWindGust,
-        real_wind_direction: data.realDirection,
-        wind_speed_factor: Math.round(windSpeedFactor * 1000) / 1000,
-        wind_gust_factor: Math.round(windGustFactor * 1000) / 1000,
-        source: "camping_aquarius",
-        notes: data.notes || null
-      }])
-    
-    if (insertError) throw insertError
+
+  // Validar que tenim les variables d'entorn de Supabase
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+    throw new Error("Supabase no està configurat. Falten les variables d'entorn NEXT_PUBLIC_SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY (o NEXT_PUBLIC_SUPABASE_ANON_KEY).")
   }
-  
+
+  // NOTA: wind_speed_factor i wind_gust_factor són columnes GENERADES a la BD,
+  // per tant NO s'han d'inserir manualment (ho calcula Postgres automàticament).
+  // També cal informar measurement_time (NOT NULL).
+  const measurementTime = data.forecastTimestamp || new Date().toISOString()
+
+  const { error: insertError } = await supabase
+    .from("wind_calibration")
+    .insert([{
+      measurement_time: measurementTime,
+      predicted_wind_speed: data.forecastWindSpeed,
+      predicted_wind_gust: data.forecastWindGust,
+      predicted_wind_direction: Math.round(data.forecastDirection),
+      real_wind_speed: data.realWindSpeed,
+      real_wind_gust: data.realWindGust,
+      real_wind_direction: Math.round(data.realDirection),
+      source: "camping_aquarius",
+      notes: data.notes || null
+    }])
+
+  if (insertError) {
+    console.error("Error inserint a wind_calibration:", insertError)
+    throw new Error(`Supabase: ${insertError.message}${insertError.hint ? ` (${insertError.hint})` : ''}`)
+  }
+
   // Recalcular factors de calibratge
   await recalculateCalibrationFactors()
 }

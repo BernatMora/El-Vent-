@@ -60,15 +60,19 @@ export async function getMarineForecast(spot?: string): Promise<MarineDay[]> {
 }
 
 // Models disponibles per Catalunya amb els seus pesos (més alt = més confiança)
+// Per la costa de l'Alt Empordà (Tramuntana, brisa marina), AROME és el més precís.
+// Els pesos s'han calibrat perquè AROME domini en el càlcul però la resta aportin diversitat.
 const WEATHER_MODELS = {
-  // AROME de Météo-France - Alta resolució (1.5-2.5km), molt bo per vent costaner
-  'meteofrance_arome_france_hd': { weight: 1.0, name: 'AROME HD', resolution: '1.5km' },
-  'meteofrance_arome_france': { weight: 0.9, name: 'AROME', resolution: '2.5km' },
-  // ICON de DWD - Bona resolució per Europa
-  'icon_eu': { weight: 0.8, name: 'ICON EU', resolution: '7km' },
-  'icon_seamless': { weight: 0.7, name: 'ICON', resolution: '11km' },
-  // GFS de NOAA - Model global de referència  
-  'gfs_seamless': { weight: 0.6, name: 'GFS', resolution: '25km' },
+  // AROME de Météo-France - Alta resolució (1.3km), òptim per vent costaner i brisa marina
+  'meteofrance_arome_france_hd': { weight: 3.0, name: 'AROME HD', resolution: '1.3km' },
+  'meteofrance_arome_france': { weight: 2.5, name: 'AROME', resolution: '2.5km' },
+  // ARPEGE - Model regional francès, també molt bo per Mediterrània NW
+  'meteofrance_arpege_europe': { weight: 1.5, name: 'ARPEGE EU', resolution: '11km' },
+  // ICON de DWD - Bona resolució per Europa, complementari
+  'icon_eu': { weight: 1.2, name: 'ICON EU', resolution: '7km' },
+  'icon_seamless': { weight: 0.8, name: 'ICON', resolution: '11km' },
+  // GFS de NOAA - Model global, només com a referència
+  'gfs_seamless': { weight: 0.5, name: 'GFS', resolution: '25km' },
 }
 
 interface ModelData {

@@ -76,8 +76,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error guardant calibratge:", error)
+    const message = error instanceof Error ? error.message : "Error guardant dades de calibratge"
     return NextResponse.json(
-      { error: "Error guardant dades de calibratge" },
+      { error: message },
       { status: 500 }
     )
   }

@@ -1,10 +1,50 @@
 import { NextResponse } from "next/server"
 import { getMultiModelForecast } from "@/lib/open-meteo-api"
+import { getMeteocatCurrentConditions } from "@/lib/meteocat-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function GET() {
+  // 1) Intentar Meteocat (dades REALS de l'estació de Sant Pere Pescador)
+  if (process.env.METEOCAT_API_KEY) {
+    try {
+      const meteocat = await getMeteocatCurrentConditions()
+      if (meteocat) {
+        return NextResponse.json({
+          current: {
+            windSpeed: meteocat.windSpeed,
+            windDirection: meteocat.windDirection,
+            windGust: meteocat.windGust,
+            temperature: meteocat.temperature,
+            humidity: meteocat.humidity,
+            lastUpdate: meteocat.lastUpdate,
+            stationName: meteocat.stationName,
+            stationCode: meteocat.stationCode,
+            isFallback: meteocat.isFallback,
+            isReal: true,
+            source: meteocat.source,
+          },
+          source: meteocat.source,
+          station: meteocat.stationName,
+          stationCode: meteocat.stationCode,
+          isFallback: meteocat.isFallback,
+          modelsUsed: 1,
+          confidence: 1,
+        }, {
+          status: 200,
+          headers: { "Cache-Control": "public, max-age=300" },
+        })
+      }
+      console.warn("Meteocat no ha retornat dades — fallback a Open-Meteo")
+    } catch (err) {
+      console.error("Error Meteocat, fallback a Open-Meteo:", err)
+    }
+  } else {
+    console.warn("METEOCAT_API_KEY no configurada — usant Open-Meteo")
+  }
+
+  // 2) Fallback: Open-Meteo multi-model
   try {
     // Obtenir dades multi-model d'Open-Meteo
     const forecast = await getMultiModelForecast("sant-pere-pescador")
