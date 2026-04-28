@@ -76,11 +76,11 @@ export function WindForecast() {
   }
 
   // Categories de vent per kitesurf (5 nivells)
-  // Molt fluix <10 · Fluix 10-12 · Bueno 13-17 · Molt bo 18-22 · Extrem ≥23
+  // Molt fluix <10 · Fluix 10-12 · Bo 13-17 · Molt bo 18-22 · Extrem ≥23
   const getFlowDescription = (windSpeed: number) => {
     if (windSpeed < 10) return "Molt fluix"
     if (windSpeed < 13) return "Fluix"
-    if (windSpeed < 18) return "Bueno"
+    if (windSpeed < 18) return "Bo"
     if (windSpeed < 23) return "Molt bo"
     return "Extremadament bo"
   }

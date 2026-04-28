@@ -13,12 +13,12 @@ const SPOT = "sant-pere-pescador"
 // Llindars de vent en nusos (5 categories)
 // Molt fluix:      < 10 kn  → no apte (platja)
 // Fluix:           10-12 kn → poc vent, aprenentatge bàsic
-// Bueno:           13-17 kn → ideal principiants
+// Bo:              13-17 kn → ideal principiants
 // Molt bo:         18-22 kn → vent fort, experiència
 // Extremadament bo: ≥ 23 kn → només experts
 const FLUIX_MAX = 10           // < 10 kn → fluix
 const MOLT_FLUIX_MAX = 13      // 10-12 kn → molt fluix
-const BUENO_MAX = 18           // 13-17 kn → bueno
+const BUENO_MAX = 18           // 13-17 kn → bo
 const MOLT_BO_MAX = 23         // 18-22 kn → molt bo
                                // ≥ 23 kn → extremadament bo
 
@@ -31,7 +31,7 @@ type SummaryTone = "fluix" | "moltFluix" | "bueno" | "moltBo" | "extrem"
 function classifyWind(windKn: number): { tone: SummaryTone; statusLabel: string } {
   if (windKn < FLUIX_MAX) return { tone: "moltFluix", statusLabel: "Molt fluix" }
   if (windKn < MOLT_FLUIX_MAX) return { tone: "fluix", statusLabel: "Fluix" }
-  if (windKn < BUENO_MAX) return { tone: "bueno", statusLabel: "Bueno" }
+  if (windKn < BUENO_MAX) return { tone: "bueno", statusLabel: "Bo" }
   if (windKn < MOLT_BO_MAX) return { tone: "moltBo", statusLabel: "Molt bo" }
   return { tone: "extrem", statusLabel: "Extremadament bo" }
 }
@@ -105,7 +105,7 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   
   // Hores amb vent suficient per navegar
   const goodWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_GOOD_WIND) // 18+ kn (Molt bo / Extrem)
-  const justejaWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && getEffectiveWind(hour) < MIN_GOOD_WIND) // 13-17 kn (Bueno)
+  const justejaWindHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && getEffectiveWind(hour) < MIN_GOOD_WIND) // 13-17 kn (Bo)
   const navigableHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND) // 13+ kn
   
   const offshoreRiskHours = hours.filter((hour) => getEffectiveWind(hour) >= MIN_JUSTETA_WIND && isOffshore(hour.windDirection))
@@ -138,7 +138,7 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   // LÒGICA basada en vent efectiu (5 categories):
   //  Fluix            < 10 kn   → no apte
   //  Molt fluix       10-12 kn  → poc vent, aprenentatge
-  //  Bueno            13-17 kn  → ideal principiants
+  //  Bo               13-17 kn  → ideal principiants
   //  Molt bo          18-22 kn  → vent fort, experiència
   //  Extremadament bo ≥ 23 kn   → només experts
   const avgRounded = Math.round(avgEffectiveWind)
@@ -179,7 +179,7 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
         statusLabel,
         reason: `Mitjana de ${avgRounded} kn (13-17 kn) — ideal principiants.`,
         decisionTitle: offshoreWarning ? `Bon vent, però alerta: ${offshoreWindName}!` : "Sí, val la pena!",
-        decisionText: offshoreWarning || `Vent moderat (13-17 kn), ideal per practicar tècniques bàsiques. Millor franja: ${bestWindow}.`,
+        decisionText: offshoreWarning || `Vent moderat (13-17 kn), ideal per practicar tècniques bàsiques del kitesurf. Millor franja: ${bestWindow}.`,
       }
     case "moltBo":
       return {
@@ -278,7 +278,7 @@ export function SessionOverview() {
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Wind className="h-3.5 w-3.5" />
-                Bueno: 13-17 kn
+                Bo: 13-17 kn
               </Badge>
               <Badge variant="outline" className="gap-1 bg-white/70">
                 <Waves className="h-3.5 w-3.5" />
