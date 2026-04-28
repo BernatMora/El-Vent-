@@ -7,6 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import {
+  subscribeToPush,
+  unsubscribeFromPush,
+  updatePushPrefs,
+} from "@/lib/push-client"
 
 interface NotificationPreferences {
   enabled: boolean
@@ -56,6 +61,15 @@ export function NotificationSettings() {
   const savePrefs = (newPrefs: NotificationPreferences) => {
     setPrefs(newPrefs)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPrefs))
+    if (newPrefs.enabled && permission === "granted") {
+      // Sincronitza preferències al servidor (sense bloquejar)
+      updatePushPrefs({
+        minWind: newPrefs.minWind,
+        alertDayBefore: newPrefs.alertDayBefore,
+        alertMorning: newPrefs.alertMorning,
+        offshoreWarnings: newPrefs.offshoreWarnings,
+      }).catch(() => {})
+    }
   }
 
   const requestPermission = async () => {
@@ -65,9 +79,30 @@ export function NotificationSettings() {
     setPermission(result)
 
     if (result === "granted") {
+      const sub = await subscribeToPush({
+        minWind: prefs.minWind,
+        alertDayBefore: prefs.alertDayBefore,
+        alertMorning: prefs.alertMorning,
+        offshoreWarnings: prefs.offshoreWarnings,
+      })
+      if (!sub.ok) {
+        // Fallback: notificacions locals només
+        console.warn("Push subscription failed:", sub.error)
+      }
       savePrefs({ ...prefs, enabled: true })
       // Show test notification
       showTestNotification()
+    }
+  }
+
+  const toggleEnabled = (enabled: boolean) => {
+    if (enabled && permission !== "granted") {
+      requestPermission()
+    } else if (!enabled) {
+      unsubscribeFromPush().catch(() => {})
+      savePrefs({ ...prefs, enabled })
+    } else {
+      savePrefs({ ...prefs, enabled })
     }
   }
 
@@ -81,14 +116,6 @@ export function NotificationSettings() {
       badge: "/icons/icon-192.svg",
       tag: "test-notification",
     })
-  }
-
-  const toggleEnabled = (enabled: boolean) => {
-    if (enabled && permission !== "granted") {
-      requestPermission()
-    } else {
-      savePrefs({ ...prefs, enabled })
-    }
   }
 
   if (!isSupported) {

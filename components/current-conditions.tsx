@@ -22,6 +22,9 @@ interface MeteocatConditions {
   isCalibrated?: boolean
   originalWindSpeed?: number
   confidence?: number
+  isOffHours?: boolean
+  forecastReferenceTime?: string
+  source?: string
 }
 
 interface CurrentResponse {
@@ -31,7 +34,6 @@ interface CurrentResponse {
   stationCode?: string
   isFallback?: boolean
   confidence?: number
-  isFallback?: boolean
 }
 
 export function CurrentConditions() {

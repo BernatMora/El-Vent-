@@ -52,7 +52,7 @@ function detectTramuntana(): Promise<Detection> {
         Math.round((first.time.getTime() - now.getTime()) / (1000 * 60 * 60)),
       )
 
-      let level: Detection["level"]
+      let level: NonNullable<Detection>["level"]
       if (hoursAhead <= 2) level = "imminent"
       else if (hoursAhead <= 6) level = "soon"
       else level = "later"

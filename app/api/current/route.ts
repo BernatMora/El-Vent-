@@ -120,8 +120,7 @@ export async function GET() {
       station: "Sant Pere Pescador",
       modelsUsed: currentConditions.modelsUsed || 5,
       confidence: currentConditions.confidence || 0.8,
-      isOffHours,
-      confidence: currentConditions.confidence || 0.8
+      isOffHours
     }, {
       status: 200,
       headers: {
