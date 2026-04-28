@@ -18,6 +18,7 @@ import { PredictionAccuracy } from "@/components/prediction-accuracy"
 import { WindAlerts } from "@/components/wind-alerts"
 import { GoNoGoIndicator } from "@/components/go-no-go-indicator"
 import { TramuntanaAlert } from "@/components/tramuntana-alert"
+import { ForecastVsRealChart } from "@/components/forecast-vs-real-chart"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
@@ -167,6 +168,10 @@ export function ClientContent() {
       <div className="mb-4 grid gap-4 sm:mb-8 md:grid-cols-2">
         <NotificationSettings />
         <PredictionAccuracy />
+      </div>
+
+      <div className="mb-4 sm:mb-8">
+        <ForecastVsRealChart key={`fvsr-${refreshKey}`} />
       </div>
     </>
   )
