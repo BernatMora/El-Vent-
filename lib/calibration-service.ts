@@ -1,5 +1,7 @@
 import { createApiClient } from "@/lib/supabase/api"
 
+// Servei de calibratge - Actualitzat per utilitzar noms de columnes correctes
+
 // Categoritzar la direcció del vent
 export function getWindDirectionCategory(degrees: number): string {
   if (degrees >= 337.5 || degrees < 22.5) return "N"
