@@ -271,105 +271,20 @@ export function SessionOverview() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className={`${toneConfig.badge} gap-1`}>
-                <Sparkles className="h-3.5 w-3.5" />
-                Semàfor de sessió
-              </Badge>
-              <Badge variant="outline" className="gap-1 bg-white/70">
-                <Wind className="h-3.5 w-3.5" />
-                Bo: 13-17 kn
-              </Badge>
-              <Badge variant="outline" className="gap-1 bg-white/70">
-                <Waves className="h-3.5 w-3.5" />
-                Molt bo: 18-22 kn · Extrem ≥ 23 kn
-              </Badge>
-            </div>
-
-            {/* Versió mòbil: scroll horitzontal amb 3 dies visibles */}
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:hidden">
-              {daySummaries.map((day, idx) => {
-                const dayTone = toneStyles[day.tone]
-                const DayIcon = dayTone.Icon
-                const shortLabel = idx === 0 ? "Avui" : idx === 1 ? "Demà" : `D${idx + 1}`
-                // Obtenir el dia de la setmana
-                const dayOfWeek = new Date(Date.now() + idx * 24 * 60 * 60 * 1000).toLocaleDateString('ca-ES', { weekday: 'short' })
-
-                return (
-                  <div
-                    key={day.label}
-                    className={`min-w-[100px] flex-shrink-0 rounded-xl border p-2.5 text-center transition-all duration-300 ${dayTone.panel}`}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <DayIcon className="h-4 w-4" />
-                      <span className="text-xs font-bold uppercase">{dayOfWeek}</span>
-                    </div>
-                    <div className="mt-1 text-lg font-bold">{day.statusLabel}</div>
-                    <div className="text-xs opacity-80">{day.scoreLabel}</div>
-                  </div>
-                )
-              })}
-            </div>
-            
-            {/* Versió tablet/desktop: graella */}
-            <div className="hidden sm:grid sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
-              {daySummaries.map((day) => {
-                const dayTone = toneStyles[day.tone]
-                const DayIcon = dayTone.Icon
-
-                return (
-                  <div
-                    key={day.label}
-                    className={`rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${dayTone.panel}`}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
-                      <div className="flex items-center gap-2">
-                        <DayIcon className="h-4 w-4" />
-                        <span>{day.label}</span>
-                      </div>
-                      <span className="rounded-full bg-white/50 px-2 py-0.5 text-xs font-bold">{day.score}/100</span>
-                    </div>
-                    <div className="text-lg font-bold">{day.statusLabel}</div>
-                    <p className="mt-1 text-sm opacity-90">{day.bestWindow}</p>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
-                  <Sparkles className="h-4 w-4 text-sky-600" />
-                  Puntuació d'avui
+            {/* Avui: el verdict principal */}
+            <div className={`rounded-2xl border p-5 ${toneConfig.panel}`}>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider opacity-80">
+                <ToneIcon className="h-4 w-4" />
+                Avui · {summary.statusLabel}
+              </div>
+              <div className="mt-2 text-2xl font-bold leading-tight">{summary.decisionTitle}</div>
+              <p className="mt-1 text-sm opacity-90">{summary.decisionText}</p>
+              {summary.bestWindowAvg > 0 && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1 text-sm font-semibold">
+                  <Wind className="h-3.5 w-3.5" />
+                  {summary.bestWindow} · {summary.bestWindowAvg} kn
                 </div>
-                <div className="text-3xl font-bold text-slate-900">{summary.score}/100</div>
-                <p className="mt-1 text-sm text-slate-600">{summary.scoreLabel}</p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
-                  <Clock3 className="h-4 w-4" />
-                  Millor franja d'avui
-                </div>
-                <div className="text-xl font-bold text-slate-900">{summary.bestWindow}</div>
-                <p className="mt-1 text-sm text-slate-600">
-                  {summary.bestWindowAvg > 0
-                    ? `Mitjana ${summary.bestWindowAvg} kn · ${summary.gustQuality}`
-                    : "Sense franja clara de vent navegable"}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 transition-all duration-300 hover:shadow-md">
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-sky-900">
-                <Waves className="h-4 w-4" />
-                Val la pena anar-hi avui?
-              </div>
-              <div className="text-lg font-bold text-sky-950">{summary.decisionTitle}</div>
-              <p className="mt-1 text-sm text-sky-900">{summary.decisionText}</p>
-              <p className="mt-2 text-xs text-sky-700">
-                Referència: 13 kn = {knotsToKmh(13)} km/h | 18 kn = {knotsToKmh(18)} km/h | 23 kn = {knotsToKmh(23)} km/h
-              </p>
+              )}
             </div>
 
             <button
