@@ -12,7 +12,8 @@ import os from 'os'
 import path from 'path'
 
 const METEOCAT_LIMIT = 750
-const FIXED_INTERVAL_MS = 60 * 60 * 1000 // 1 hora entre consultes
+const FIXED_INTERVAL_MS = 60 * 60 * 1000 // 1 hora entre consultes en cas d'èxit
+const RETRY_INTERVAL_MS = 5 * 60 * 1000  // 5 min entre reintents si la petició falla
 // Consultem 24h/24h amb interval d'1h: 24×30 = 720/mes (sota el límit 750).
 // Mantenim DAYTIME_* per a info diagnòstica, però NO bloquegen la consulta.
 const DAYTIME_START_HOUR = 8
@@ -294,15 +295,30 @@ export async function getMeteocatCurrentConditions(): Promise<MeteocatCurrentCon
       if (!shouldRefresh(fresh)) return fresh.lastReading
 
       // Marquem l'intent abans de la crida per evitar que altres invocacions concurrents
-      // (en serverless) facin la mateixa petició.
-      fresh.lastFetchAt = Date.now()
+      // (en serverless) facin la mateixa petició. Si la crida falla, ho corregirem
+      // després perquè el proper reintent passi en RETRY_INTERVAL_MS i no en 1h.
+      const attemptStart = Date.now()
+      fresh.lastFetchAt = attemptStart
       writeUsageLog(fresh)
 
       const result = await fetchMeteocatCurrentConditions()
-      // Sumem 1 al comptador mensual encara que falli (per evitar bucles agressius)
       const after = readUsageLog()
-      registerFetch(after, result ?? after.lastReading)
-      return result ?? after.lastReading
+      if (result) {
+        // Èxit: comptem la consulta, guardem la lectura i mantenim cooldown d'1h.
+        registerFetch(after, result)
+        return result
+      }
+      // Fallada: també comptem (per evitar bucles agressius) però acurtem el cooldown
+      // a RETRY_INTERVAL_MS perquè el proper intent es faci aviat.
+      const key = getMonthKey()
+      if (!after.months[key]) after.months[key] = { count: 0 }
+      after.months[key].count++
+      after.lastFetchAt = attemptStart - (FIXED_INTERVAL_MS - RETRY_INTERVAL_MS)
+      writeUsageLog(after)
+      console.warn(
+        `[Meteocat] Fetch ha fallat — reintent en ${RETRY_INTERVAL_MS / 60000} min`,
+      )
+      return after.lastReading
     } finally {
       inflight = null
     }

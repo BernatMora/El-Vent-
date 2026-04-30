@@ -21,6 +21,7 @@ import { TramuntanaAlert } from "@/components/tramuntana-alert"
 import { ForecastVsRealChart } from "@/components/forecast-vs-real-chart"
 import { MobileStatusBar } from "@/components/mobile-status-bar"
 import { AquariusMeteo } from "@/components/aquarius-meteo"
+import { AquariusReadings } from "@/components/aquarius-readings"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
@@ -79,6 +80,11 @@ export function ClientContent() {
       {/* Verdict primer de tot — el més important pel kiter al mòbil */}
       <div className="mb-3 sm:mb-6">
         <GoNoGoIndicator key={`gonogo-${refreshKey}`} />
+      </div>
+
+      {/* Lectura en directe del camping (anemòmetre a la platja) */}
+      <div className="mb-3 sm:mb-6">
+        <AquariusReadings />
       </div>
 
       <div className="sticky top-2 z-20 mb-3 rounded-xl border bg-slate-50/95 p-1.5 shadow-sm backdrop-blur sm:mb-6 sm:rounded-2xl sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">

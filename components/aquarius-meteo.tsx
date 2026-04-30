@@ -118,7 +118,7 @@ export function AquariusMeteo() {
                   </div>
                 </div>
               )}
-              {data.urls[2] && (
+              {data.urls[1] && (
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     Direcció del vent
@@ -126,7 +126,7 @@ export function AquariusMeteo() {
                   <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`${data.urls[2]}?k=${refreshKey}`}
+                      src={`${data.urls[1]}?k=${refreshKey}`}
                       alt="Direcció del vent"
                       className="max-h-40 w-auto object-contain"
                       loading="lazy"
