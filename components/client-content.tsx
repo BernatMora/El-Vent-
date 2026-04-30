@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { WindForecast } from "@/components/wind-forecast"
 import { SessionOverview } from "@/components/session-overview"
 import { SeaConditions } from "@/components/sea-conditions"
+import { AquariusMeteo } from "@/components/aquarius-meteo"
+import { AquariusReadings } from "@/components/aquarius-readings"
 import { getForecastData } from "@/lib/api"
 
 const SPOT = "sant-pere-pescador"
@@ -61,8 +63,18 @@ export function ClientContent() {
 
   return (
     <>
+      {/* A la platja ara — primer vistaso */}
+      <div className="mb-3 sm:mb-6">
+        <AquariusReadings />
+      </div>
+
       {/* Semàfor de sessió */}
       <SessionOverview key={`session-${refreshKey}`} />
+
+      {/* Anemòmetre de la platja */}
+      <div className="mb-3 sm:mb-6">
+        <AquariusMeteo />
+      </div>
 
       {/* Previsió */}
       <div className="mb-3 sm:mb-8">
