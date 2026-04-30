@@ -20,6 +20,7 @@ import { GoNoGoIndicator } from "@/components/go-no-go-indicator"
 import { TramuntanaAlert } from "@/components/tramuntana-alert"
 import { ForecastVsRealChart } from "@/components/forecast-vs-real-chart"
 import { MobileStatusBar } from "@/components/mobile-status-bar"
+import { AquariusMeteo } from "@/components/aquarius-meteo"
 import { getForecastData } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
@@ -129,6 +130,10 @@ export function ClientContent() {
 
       <div className="mb-3 sm:mb-8 rounded-xl bg-white p-2 sm:p-6 shadow-md dark:bg-slate-900">
         <CurrentConditions key={`conditions-${refreshKey}`} />
+      </div>
+
+      <div className="mb-3 sm:mb-6">
+        <AquariusMeteo />
       </div>
 
       <Tabs defaultValue="previsio" className="mb-3 sm:mb-8">

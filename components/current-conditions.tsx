@@ -292,10 +292,17 @@ export function CurrentConditions() {
           </div>
         )}
         
-        <div className="mt-4 text-center text-xs text-muted-foreground">
-          {currentData?.isReal
-            ? `Font: ${currentData.source} · Mesures reals d'estació a 10m`
-            : `Font: ${currentData?.source || "Multi-model"} · Previsió combinada AROME + ICON + GFS`}
+        <div className="mt-4 text-center text-xs text-muted-foreground space-y-1">
+          <div>
+            {currentData?.isReal
+              ? `Font: ${currentData.source} · Mesures reals d'estació a 10m`
+              : `Font: ${currentData?.source || "Multi-model"} · Previsió combinada AROME + ICON + GFS`}
+          </div>
+          {currentData?.isReal && (
+            <div className="text-[10px] sm:text-xs italic">
+              Estació oficial XEMA · pot diferir d'anemòmetres de platja (p.ex. Camping Aquàrius) per microclima, alçada o exposició.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

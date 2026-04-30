@@ -8,15 +8,36 @@
 //   - Si s'arriba al límit mensual o no toca refrescar, es retorna l'última dada
 //     cachejada (mai es fa una nova petició fora de l'horari fix).
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 
 const METEOCAT_LIMIT = 750
 const FIXED_INTERVAL_MS = 60 * 60 * 1000 // 1 hora entre consultes
-// Només consultem en horari diurn (hora local Europe/Madrid).
-// 8:00–21:00 → 14 consultes/dia × 30 = 420/mes (marge ample sota 750).
+// Consultem 24h/24h amb interval d'1h: 24×30 = 720/mes (sota el límit 750).
+// Mantenim DAYTIME_* per a info diagnòstica, però NO bloquegen la consulta.
 const DAYTIME_START_HOUR = 8
-const DAYTIME_END_HOUR = 21 // inclusive (última consulta a les 21:00)
-const METEOCAT_LOG_PATH = path.join(process.cwd(), '.meteocat-usage.json')
+const DAYTIME_END_HOUR = 21
+// A serverless (Netlify/Vercel) `process.cwd()` no és escrivible o no persisteix
+// entre invocacions. Usem `/tmp` (escrivible mentre l'instància lambda està viva)
+// i caiem a cwd en local. Permet reduir crides Meteocat dins una mateixa instància warm.
+function resolveLogPath(): string {
+  const fileName = '.meteocat-usage.json'
+  const candidates = [
+    process.env.METEOCAT_CACHE_DIR,
+    process.env.NETLIFY ? os.tmpdir() : null,
+    process.env.VERCEL ? os.tmpdir() : null,
+    process.cwd(),
+    os.tmpdir(),
+  ].filter(Boolean) as string[]
+  for (const dir of candidates) {
+    try {
+      fs.accessSync(dir, fs.constants.W_OK)
+      return path.join(dir, fileName)
+    } catch {}
+  }
+  return path.join(os.tmpdir(), fileName)
+}
+const METEOCAT_LOG_PATH = resolveLogPath()
 
 interface UsageLog {
   // Comptador per mes (YYYY-MM): nombre de cicles de refresc realitzats
@@ -81,7 +102,8 @@ function isDaytime(date = new Date()): boolean {
 
 function shouldRefresh(log: UsageLog): boolean {
   if (!underMonthlyLimit(log)) return false
-  if (!isDaytime()) return false
+  // Permetem consultes 24h/24h: l'usuari pot mirar condicions a qualsevol hora.
+  // El límit ve donat per FIXED_INTERVAL_MS (1h) → 720/mes < 750.
   if (!log.lastFetchAt) return true
   return Date.now() - log.lastFetchAt >= FIXED_INTERVAL_MS
 }
