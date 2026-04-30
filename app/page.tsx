@@ -25,9 +25,6 @@ export default function Home() {
             <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wide text-sky-100">
               Sant Pere Pescador · Kitesurf
             </div>
-            <div className="mb-4 text-base font-semibold text-cyan-100">
-              Bernat Mora
-            </div>
             <div className="mx-auto grid max-w-xs grid-cols-2 gap-2 text-left">
               {highlights.map((item) => (
                 <div key={item.label} className="rounded-xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-lg">

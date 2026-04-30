@@ -300,7 +300,7 @@ export function CurrentConditions() {
           </div>
           {currentData?.isReal && (
             <div className="text-[10px] sm:text-xs italic">
-              Estació oficial XEMA · pot diferir d'anemòmetres de platja (p.ex. Camping Aquàrius) per microclima, alçada o exposició.
+              Estació oficial XEMA · pot diferir del que es mesura a la platja ara segons Bernat Mora per microclima, alçada o exposició.
             </div>
           )}
         </div>
