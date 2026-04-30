@@ -1,211 +1,292 @@
-import { createApiClient } from "@/lib/supabase/api"
+// Calibratge automàtic del vent (sense Supabase).
+// Compara cada ~30 min la previsió d'Open-Meteo amb les dades reals de Meteocat
+// i manté factors de correcció per direcció (categoria de 8 punts).
+//
+// Estat persistit a `.calibration-state.json` (com `.meteocat-usage.json`).
 
-// Servei de calibratge - Actualitzat per utilitzar noms de columnes correctes
+import fs from "fs"
+import path from "path"
+import { getMultiModelForecast } from "./open-meteo-api"
+import { getMeteocatCurrentConditions } from "./meteocat-api"
 
-// Categoritzar la direcció del vent
-export function getWindDirectionCategory(degrees: number): string {
-  if (degrees >= 337.5 || degrees < 22.5) return "N"
-  if (degrees >= 22.5 && degrees < 67.5) return "NE"
-  if (degrees >= 67.5 && degrees < 112.5) return "E"
-  if (degrees >= 112.5 && degrees < 157.5) return "SE"
-  if (degrees >= 157.5 && degrees < 202.5) return "S"
-  if (degrees >= 202.5 && degrees < 247.5) return "SW"
-  if (degrees >= 247.5 && degrees < 292.5) return "W"
-  if (degrees >= 292.5 && degrees < 337.5) return "NW"
-  return "N"
-}
+const STATE_PATH = path.join(process.cwd(), ".calibration-state.json")
 
-// Obtenir el nom del vent en català
-export function getWindName(degrees: number): string {
-  const category = getWindDirectionCategory(degrees)
-  const names: Record<string, string> = {
-    "N": "Tramuntana",
-    "NE": "Gregal",
-    "E": "Llevant",
-    "SE": "Xaloc",
-    "S": "Migjorn",
-    "SW": "Garbí/Llebeig",
-    "W": "Ponent",
-    "NW": "Mestral"
-  }
-  return names[category] || "Desconegut"
-}
+const RUN_INTERVAL_MS = 60 * 60 * 1000 // cada 60 minuts (alineat amb la freqüència fixa de Meteocat)
+const HISTORY_LIMIT = 200
+const MIN_PREDICTED_KTS = 2 // ignorar mostres amb previsió molt baixa (sorollós)
+const EMA_ALPHA = 0.25 // pes de la nova mostra a la mitjana mòbil
+const CONFIDENCE_FULL_AT = 12 // mostres per arribar a confiança 1
+const FACTOR_MIN = 0.4
+const FACTOR_MAX = 2.5
 
-// Guardar una entrada de calibratge
-export async function saveCalibrationEntry(data: {
-  forecastWindSpeed: number
-  forecastWindGust: number
-  forecastDirection: number
-  realWindSpeed: number
-  realWindGust: number
-  realDirection: number
-  forecastTimestamp: string
-  notes?: string
-}) {
-  const supabase = createApiClient()
+export type DirectionCategory = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW"
 
-  // Validar que tenim les variables d'entorn de Supabase
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-    throw new Error("Supabase no està configurat. Falten les variables d'entorn NEXT_PUBLIC_SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY (o NEXT_PUBLIC_SUPABASE_ANON_KEY).")
-  }
+const ALL_CATEGORIES: DirectionCategory[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
-  // NOTA: wind_speed_factor i wind_gust_factor són columnes GENERADES a la BD,
-  // per tant NO s'han d'inserir manualment (ho calcula Postgres automàticament).
-  // També cal informar measurement_time (NOT NULL).
-  const measurementTime = data.forecastTimestamp || new Date().toISOString()
-
-  const { error: insertError } = await supabase
-    .from("wind_calibration")
-    .insert([{
-      measurement_time: measurementTime,
-      predicted_wind_speed: data.forecastWindSpeed,
-      predicted_wind_gust: data.forecastWindGust,
-      predicted_wind_direction: Math.round(data.forecastDirection),
-      real_wind_speed: data.realWindSpeed,
-      real_wind_gust: data.realWindGust,
-      real_wind_direction: Math.round(data.realDirection),
-      source: "camping_aquarius",
-      notes: data.notes || null
-    }])
-
-  if (insertError) {
-    console.error("Error inserint a wind_calibration:", insertError)
-    throw new Error(`Supabase: ${insertError.message}${insertError.hint ? ` (${insertError.hint})` : ''}`)
-  }
-
-  // Recalcular factors de calibratge
-  await recalculateCalibrationFactors()
-}
-
-// Recalcular els factors de calibratge basant-se en l'historial
-export async function recalculateCalibrationFactors() {
-  const supabase = createApiClient()
-  
-  // Obtenir totes les entrades de calibratge
-  const { data: entries, error } = await supabase
-    .from("wind_calibration")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(100) // Últimes 100 entrades
-  
-  if (error || !entries || entries.length < 1) {
-    console.log("No hi ha prou dades per calibrar")
-    return
-  }
-  
-  // Agrupar per direcció de vent (categoria)
-  const byDirection: Record<string, typeof entries> = {}
-  for (const entry of entries) {
-    const dir = getWindDirectionCategory(entry.predicted_wind_direction || 0)
-    if (!byDirection[dir]) byDirection[dir] = []
-    byDirection[dir].push(entry)
-  }
-  
-  // Calcular factors per cada direcció
-  for (const [direction, dirEntries] of Object.entries(byDirection)) {
-    if (dirEntries.length < 1) continue
-    
-    // Calcular factors mitjans
-    const avgWindSpeedFactor = dirEntries.reduce((sum, e) => sum + (e.wind_speed_factor || 1), 0) / dirEntries.length
-    const avgWindGustFactor = dirEntries.reduce((sum, e) => sum + (e.wind_gust_factor || 1), 0) / dirEntries.length
-    
-    // Calcular confiança basada en el nombre d'entrades
-    const confidence = Math.min(dirEntries.length / 10, 1) // Max confiança amb 10+ entrades
-    
-    // Obtenir rang de direccions per aquesta categoria
-    const dirRanges: Record<string, { min: number; max: number }> = {
-      "N": { min: 337, max: 22 },
-      "NE": { min: 22, max: 67 },
-      "E": { min: 67, max: 112 },
-      "SE": { min: 112, max: 157 },
-      "S": { min: 157, max: 202 },
-      "SW": { min: 202, max: 247 },
-      "W": { min: 247, max: 292 },
-      "NW": { min: 292, max: 337 }
-    }
-    const range = dirRanges[direction] || { min: 0, max: 360 }
-    
-    // Upsert del factor
-    await supabase.from("calibration_factors").upsert({
-      direction_name: direction,
-      wind_direction_min: range.min,
-      wind_direction_max: range.max,
-      avg_wind_speed_factor: Math.round(avgWindSpeedFactor * 1000) / 1000,
-      avg_wind_gust_factor: Math.round(avgWindGustFactor * 1000) / 1000,
-      sample_count: dirEntries.length,
-      confidence: Math.round(confidence * 100) / 100,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: "direction_name"
-    })
-  }
-}
-
-// Obtenir els factors de calibratge actuals
-export async function getCalibrationFactors(): Promise<Record<string, {
+interface DirectionFactor {
   windSpeedFactor: number
   windGustFactor: number
-  confidence: number
   sampleCount: number
-}>> {
-  const supabase = createApiClient()
-  
-  const { data, error } = await supabase
-    .from("calibration_factors")
-    .select("*")
-  
-  if (error || !data) return {}
-  
-  const factors: Record<string, any> = {}
-  for (const row of data) {
-    factors[row.direction_name] = {
-      windSpeedFactor: row.avg_wind_speed_factor || 1,
-      windGustFactor: row.avg_wind_gust_factor || 1,
-      confidence: row.confidence || 0,
-      sampleCount: row.sample_count || 0
-    }
-  }
-  
-  return factors
+  lastUpdated: string | null
 }
 
-// Aplicar calibratge a una previsió
+export interface HistoryEntry {
+  timestamp: string
+  direction: number
+  directionCategory: DirectionCategory
+  predictedWindSpeed: number
+  predictedWindGust: number
+  realWindSpeed: number
+  realWindGust: number
+  windSpeedFactor: number
+  windGustFactor: number
+  station: string
+}
+
+interface CalibrationState {
+  lastRun: string | null
+  factors: Record<DirectionCategory, DirectionFactor>
+  history: HistoryEntry[]
+}
+
+function emptyFactor(): DirectionFactor {
+  return { windSpeedFactor: 1, windGustFactor: 1, sampleCount: 0, lastUpdated: null }
+}
+
+function emptyFactors(): Record<DirectionCategory, DirectionFactor> {
+  return ALL_CATEGORIES.reduce((acc, k) => {
+    acc[k] = emptyFactor()
+    return acc
+  }, {} as Record<DirectionCategory, DirectionFactor>)
+}
+
+function loadState(): CalibrationState {
+  try {
+    if (fs.existsSync(STATE_PATH)) {
+      const raw = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"))
+      return {
+        lastRun: raw.lastRun ?? null,
+        factors: { ...emptyFactors(), ...(raw.factors || {}) },
+        history: Array.isArray(raw.history) ? raw.history : [],
+      }
+    }
+  } catch (err) {
+    console.warn("No s'ha pogut llegir l'estat de calibratge:", err)
+  }
+  return { lastRun: null, factors: emptyFactors(), history: [] }
+}
+
+function saveState(state: CalibrationState) {
+  try {
+    fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2))
+  } catch (err) {
+    console.warn("No s'ha pogut escriure l'estat de calibratge:", err)
+  }
+}
+
+// ---- Utilitats de direcció ----
+
+export function getWindDirectionCategory(degrees: number): DirectionCategory {
+  const d = ((degrees % 360) + 360) % 360
+  if (d >= 337.5 || d < 22.5) return "N"
+  if (d < 67.5) return "NE"
+  if (d < 112.5) return "E"
+  if (d < 157.5) return "SE"
+  if (d < 202.5) return "S"
+  if (d < 247.5) return "SW"
+  if (d < 292.5) return "W"
+  return "NW"
+}
+
+export function getWindName(degrees: number): string {
+  const names: Record<DirectionCategory, string> = {
+    N: "Tramuntana",
+    NE: "Gregal",
+    E: "Llevant",
+    SE: "Xaloc",
+    S: "Migjorn",
+    SW: "Garbí/Llebeig",
+    W: "Ponent",
+    NW: "Mestral",
+  }
+  return names[getWindDirectionCategory(degrees)]
+}
+
+// ---- API pública per altres mòduls ----
+
+export type FactorsExport = Record<
+  string,
+  {
+    windSpeedFactor: number
+    windGustFactor: number
+    confidence: number
+    sampleCount: number
+    lastUpdated: string | null
+  }
+>
+
+export async function getCalibrationFactors(): Promise<FactorsExport> {
+  const state = loadState()
+  const out: FactorsExport = {}
+  for (const [k, f] of Object.entries(state.factors)) {
+    if (f.sampleCount > 0) {
+      out[k] = {
+        windSpeedFactor: f.windSpeedFactor,
+        windGustFactor: f.windGustFactor,
+        confidence: Math.min(1, f.sampleCount / CONFIDENCE_FULL_AT),
+        sampleCount: f.sampleCount,
+        lastUpdated: f.lastUpdated,
+      }
+    }
+  }
+  return out
+}
+
+export async function getCalibrationHistory(limit = 30): Promise<HistoryEntry[]> {
+  const state = loadState()
+  return state.history.slice(0, limit)
+}
+
+export async function getCalibrationStatus() {
+  const state = loadState()
+  return {
+    lastRun: state.lastRun,
+    nextRunDueAt: state.lastRun
+      ? new Date(new Date(state.lastRun).getTime() + RUN_INTERVAL_MS).toISOString()
+      : null,
+    intervalMinutes: RUN_INTERVAL_MS / 60000,
+    totalSamples: Object.values(state.factors).reduce((sum, f) => sum + f.sampleCount, 0),
+    factors: await getCalibrationFactors(),
+  }
+}
+
 export function applyCalibration(
   windSpeed: number,
   windGust: number,
   direction: number,
-  factors: Record<string, { windSpeedFactor: number; windGustFactor: number; confidence: number }>
+  factors: FactorsExport,
 ): { windSpeed: number; windGust: number; calibrated: boolean; confidence: number } {
-  const category = getWindDirectionCategory(direction)
-  const factor = factors[category]
-  
-  if (!factor || factor.confidence < 0.3) {
-    // No hi ha prou dades per calibrar aquesta direcció
+  const cat = getWindDirectionCategory(direction)
+  const f = factors[cat]
+  if (!f || f.confidence < 0.2) {
     return { windSpeed, windGust, calibrated: false, confidence: 0 }
   }
-  
-  // Aplicar factors amb interpolació basada en confiança
-  const adjustedWindSpeed = Math.round(windSpeed * factor.windSpeedFactor)
-  const adjustedWindGust = Math.round(windGust * factor.windGustFactor)
-  
+  const adjustedSpeed = Math.max(0, Math.round(windSpeed * f.windSpeedFactor))
+  const adjustedGust = Math.max(0, Math.round(windGust * f.windGustFactor))
   return {
-    windSpeed: adjustedWindSpeed,
-    windGust: Math.max(adjustedWindGust, adjustedWindSpeed), // Ràfega sempre >= vent
+    windSpeed: adjustedSpeed,
+    windGust: Math.max(adjustedGust, adjustedSpeed),
     calibrated: true,
-    confidence: factor.confidence
+    confidence: f.confidence,
   }
 }
 
-// Obtenir historial de calibratge
-export async function getCalibrationHistory(limit = 20) {
-  const supabase = createApiClient()
-  
-  const { data, error } = await supabase
-    .from("wind_calibration")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit)
-  
-  if (error) throw error
-  return data || []
+// ---- Auto-calibratge ----
+
+function clamp(x: number, min = FACTOR_MIN, max = FACTOR_MAX) {
+  if (!Number.isFinite(x)) return 1
+  return Math.max(min, Math.min(max, x))
+}
+
+let inflight: Promise<{ ran: boolean; reason?: string }> | null = null
+
+/**
+ * Executa una passada de calibratge si han passat ≥30 min des de l'última.
+ * Idempotent i segur en concurrència. Pensat per cridar-se amb `void`
+ * a les rutes /api/current i /api/forecast.
+ */
+export async function runAutoCalibrationIfDue(
+  force = false,
+): Promise<{ ran: boolean; reason?: string }> {
+  if (inflight) return inflight
+  inflight = (async () => {
+    try {
+      const state = loadState()
+      const now = Date.now()
+      if (!force && state.lastRun) {
+        const since = now - new Date(state.lastRun).getTime()
+        if (since < RUN_INTERVAL_MS) return { ran: false, reason: "too-soon" }
+      }
+
+      // Marquem l'inici aviat per evitar curses entre processos
+      state.lastRun = new Date(now).toISOString()
+      saveState(state)
+
+      // 1) Dades reals (Meteocat)
+      const real = await getMeteocatCurrentConditions().catch(() => null)
+      if (!real) return { ran: false, reason: "no-meteocat" }
+
+      // 2) Previsió per a l'hora actual (Open-Meteo multi-model)
+      let forecast: any[] = []
+      try {
+        forecast = await getMultiModelForecast("kitesurf-point")
+      } catch {
+        return { ran: false, reason: "no-forecast" }
+      }
+      if (!forecast || forecast.length === 0) return { ran: false, reason: "no-forecast" }
+
+      const today = forecast[0]
+      const currentHour = new Date().getHours()
+      let predicted: any = null
+      let bestDiff = 99
+      for (const h of today.hours || []) {
+        const hourNum = h.hour ?? parseInt(String(h.time || "0").split(":")[0])
+        const diff = Math.abs(hourNum - currentHour)
+        if (diff < bestDiff) {
+          bestDiff = diff
+          predicted = h
+        }
+      }
+      if (!predicted) return { ran: false, reason: "no-hour" }
+
+      const predSpeed = Number(predicted.windSpeed) || 0
+      const predGust = Number(predicted.windGust) || 0
+      if (predSpeed < MIN_PREDICTED_KTS) {
+        return { ran: false, reason: "predicted-too-low" }
+      }
+
+      const direction = real.windDirection ?? predicted.windDirection ?? 0
+      const cat = getWindDirectionCategory(direction)
+      const sFactor = clamp(real.windSpeed / predSpeed)
+      const gFactor = clamp(predGust > 0 ? real.windGust / predGust : sFactor)
+
+      const cur = state.factors[cat]
+      const alpha = cur.sampleCount === 0 ? 1 : EMA_ALPHA
+      state.factors[cat] = {
+        windSpeedFactor: +(cur.windSpeedFactor * (1 - alpha) + sFactor * alpha).toFixed(3),
+        windGustFactor: +(cur.windGustFactor * (1 - alpha) + gFactor * alpha).toFixed(3),
+        sampleCount: cur.sampleCount + 1,
+        lastUpdated: new Date().toISOString(),
+      }
+
+      state.history.unshift({
+        timestamp: new Date().toISOString(),
+        direction,
+        directionCategory: cat,
+        predictedWindSpeed: predSpeed,
+        predictedWindGust: predGust,
+        realWindSpeed: real.windSpeed,
+        realWindGust: real.windGust,
+        windSpeedFactor: +sFactor.toFixed(3),
+        windGustFactor: +gFactor.toFixed(3),
+        station: real.stationName,
+      })
+      state.history = state.history.slice(0, HISTORY_LIMIT)
+
+      saveState(state)
+
+      console.log(
+        `✅ Auto-calibratge ${cat}: sF=${sFactor.toFixed(2)} gF=${gFactor.toFixed(2)} ` +
+          `(real ${real.windSpeed} kts vs previst ${predSpeed} kts)`,
+      )
+      return { ran: true }
+    } catch (err) {
+      console.error("Error en calibratge automàtic:", err)
+      return { ran: false, reason: "error" }
+    } finally {
+      // s'allibera el flag al sortir; loadState() la propera vegada llegeix l'estat actualitzat
+      inflight = null
+    }
+  })()
+  return inflight
 }

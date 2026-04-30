@@ -1,3 +1,116 @@
+// --- Control global de consultes Meteocat ---
+// Política: à ESTRUCTURA FIXA — totes les peticions compartides per tots els usuaris.
+//   - Màxim 750 consultes/mes (límit del pla Meteocat).
+//   - Una consulta nova només es fa cada FIXED_INTERVAL_MS (60 min) com a màxim.
+//     24 consultes/dia × 30 = 720/mes (marge de seguretat).
+//   - L'estat (última consulta + dades + comptador mensual) es persisteix a disk
+//     a `.meteocat-usage.json` perquè totes les invocacions serverless el comparteixin.
+//   - Si s'arriba al límit mensual o no toca refrescar, es retorna l'última dada
+//     cachejada (mai es fa una nova petició fora de l'horari fix).
+import fs from 'fs'
+import path from 'path'
+
+const METEOCAT_LIMIT = 750
+const FIXED_INTERVAL_MS = 60 * 60 * 1000 // 1 hora entre consultes
+// Només consultem en horari diurn (hora local Europe/Madrid).
+// 8:00–21:00 → 14 consultes/dia × 30 = 420/mes (marge ample sota 750).
+const DAYTIME_START_HOUR = 8
+const DAYTIME_END_HOUR = 21 // inclusive (última consulta a les 21:00)
+const METEOCAT_LOG_PATH = path.join(process.cwd(), '.meteocat-usage.json')
+
+interface UsageLog {
+  // Comptador per mes (YYYY-MM): nombre de cicles de refresc realitzats
+  months: Record<string, { count: number }>
+  // Últim refresc realitzat
+  lastFetchAt: number | null
+  // Última dada obtinguda (cache global compartit entre invocacions)
+  lastReading: MeteocatCurrentConditions | null
+}
+
+function getMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function readUsageLog(): UsageLog {
+  try {
+    if (fs.existsSync(METEOCAT_LOG_PATH)) {
+      const raw = JSON.parse(fs.readFileSync(METEOCAT_LOG_PATH, 'utf8'))
+      // Migració des del format antic { 'YYYY-MM': { count, last } }
+      if (raw && !raw.months && Object.keys(raw).some(k => /^\d{4}-\d{2}$/.test(k))) {
+        const months: Record<string, { count: number }> = {}
+        for (const [k, v] of Object.entries<any>(raw)) {
+          if (/^\d{4}-\d{2}$/.test(k)) months[k] = { count: v?.count ?? 0 }
+        }
+        return { months, lastFetchAt: null, lastReading: null }
+      }
+      return {
+        months: raw.months ?? {},
+        lastFetchAt: raw.lastFetchAt ?? null,
+        lastReading: raw.lastReading ?? null,
+      }
+    }
+  } catch {}
+  return { months: {}, lastFetchAt: null, lastReading: null }
+}
+
+function writeUsageLog(log: UsageLog) {
+  try {
+    fs.writeFileSync(METEOCAT_LOG_PATH, JSON.stringify(log, null, 2))
+  } catch {}
+}
+
+function monthlyCount(log: UsageLog): number {
+  return log.months[getMonthKey()]?.count ?? 0
+}
+
+function underMonthlyLimit(log: UsageLog): boolean {
+  return monthlyCount(log) < METEOCAT_LIMIT
+}
+
+function isDaytime(date = new Date()): boolean {
+  // Hora local Europe/Madrid (Netlify executa en UTC, cal convertir-ho)
+  const localHour = Number(
+    new Intl.DateTimeFormat('ca-ES', {
+      hour: 'numeric',
+      hour12: false,
+      timeZone: 'Europe/Madrid',
+    }).format(date),
+  )
+  return localHour >= DAYTIME_START_HOUR && localHour <= DAYTIME_END_HOUR
+}
+
+function shouldRefresh(log: UsageLog): boolean {
+  if (!underMonthlyLimit(log)) return false
+  if (!isDaytime()) return false
+  if (!log.lastFetchAt) return true
+  return Date.now() - log.lastFetchAt >= FIXED_INTERVAL_MS
+}
+
+function registerFetch(log: UsageLog, reading: MeteocatCurrentConditions | null) {
+  const key = getMonthKey()
+  if (!log.months[key]) log.months[key] = { count: 0 }
+  log.months[key].count++
+  log.lastFetchAt = Date.now()
+  if (reading) log.lastReading = reading
+  writeUsageLog(log)
+}
+
+export function getMeteocatUsage() {
+  const log = readUsageLog()
+  const used = monthlyCount(log)
+  return {
+    monthlyLimit: METEOCAT_LIMIT,
+    monthlyUsed: used,
+    monthlyRemaining: Math.max(0, METEOCAT_LIMIT - used),
+    lastFetchAt: log.lastFetchAt ? new Date(log.lastFetchAt).toISOString() : null,
+    nextFetchAt: log.lastFetchAt
+      ? new Date(log.lastFetchAt + FIXED_INTERVAL_MS).toISOString()
+      : null,
+    intervalMinutes: FIXED_INTERVAL_MS / 60000,
+    daytimeWindow: `${DAYTIME_START_HOUR}:00–${DAYTIME_END_HOUR}:00`,
+    isDaytime: isDaytime(),
+  }
+}
 // API Meteocat XEMA - Dades reals de l'estació de Sant Pere Pescador
 // Documentació: https://apidocs.meteocat.gencat.cat/documentacio/dades-mesurades/
 
@@ -132,26 +245,42 @@ async function getDayReadings(date: Date): Promise<any | null> {
   }
 }
 
-// Obtenir condicions actuals — prova la cadena d'estacions fins trobar dades vàlides
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minuts
-let conditionsCache: { data: MeteocatCurrentConditions; expires: number } | null = null
+// Obtenir condicions actuals — política d'horari fix global
+// (1 consulta cada FIXED_INTERVAL_MS, màxim METEOCAT_LIMIT/mes, compartit per tothom)
 let inflight: Promise<MeteocatCurrentConditions | null> | null = null
 
 export async function getMeteocatCurrentConditions(): Promise<MeteocatCurrentConditions | null> {
-  // 1) Cache encara vàlida
-  if (conditionsCache && Date.now() < conditionsCache.expires) {
-    return conditionsCache.data
+  const log = readUsageLog()
+
+  // 1) Si encara no toca refrescar, retornem l'última dada cachejada (de disc)
+  if (!shouldRefresh(log)) {
+    if (!underMonthlyLimit(log)) {
+      console.warn(
+        `[Meteocat] Límit mensual ${METEOCAT_LIMIT} assolit (${monthlyCount(log)}), servint cache`,
+      )
+    }
+    return log.lastReading
   }
-  // 2) Coalescència de peticions concurrents
+
+  // 2) Coalescència de peticions concurrents en aquesta instància
   if (inflight) return inflight
 
   inflight = (async () => {
     try {
+      // Re-llegim per si una altra instància ha refrescat just ara
+      const fresh = readUsageLog()
+      if (!shouldRefresh(fresh)) return fresh.lastReading
+
+      // Marquem l'intent abans de la crida per evitar que altres invocacions concurrents
+      // (en serverless) facin la mateixa petició.
+      fresh.lastFetchAt = Date.now()
+      writeUsageLog(fresh)
+
       const result = await fetchMeteocatCurrentConditions()
-      if (result) {
-        conditionsCache = { data: result, expires: Date.now() + CACHE_TTL_MS }
-      }
-      return result
+      // Sumem 1 al comptador mensual encara que falli (per evitar bucles agressius)
+      const after = readUsageLog()
+      registerFetch(after, result ?? after.lastReading)
+      return result ?? after.lastReading
     } finally {
       inflight = null
     }

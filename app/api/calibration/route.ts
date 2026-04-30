@@ -1,85 +1,53 @@
 import { NextRequest, NextResponse } from "next/server"
-import { 
-  saveCalibrationEntry, 
-  getCalibrationFactors, 
-  getCalibrationHistory 
+import {
+  getCalibrationFactors,
+  getCalibrationHistory,
+  getCalibrationStatus,
+  runAutoCalibrationIfDue,
 } from "@/lib/calibration-service"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-// GET - Obtenir factors de calibratge i historial
+// GET ?type=factors|history|status
+// Per defecte retorna l'estat complet (factors + metadades).
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const type = searchParams.get("type") || "factors"
-    
+    const type = request.nextUrl.searchParams.get("type") || "status"
+
     if (type === "history") {
-      const history = await getCalibrationHistory(30)
+      const history = await getCalibrationHistory(50)
       return NextResponse.json({ history })
     }
-    
-    const factors = await getCalibrationFactors()
-    return NextResponse.json({ factors })
+
+    if (type === "factors") {
+      const factors = await getCalibrationFactors()
+      return NextResponse.json({ factors })
+    }
+
+    const status = await getCalibrationStatus()
+    return NextResponse.json(status)
   } catch (error) {
     console.error("Error obtenint calibratge:", error)
     return NextResponse.json(
       { error: "Error obtenint dades de calibratge" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
 
-// POST - Afegir nova entrada de calibratge
+// POST força una nova passada de calibratge (?force=1 salta el rate-limit de 30 min)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
-    // Validar dades
-    const required = [
-      "forecastWindSpeed", 
-      "forecastWindGust", 
-      "forecastDirection",
-      "realWindSpeed",
-      "realWindGust",
-      "realDirection",
-      "forecastTimestamp"
-    ]
-    
-    for (const field of required) {
-      if (body[field] === undefined || body[field] === null) {
-        return NextResponse.json(
-          { error: `Camp requerit: ${field}` },
-          { status: 400 }
-        )
-      }
-    }
-    
-    await saveCalibrationEntry({
-      forecastWindSpeed: Number(body.forecastWindSpeed),
-      forecastWindGust: Number(body.forecastWindGust),
-      forecastDirection: Number(body.forecastDirection),
-      realWindSpeed: Number(body.realWindSpeed),
-      realWindGust: Number(body.realWindGust),
-      realDirection: Number(body.realDirection),
-      forecastTimestamp: body.forecastTimestamp,
-      notes: body.notes
-    })
-    
-    // Retornar els nous factors actualitzats
-    const factors = await getCalibrationFactors()
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: "Dades guardades i factors recalculats",
-      factors 
-    })
+    const force = request.nextUrl.searchParams.get("force") === "1"
+    const result = await runAutoCalibrationIfDue(force)
+    const status = await getCalibrationStatus()
+    return NextResponse.json({ ...result, status })
   } catch (error) {
-    console.error("Error guardant calibratge:", error)
-    const message = error instanceof Error ? error.message : "Error guardant dades de calibratge"
+    console.error("Error executant calibratge:", error)
     return NextResponse.json(
-      { error: message },
-      { status: 500 }
+      { error: "Error executant calibratge" },
+      { status: 500 },
     )
   }
 }

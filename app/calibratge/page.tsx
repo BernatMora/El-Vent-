@@ -1,4 +1,3 @@
-import { CalibrationForm } from "@/components/calibration-form"
 import { CalibrationStatus } from "@/components/calibration-status"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -6,7 +5,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Calibratge - Els Vents de Sant Pere Pescador",
-  description: "Sistema de calibratge per millorar la precisió de les previsions",
+  description: "Calibratge automàtic de previsions amb dades reals de Meteocat",
 }
 
 export default function CalibratgePage() {
@@ -21,9 +20,9 @@ export default function CalibratgePage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Calibratge de Previsions</h1>
+              <h1 className="text-2xl font-bold">Calibratge automàtic</h1>
               <p className="text-sm text-muted-foreground">
-                Entrena el sistema amb dades reals per millorar la precisió
+                Compara la previsió amb el vent real de Meteocat cada 30 minuts
               </p>
             </div>
           </div>
@@ -31,32 +30,35 @@ export default function CalibratgePage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CalibrationForm />
-          <CalibrationStatus />
-        </div>
+        <CalibrationStatus />
 
         <div className="mt-8 p-4 bg-muted rounded-lg">
           <h2 className="font-medium mb-2">Com funciona?</h2>
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
             <li>
-              Mira les dades reals del vent a la webcam del Camping Aquarius
+              Cada 30 minuts el sistema agafa la previsió d&apos;Open-Meteo per a l&apos;hora
+              actual al kitesurf-point.
             </li>
             <li>
-              Introdueix el vent mitjà, la ràfega màxima i la direcció que veus
+              Llegeix les dades reals de l&apos;estació Meteocat (XEMA) de Sant Pere
+              Pescador (o l&apos;estació de fallback més propera).
             </li>
             <li>
-              El sistema compara amb la previsió d&apos;Open-Meteo i calcula l&apos;error
+              Calcula els factors <em>real / previst</em> per a vent i ràfega, i els
+              agrupa per direcció (Tramuntana, Garbí, etc.).
             </li>
             <li>
-              Amb cada entrada, els factors de correcció es van ajustant automàticament
+              Aplica una mitjana mòbil exponencial per absorbir errors puntuals i
+              augmenta la confiança a mesura que arriben mostres.
             </li>
             <li>
-              Les futures previsions s&apos;aplicaran els factors apresos per ser més precises
+              Les previsions futures es corregeixen automàticament amb aquests
+              factors quan hi ha prou confiança (≥ 20%).
             </li>
           </ol>
           <p className="mt-4 text-sm">
-            <strong>Consell:</strong> Introdueix dades regularment, especialment amb diferents direccions de vent (Tramuntana, Garbí, etc.) per tenir un calibratge complet.
+            <strong>Nota:</strong> ja no cal calibratge manual. Pots forçar una passada
+            amb el botó <em>Calibrar ara</em> si vols actualitzar abans dels 30 min.
           </p>
         </div>
       </main>

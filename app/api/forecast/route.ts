@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server"
 import { fetchForecastDataDirect } from "@/lib/api"
 import { VALID_SPOTS } from "@/lib/spot-coordinates"
-import { getCalibrationFactors, applyCalibration } from "@/lib/calibration-service"
+import {
+  getCalibrationFactors,
+  applyCalibration,
+  runAutoCalibrationIfDue,
+} from "@/lib/calibration-service"
 
 export const runtime = "nodejs"
 
 export async function GET(request: Request) {
+  // Auto-calibratge en segon pla (cada 30 min com a màxim)
+  void runAutoCalibrationIfDue().catch(() => {})
+
   const { searchParams } = new URL(request.url)
   const requestedSpot = searchParams.get("spot")
   const skipCalibration = searchParams.get("raw") === "true"

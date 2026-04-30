@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server"
 import { getMultiModelForecast } from "@/lib/open-meteo-api"
 import { getMeteocatCurrentConditions } from "@/lib/meteocat-api"
-import { getCalibrationFactors, applyCalibration } from "@/lib/calibration-service"
+import {
+  getCalibrationFactors,
+  applyCalibration,
+  runAutoCalibrationIfDue,
+} from "@/lib/calibration-service"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function GET() {
+  // Auto-calibratge en segon pla (cada 30 min com a màxim)
+  void runAutoCalibrationIfDue().catch(() => {})
+
   // 1) Intentar Meteocat (dades REALS de l'estació de Sant Pere Pescador)
   if (process.env.METEOCAT_API_KEY) {
     try {

@@ -1,7 +1,6 @@
 import { ClientContent } from "@/components/client-content"
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { Gauge, Settings2 } from "lucide-react"
-import Link from "next/link"
 
 const highlights = [
   { value: "7 dies", label: "previsio", Icon: Gauge },
@@ -14,13 +13,6 @@ export default function Home() {
       <div className="mx-auto max-w-6xl">
         <section className="relative mb-3 overflow-hidden rounded-2xl bg-gradient-to-r from-sky-900 via-blue-800 to-cyan-700 px-3 py-3 text-white shadow-lg sm:mb-8 sm:rounded-3xl sm:p-6 md:p-8">
           <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 sm:top-3 sm:right-3 sm:gap-2">
-            <Link
-              href="/calibratge"
-              className="rounded-full bg-white/15 p-2 text-sky-100 transition-colors hover:bg-white/25 active:bg-white/30"
-              title="Calibratge"
-            >
-              <Settings2 className="h-4 w-4" />
-            </Link>
             <DarkModeToggle />
           </div>
           {/* Mobile: minimal header */}

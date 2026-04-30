@@ -1,3 +1,19 @@
+/**
+ * Corregeix la previsió d'Open-Meteo amb les dades reals de Meteocat.
+ * Si la previsió és 0, retorna la previsió original.
+ * @param predicted Valor previst (Open-Meteo)
+ * @param real Valor real (Meteocat)
+ * @returns Valor corregit
+ */
+export function correctForecast(predicted: number | null | undefined, real: number | null | undefined): number | null {
+  if (predicted == null || real == null) return predicted ?? null;
+  if (predicted === 0) return predicted;
+  const factor = real / predicted;
+  return +(predicted * factor).toFixed(2);
+}
+
+// Exemple d'ús:
+// const corrected = correctForecast(12, 15); // 15
 // Sistema de calibració local basat en observacions reals
 export interface WindObservation {
   id: string
