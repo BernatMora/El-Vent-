@@ -92,36 +92,48 @@ export function AquariusMeteo() {
 
         <div className="mt-3">
           {loading && !data ? (
-            <div className="grid grid-cols-2 gap-2">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-md" />
-              ))}
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-48 w-full rounded-md" />
+              <Skeleton className="h-32 w-full rounded-md" />
             </div>
           ) : error && !data ? (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
               {error}
             </div>
           ) : data?.urls?.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { url: data.urls[0], label: "Velocitat del vent" },
-                { url: data.urls[2], label: "Direcció del vent" },
-              ]
-                .filter((it) => !!it.url)
-                .map((it) => (
-                  <div key={it.url} className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">{it.label}</span>
-                    <div className="flex w-full items-center justify-center rounded-md border bg-white p-1">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`${it.url}?k=${refreshKey}`}
-                        alt={it.label}
-                        className="max-h-32 w-auto object-contain"
-                        loading="lazy"
-                      />
-                    </div>
+            <div className="flex flex-col gap-3">
+              {data.urls[0] && (
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Velocitat del vent
+                  </span>
+                  <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${data.urls[0]}?k=${refreshKey}`}
+                      alt="Velocitat del vent"
+                      className="w-full max-w-2xl object-contain"
+                      loading="lazy"
+                    />
                   </div>
-                ))}
+                </div>
+              )}
+              {data.urls[2] && (
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Direcció del vent
+                  </span>
+                  <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${data.urls[2]}?k=${refreshKey}`}
+                      alt="Direcció del vent"
+                      className="max-h-40 w-auto object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
