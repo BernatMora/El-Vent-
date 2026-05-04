@@ -132,8 +132,8 @@ export function WindForecast() {
                   const n = parseInt(h.time.split(":")[0])
                   return n >= 9 && n <= 21
                 })
-                const avgKn = hours.length
-                  ? Math.round(hours.reduce((s, h) => s + h.windSpeed, 0) / hours.length)
+                const maxKn = hours.length
+                  ? Math.max(...hours.map((h) => Math.round(h.windSpeed)))
                   : 0
                 const isOpen = expandedDay === dayIndex
                 const dayLabel =
@@ -146,15 +146,18 @@ export function WindForecast() {
                     {/* Capçalera del dia — sempre visible */}
                     <button
                       type="button"
-                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${windRowBg(avgKn)}`}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${windRowBg(maxKn)}`}
                       onClick={() => setExpandedDay(isOpen ? -1 : dayIndex)}
                     >
                       <div className="flex items-center gap-2">
-                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${windDot(avgKn)}`} />
+                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${windDot(maxKn)}`} />
                         <span className="font-semibold text-sm text-slate-800">{dayLabel}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-bold ${windText(avgKn)}`}>{avgKn} kn</span>
+                        <div className="flex flex-col items-end leading-none">
+                          <span className={`text-sm font-bold ${windText(maxKn)}`}>{maxKn} kn</span>
+                          <span className="text-[10px] text-slate-400">màx</span>
+                        </div>
                         {isOpen
                           ? <ChevronUp className="h-4 w-4 text-slate-400" />
                           : <ChevronDown className="h-4 w-4 text-slate-400" />}
