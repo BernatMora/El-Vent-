@@ -1,12 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, CheckCircle2, Clock3, Share2, Sparkles, Waves, Wind, XCircle } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { AlertTriangle, CheckCircle2, Wind, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
-import { knotsToKmh } from "@/lib/utils"
 
 const SPOT = "sant-pere-pescador"
 
@@ -68,10 +66,6 @@ function getOffshoreWindName(direction: number): string {
   if (direction >= 247.5 && direction < 292.5) return "Ponent"
   if (direction >= 202.5 && direction < 247.5) return "Garbí"
   return "offshore"
-}
-
-function isFavorable(direction: number) {
-  return direction >= 15 && direction <= 135
 }
 
 function getDayLabel(index: number) {
@@ -287,26 +281,6 @@ export function SessionOverview() {
               )}
             </div>
 
-            <button
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-100 px-4 py-3 text-sm font-medium text-sky-700 transition hover:bg-sky-200"
-              onClick={() => {
-                const text = `🪁 ${summary.label} a Sant Pere Pescador\n` +
-                  `${summary.statusLabel} (${summary.score}/100)\n` +
-                  `Millor franja: ${summary.bestWindow}` +
-                  (summary.bestWindowAvg > 0 ? ` · ${summary.bestWindowAvg} kn · ${summary.gustQuality}` : '') +
-                  `\n${summary.decisionTitle}\n\nels-vents-de-sant-pere-pescador.netlify.app`
-                if (navigator.share) {
-                  navigator.share({ title: "El Vent — Sessió", text }).catch(() => {})
-                } else {
-                  navigator.clipboard.writeText(text).then(() => {
-                    alert("Copiat al portapapers!")
-                  }).catch(() => {})
-                }
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-              Compartir sessió
-            </button>
           </div>
         )}
       </CardContent>

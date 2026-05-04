@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Els Vents de Sant Pere Pescador',
+  title: 'El Vent · Bernat Mora',
   description: 'Prediccions meteorològiques amb Intel·ligència Artificial per kitesurf a Sant Pere Pescador',
   manifest: '/manifest.json',
   appleWebApp: {

@@ -18,7 +18,7 @@ export default function Home() {
           {/* Mobile: minimal header */}
           <div className="sm:hidden">
             <div className="text-[10px] uppercase tracking-wider text-cyan-100/80">Sant Pere · Kitesurf</div>
-            <div className="text-base font-bold leading-tight">El Vent</div>
+            <div className="text-base font-bold leading-tight">El Vent <span className="font-normal text-sm text-cyan-200/80">(Bernat Mora)</span></div>
           </div>
           {/* Tablet/Desktop: full hero */}
           <div className="hidden text-center sm:block">
