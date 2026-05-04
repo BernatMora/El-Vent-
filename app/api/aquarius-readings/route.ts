@@ -61,7 +61,7 @@ async function extractDirection(buf: Buffer): Promise<number | null> {
 }
 
 // Extreu velocitat i ratxa instantànies del gràfic (b.png) usant la columna més
-// dreta amb dades. La conversió és aproximada perquè depèn de l'escala Y.
+// a la dreta amb dades stables i evita dades puntuals de soroll.
 async function extractWind(buf: Buffer): Promise<{
   speedKmh: number | null
   gustKmh: number | null
@@ -77,24 +77,34 @@ async function extractWind(buf: Buffer): Promise<{
   const plotTop = Math.round(H * 0.08)
   const plotBottom = Math.round(H * 0.81)
 
-  let speedY: number | null = null
-  let gustY: number | null = null
-  for (let x = plotRight; x >= plotLeft && (speedY === null || gustY === null); x--) {
-    const tealYs: number[] = []
-    const orangeYs: number[] = []
+  type ColumnData = {
+    x: number
+    speedYs: number[]
+    gustYs: number[]
+  }
+
+  const columns: ColumnData[] = []
+  for (let x = plotLeft; x <= plotRight; x++) {
+    const speedYs: number[] = []
+    const gustYs: number[] = []
     for (let y = plotTop; y <= plotBottom; y++) {
       const i = (y * W + x) * C
       const r = data[i], g = data[i + 1], b = data[i + 2]
-      if (speedY === null && isTeal(r, g, b)) tealYs.push(y)
-      if (gustY === null && isOrange(r, g, b)) orangeYs.push(y)
+      if (isTeal(r, g, b)) speedYs.push(y)
+      if (isOrange(r, g, b)) gustYs.push(y)
     }
-    if (speedY === null && tealYs.length) {
-      speedY = tealYs.reduce((a, b) => a + b, 0) / tealYs.length
-    }
-    if (gustY === null && orangeYs.length) {
-      gustY = orangeYs.reduce((a, b) => a + b, 0) / orangeYs.length
+    if (speedYs.length || gustYs.length) {
+      columns.push({ x, speedYs, gustYs })
     }
   }
+
+  const selected = columns
+    .sort((a, b) => b.x - a.x)
+    .find((col) => col.speedYs.length || col.gustYs.length)
+
+  const avg = (ys: number[]) => (ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : null)
+  const speedY = selected ? avg(selected.speedYs) : null
+  const gustY = selected ? avg(selected.gustYs) : null
 
   const yToKmh = (y: number | null) => {
     if (y === null) return null
