@@ -8,7 +8,6 @@ import fs from "fs"
 import path from "path"
 import { getMultiModelForecast } from "./open-meteo-api"
 import { getMeteocatCurrentConditions } from "./meteocat-api"
-import { getAquariusReading } from "./aquarius-service"
 
 const STATE_PATH = path.join(process.cwd(), ".calibration-state.json")
 
@@ -48,7 +47,6 @@ interface CalibrationState {
   lastRun: string | null
   factors: Record<DirectionCategory, DirectionFactor>
   history: HistoryEntry[]
-  aquariusMaxKmh: number | null  // escala Y calibrada del Davis WeatherLink
 }
 
 function emptyFactor(): DirectionFactor {
@@ -70,13 +68,12 @@ function loadState(): CalibrationState {
         lastRun: raw.lastRun ?? null,
         factors: { ...emptyFactors(), ...(raw.factors || {}) },
         history: Array.isArray(raw.history) ? raw.history : [],
-        aquariusMaxKmh: typeof raw.aquariusMaxKmh === "number" ? raw.aquariusMaxKmh : null,
       }
     }
   } catch (err) {
     console.warn("No s'ha pogut llegir l'estat de calibratge:", err)
   }
-  return { lastRun: null, factors: emptyFactors(), history: [], aquariusMaxKmh: null }
+  return { lastRun: null, factors: emptyFactors(), history: [] }
 }
 
 function saveState(state: CalibrationState) {
@@ -275,48 +272,6 @@ export async function runAutoCalibrationIfDue(
         station: real.stationName,
       })
       state.history = state.history.slice(0, HISTORY_LIMIT)
-
-      // ---- Calibratge de l'escala Aquarius (Prioritat 1) ----
-      // Compara el vent real de Meteocat amb la fracció Y del gràfic Davis
-      // per aprendre l'escala real del gràfic sense OCR.
-      try {
-        const aquarius = await getAquariusReading()
-        if (
-          aquarius.speedFraction !== null &&
-          aquarius.speedFraction > 0.05 &&  // evita divisions per valors molt petits
-          real.windSpeed > 2               // ignora calma absoluta (Meteocat en nusos)
-        ) {
-          const realKmh = real.windSpeed * 1.852
-          const impliedMax = realKmh / aquarius.speedFraction
-          if (impliedMax >= 10 && impliedMax <= 100) {
-            const prevMax = state.aquariusMaxKmh
-            const scaleAlpha = prevMax === null ? 1 : 0.15  // primera vegada: directe
-            state.aquariusMaxKmh = +(
-              (prevMax ?? impliedMax) * (1 - scaleAlpha) + impliedMax * scaleAlpha
-            ).toFixed(1)
-            console.log(
-              `📏 Escala Aquarius: ${state.aquariusMaxKmh} km/h ` +
-              `(implícat ${impliedMax.toFixed(1)}, Meteocat ${real.windSpeed.toFixed(1)} kn, frac ${aquarius.speedFraction.toFixed(2)})`
-            )
-          }
-        }
-
-        // ---- Confirmació de direcció (Prioritat 3) ----
-        // Si Aquarius i Meteocat coincideixen en direcció (±45°), el calibratge
-        // de velocitat per categoria és més fiable. Només ho registrem per ara.
-        if (aquarius.windDirection !== null && real.windDirection !== null) {
-          const diff = Math.abs(aquarius.windDirection - real.windDirection)
-          const agree = diff <= 45 || diff >= 315
-          if (!agree) {
-            console.log(
-              `⚠️  Direcció Aquarius (${aquarius.windDirection}°) vs Meteocat (${real.windDirection}°): discordança de ${Math.min(diff, 360 - diff)}°`
-            )
-          }
-        }
-      } catch (aquErr) {
-        // Aquarius pot estar offline; no és crític per al calibratge principal
-        console.warn("No s'ha pogut llegir Aquarius per calibratge:", (aquErr as Error).message)
-      }
 
       saveState(state)
 

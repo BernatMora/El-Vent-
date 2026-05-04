@@ -2,26 +2,16 @@
 // Usat per l'API route /api/aquarius-readings i pel calibratge automàtic.
 
 import sharp from "sharp"
-import fs from "fs"
-import path from "path"
 
 const ENDPOINT = "https://www.campingaquarius.com/rutasTiempos"
 const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 const REFERER = "https://www.campingaquarius.com/la-camara-web"
-const STATE_PATH = path.join(process.cwd(), ".calibration-state.json")
-const FALLBACK_MAX_KMH = 20
+// Escala real del Davis WeatherLink del Camping Aquàrius: 0–30 km/h
+// Sobreescrivible amb AQUARIUS_MAX_KMH si l'escala canvia (auto-escala en vent fort)
+const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 30)
 
-// Llegeix l'escala calibrada del fitxer d'estat (actualitzada per calibration-service)
 export function getAquariusMaxKmh(): number {
-  try {
-    if (fs.existsSync(STATE_PATH)) {
-      const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"))
-      if (typeof state.aquariusMaxKmh === "number" && state.aquariusMaxKmh > 0) {
-        return state.aquariusMaxKmh
-      }
-    }
-  } catch {}
-  return Number(process.env.AQUARIUS_MAX_KMH ?? FALLBACK_MAX_KMH)
+  return SCALE_MAX_KMH
 }
 
 // Cache en memòria (60 s) compartida entre la ruta i el calibratge
