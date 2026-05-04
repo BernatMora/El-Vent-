@@ -109,13 +109,16 @@ async function extractWind(buf: Buffer, maxKmh: number): Promise<WindExtraction>
     if (speedYs.length || gustYs.length) columns.push({ x, speedYs, gustYs })
   }
 
-  const selected = columns
-    .sort((a, b) => b.x - a.x)
-    .find((c) => c.speedYs.length || c.gustYs.length)
+  // Busca el color de vent i ratxa per separat: la línia de ratxa (orange)
+  // pot avançar uns píxels més a la dreta que la de vent (teal), i viceversa.
+  // Si usem una sola columna compartida, el color que hi manca surt com null.
+  const sorted = columns.sort((a, b) => b.x - a.x)
+  const speedCol = sorted.find((c) => c.speedYs.length > 0)
+  const gustCol  = sorted.find((c) => c.gustYs.length > 0)
 
   const avg = (ys: number[]) => ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : null
-  const speedY = selected ? avg(selected.speedYs) : null
-  const gustY = selected ? avg(selected.gustYs) : null
+  const speedY = speedCol ? avg(speedCol.speedYs) : null
+  const gustY  = gustCol  ? avg(gustCol.gustYs)   : null
 
   const toFraction = (y: number | null) =>
     y !== null ? Math.max(0, Math.min(1, (plotBottom - y) / plotH)) : null
