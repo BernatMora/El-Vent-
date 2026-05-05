@@ -8,7 +8,7 @@ const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 const REFERER = "https://www.campingaquarius.com/la-camara-web"
 // Escala real del Davis WeatherLink del Camping Aquàrius: 0–40 km/h
 // Sobreescrivible amb AQUARIUS_MAX_KMH si l'escala canvia (auto-escala en vent fort)
-const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 40)
+const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 20)
 
 export function getAquariusMaxKmh(): number {
   return SCALE_MAX_KMH
@@ -17,6 +17,9 @@ export function getAquariusMaxKmh(): number {
 // Cache en memòria (60 s) compartida entre la ruta i el calibratge
 let memCache: { at: number; data: AquariusReading } | null = null
 const CACHE_MS = 60 * 1000
+
+// Última escala detectada amb èxit — es conserva entre lectures per si la detecció falla
+let lastGoodScaleKmh: number | null = null
 
 // ---- Detecció de colors ----
 
@@ -67,7 +70,7 @@ async function extractDirection(buf: Buffer): Promise<number | null> {
 // El Davis WeatherLink auto-escala la gràfica (0-20, 0-30, 0-40, 0-60 km/h…).
 // Detectem l'escala comptant les transicions de lluminositat entre les bandes
 // horitzontals del fons (una banda per cada 10 km/h).
-// Retorna el màxim de l'eix Y, o el fallback configurat si la detecció falla.
+// Retorna el màxim de l'eix Y, o null si la detecció falla.
 
 function detectScaleMax(
   data: Buffer,
@@ -77,15 +80,32 @@ function detectScaleMax(
   plotRight: number,
   plotTop: number,
   plotBottom: number,
-  fallback: number,
-): number {
+): number | null {
   const plotH = plotBottom - plotTop
 
-  // Lluminositat mitjana per fila (mostrejant cada 4 columnes, ignorant teal/orange)
+  // Busca columnes de fons pur (sense cap píxel teal/orange) per detectar bandes.
+  // Quan la barra és molt alta (vent baix en escala 0-20), tapa gairebé tot el fons.
+  const allXs: number[] = []
+  const bgXs: number[] = []
+  for (let x = plotLeft + 2; x <= plotRight - 2; x += 4) {
+    allXs.push(x)
+    let hasBand = false
+    for (let y = plotTop; y <= plotBottom; y++) {
+      const i = (y * W + x) * C
+      if (isTeal(data[i], data[i+1], data[i+2]) || isOrange(data[i], data[i+1], data[i+2])) {
+        hasBand = true; break
+      }
+    }
+    if (!hasBand) bgXs.push(x)
+  }
+  // Si hi ha prou columnes de fons lliures, les fem servir; sinó, escanejem totes
+  const scanColumns = bgXs.length >= 4 ? bgXs : allXs
+
+  // Lluminositat mitjana per fila (ignorant teal/orange)
   const rowLum: number[] = []
   for (let y = plotTop; y <= plotBottom; y++) {
     let sum = 0, cnt = 0
-    for (let x = plotLeft + 2; x <= plotRight - 2; x += 4) {
+    for (const x of scanColumns) {
       const i = (y * W + x) * C
       const r = data[i], g = data[i + 1], b = data[i + 2]
       if (isTeal(r, g, b) || isOrange(r, g, b)) continue
@@ -127,7 +147,7 @@ function detectScaleMax(
     )
   }
 
-  return fallback
+  return null
 }
 
 // ---- Extracció de velocitat del gràfic (b.png) ----
@@ -144,7 +164,7 @@ interface WindExtraction {
   detectedMaxKmh: number
 }
 
-async function extractWind(buf: Buffer, fallbackMaxKmh: number): Promise<WindExtraction> {
+async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindExtraction> {
   const { data, info } = await sharp(buf).raw().toBuffer({ resolveWithObject: true })
   const W = info.width, H = info.height, C = info.channels
   const plotLeft = Math.round(W * 0.06)
@@ -153,7 +173,10 @@ async function extractWind(buf: Buffer, fallbackMaxKmh: number): Promise<WindExt
   const plotBottom = Math.round(H * 0.81)
   const plotH = plotBottom - plotTop
 
-  const maxKmh = detectScaleMax(data, W, C, plotLeft, plotRight, plotTop, plotBottom, fallbackMaxKmh)
+  const detected = detectScaleMax(data, W, C, plotLeft, plotRight, plotTop, plotBottom)
+  if (detected !== null) lastGoodScaleKmh = detected
+  // Prioritat: detecció actual → última escala bona → fallback configurat
+  const maxKmh = detected ?? lastGoodScaleKmh ?? hardFallbackKmh
 
   type Col = { x: number; speedYs: number[]; gustYs: number[] }
   const columns: Col[] = []
