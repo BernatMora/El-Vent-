@@ -51,13 +51,8 @@ export async function GET() {
       )
     }
 
-    const speedFile = files.find((f) => /^b\d+\.png$/i.test(f))
-    const directionFile = files.find((f) => /^c\d+\.png$/i.test(f))
-    const fallbackSpeed = files[0]
-    const fallbackDirection = files[1] ?? files[0]
-
-    const speedUrl = `${IMG_BASE}${speedFile ?? fallbackSpeed}`
-    const directionUrl = `${IMG_BASE}${directionFile ?? fallbackDirection}`
+    const speedUrl = `${IMG_BASE}${files[0]}`
+    const directionUrl = `${IMG_BASE}${files[1] ?? files[0]}`
 
     cache = { at: Date.now(), speedUrl, directionUrl }
 
