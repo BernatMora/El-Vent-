@@ -147,7 +147,7 @@ export function AquariusReadings() {
 
         {data.isApproximate && (
           <p className="mt-2 text-[10px] text-muted-foreground italic">
-            Velocitat aprox. (extreta del gràfic, escala {data.assumedMaxKmh} km/h). Direcció exacta.
+            Velocitat aprox. extreta del gràfic (escala {data.assumedMaxKmh} km/h). Direcció exacta.
           </p>
         )}
       </CardContent>

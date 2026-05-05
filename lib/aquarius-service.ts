@@ -6,9 +6,9 @@ import sharp from "sharp"
 const ENDPOINT = "https://www.campingaquarius.com/rutasTiempos"
 const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 const REFERER = "https://www.campingaquarius.com/la-camara-web"
-// Escala real del Davis WeatherLink del Camping Aquàrius: 0–30 km/h
+// Escala real del Davis WeatherLink del Camping Aquàrius: 0–40 km/h
 // Sobreescrivible amb AQUARIUS_MAX_KMH si l'escala canvia (auto-escala en vent fort)
-const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 30)
+const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 40)
 
 export function getAquariusMaxKmh(): number {
   return SCALE_MAX_KMH
@@ -63,6 +63,73 @@ async function extractDirection(buf: Buffer): Promise<number | null> {
   return Math.round(deg)
 }
 
+// ---- Detecció automàtica de l'escala de l'eix Y ----
+// El Davis WeatherLink auto-escala la gràfica (0-20, 0-30, 0-40, 0-60 km/h…).
+// Detectem l'escala comptant les transicions de lluminositat entre les bandes
+// horitzontals del fons (una banda per cada 10 km/h).
+// Retorna el màxim de l'eix Y, o el fallback configurat si la detecció falla.
+
+function detectScaleMax(
+  data: Buffer,
+  W: number,
+  C: number,
+  plotLeft: number,
+  plotRight: number,
+  plotTop: number,
+  plotBottom: number,
+  fallback: number,
+): number {
+  const plotH = plotBottom - plotTop
+
+  // Lluminositat mitjana per fila (mostrejant cada 4 columnes, ignorant teal/orange)
+  const rowLum: number[] = []
+  for (let y = plotTop; y <= plotBottom; y++) {
+    let sum = 0, cnt = 0
+    for (let x = plotLeft + 2; x <= plotRight - 2; x += 4) {
+      const i = (y * W + x) * C
+      const r = data[i], g = data[i + 1], b = data[i + 2]
+      if (isTeal(r, g, b) || isOrange(r, g, b)) continue
+      sum += (r + g + b) / 3
+      cnt++
+    }
+    rowLum.push(cnt > 0 ? sum / cnt : 255)
+  }
+
+  // Detecta transicions entre bandes: la mitjana dels 3 pixels abans ≠ dels 3 després
+  const THRESH = 5
+  const rawTrans: number[] = []
+  for (let i = 3; i < rowLum.length - 3; i++) {
+    const before = (rowLum[i - 1] + rowLum[i - 2] + rowLum[i - 3]) / 3
+    const after  = (rowLum[i + 1] + rowLum[i + 2] + rowLum[i + 3]) / 3
+    if (Math.abs(before - after) >= THRESH) rawTrans.push(i)
+  }
+
+  // Fusiona transicions properes (< 6 px = mateixa línia de quadrícula)
+  const gridlines: number[] = []
+  let last = -999
+  for (const y of rawTrans) {
+    if (y - last > 6) gridlines.push(y)
+    last = y
+  }
+
+  // Elimina transicions de vora (artefactes del límit plot/marge)
+  const EDGE = 12
+  const inner = gridlines.filter(y => y > EDGE && y < plotH - EDGE)
+
+  // Línies interiors = quadrícules a 10, 20, …, (max-10) km/h
+  // max = (count + 1) × 10
+  const count = inner.length
+  if (count >= 1 && count <= 7) {
+    const inferred = (count + 1) * 10
+    const valid = [20, 30, 40, 60, 80]
+    return valid.reduce((best, s) =>
+      Math.abs(s - inferred) < Math.abs(best - inferred) ? s : best
+    )
+  }
+
+  return fallback
+}
+
 // ---- Extracció de velocitat del gràfic (b.png) ----
 // Retorna speedFraction (0–1, fracció de l'eix Y) a més dels km/h calculats.
 // speedFraction permet calibrar l'escala real sense OCR.
@@ -72,11 +139,12 @@ interface WindExtraction {
   gustKmh: number | null
   speedKnots: number | null
   gustKnots: number | null
-  speedFraction: number | null  // per calibrar l'escala: implied_max = real_kmh / fraction
+  speedFraction: number | null
   gustFraction: number | null
+  detectedMaxKmh: number
 }
 
-async function extractWind(buf: Buffer, maxKmh: number): Promise<WindExtraction> {
+async function extractWind(buf: Buffer, fallbackMaxKmh: number): Promise<WindExtraction> {
   const { data, info } = await sharp(buf).raw().toBuffer({ resolveWithObject: true })
   const W = info.width, H = info.height, C = info.channels
   const plotLeft = Math.round(W * 0.06)
@@ -84,6 +152,8 @@ async function extractWind(buf: Buffer, maxKmh: number): Promise<WindExtraction>
   const plotTop = Math.round(H * 0.08)
   const plotBottom = Math.round(H * 0.81)
   const plotH = plotBottom - plotTop
+
+  const maxKmh = detectScaleMax(data, W, C, plotLeft, plotRight, plotTop, plotBottom, fallbackMaxKmh)
 
   type Col = { x: number; speedYs: number[]; gustYs: number[] }
   const columns: Col[] = []
@@ -101,7 +171,6 @@ async function extractWind(buf: Buffer, maxKmh: number): Promise<WindExtraction>
 
   // Busca el color de vent i ratxa per separat: la línia de ratxa (orange)
   // pot avançar uns píxels més a la dreta que la de vent (teal), i viceversa.
-  // Si usem una sola columna compartida, el color que hi manca surt com null.
   const sorted = columns.sort((a, b) => b.x - a.x)
   const speedCol = sorted.find((c) => c.speedYs.length > 0)
   const gustCol  = sorted.find((c) => c.gustYs.length > 0)
@@ -127,6 +196,7 @@ async function extractWind(buf: Buffer, maxKmh: number): Promise<WindExtraction>
     gustKnots: gKmh !== null ? Math.round(gKmh / 1.852) : null,
     speedFraction: sFrac,
     gustFraction: gFrac,
+    detectedMaxKmh: maxKmh,
   }
 }
 
@@ -186,9 +256,9 @@ export async function getAquariusReading(forceRefresh = false): Promise<Aquarius
     windGust: wind.gustKnots,
     speedFraction: wind.speedFraction,
     gustFraction: wind.gustFraction,
-    maxKmhUsed: maxKmh,
+    maxKmhUsed: wind.detectedMaxKmh,
     isApproximate: true,
-    note: "Velocitat: aprox. (escala Davis auto-calibrada). Direcció: fiable.",
+    note: `Velocitat: aprox. (escala detectada ${wind.detectedMaxKmh} km/h). Direcció: fiable.`,
     images: { speedChart: bUrl, direction: cUrl },
   }
 
