@@ -39,44 +39,6 @@ self.addEventListener("message", (event) => {
   }
 })
 
-// Push notifications
-self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : {}
-  const title = data.title || "El Vent - Alerta de condicions"
-  const options = {
-    body: data.body || "Hi ha bones condicions de vent previstes!",
-    icon: "/icons/icon-192.svg",
-    badge: "/icons/icon-192.svg",
-    tag: data.tag || "wind-alert",
-    data: { url: data.url || "/" },
-    vibrate: [200, 100, 200],
-    actions: [
-      { action: "open", title: "Veure previsió" },
-      { action: "dismiss", title: "Tancar" }
-    ]
-  }
-  event.waitUntil(self.registration.showNotification(title, options))
-})
-
-// Handle notification click
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close()
-  if (event.action === "dismiss") return
-  
-  event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === "/" && "focus" in client) {
-          return client.focus()
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(event.notification.data?.url || "/")
-      }
-    })
-  )
-})
-
 // Network-First for EVERYTHING — always get fresh content when online
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return
