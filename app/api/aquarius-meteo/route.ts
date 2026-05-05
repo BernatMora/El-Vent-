@@ -9,14 +9,14 @@ const ENDPOINT = "https://www.campingaquarius.com/rutasTiempos"
 const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 
 // Cache en memoria per instancia serverless (60s; la web origen refresca cada 30s)
-let cache: { at: number; urls: string[] } | null = null
+let cache: { at: number; speedUrl: string; directionUrl: string } | null = null
 const CACHE_MS = 60 * 1000
 
 export async function GET() {
   try {
-    if (cache && Date.now() - cache.at < CACHE_MS && cache.urls.length > 0) {
+    if (cache && Date.now() - cache.at < CACHE_MS) {
       return NextResponse.json(
-        { urls: cache.urls, source: ENDPOINT, cachedAt: new Date(cache.at).toISOString() },
+        { speedUrl: cache.speedUrl, directionUrl: cache.directionUrl, source: ENDPOINT, cachedAt: new Date(cache.at).toISOString() },
         { status: 200, headers: { "Cache-Control": "public, max-age=60" } },
       )
     }
@@ -33,7 +33,7 @@ export async function GET() {
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: `HTTP ${res.status}`, urls: cache?.urls ?? [] },
+        { error: `HTTP ${res.status}`, speedUrl: cache?.speedUrl, directionUrl: cache?.directionUrl },
         { status: 502 },
       )
     }
@@ -46,22 +46,29 @@ export async function GET() {
 
     if (files.length === 0) {
       return NextResponse.json(
-        { error: "Resposta inesperada del camping", raw: text.slice(0, 200), urls: cache?.urls ?? [] },
+        { error: "Resposta inesperada del camping", raw: text.slice(0, 200), speedUrl: cache?.speedUrl, directionUrl: cache?.directionUrl },
         { status: 502 },
       )
     }
 
-    const urls = files.map((f) => `${IMG_BASE}${f}`)
-    cache = { at: Date.now(), urls }
+    const speedFile = files.find((f) => /^b\d+\.png$/i.test(f))
+    const directionFile = files.find((f) => /^c\d+\.png$/i.test(f))
+    const fallbackSpeed = files[0]
+    const fallbackDirection = files[1] ?? files[0]
+
+    const speedUrl = `${IMG_BASE}${speedFile ?? fallbackSpeed}`
+    const directionUrl = `${IMG_BASE}${directionFile ?? fallbackDirection}`
+
+    cache = { at: Date.now(), speedUrl, directionUrl }
 
     return NextResponse.json(
-      { urls, source: ENDPOINT, cachedAt: new Date(cache.at).toISOString() },
+      { speedUrl, directionUrl, source: ENDPOINT, cachedAt: new Date(cache.at).toISOString() },
       { status: 200, headers: { "Cache-Control": "public, max-age=60" } },
     )
   } catch (err) {
     console.error("Error /api/aquarius-meteo:", err)
     return NextResponse.json(
-      { error: "Error obtenint dades del camping", urls: cache?.urls ?? [] },
+      { error: "Error obtenint dades del camping", speedUrl: cache?.speedUrl, directionUrl: cache?.directionUrl },
       { status: 500 },
     )
   }

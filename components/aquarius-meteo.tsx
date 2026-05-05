@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 
 interface AquariusResponse {
-  urls: string[]
+  speedUrl: string
+  directionUrl: string
   source: string
   cachedAt?: string
   error?: string
@@ -24,7 +25,7 @@ export function AquariusMeteo() {
       setError(null)
       const res = await fetch("/api/aquarius-meteo")
       const json: AquariusResponse = await res.json()
-      if (!res.ok || !json.urls?.length) {
+      if (!res.ok || !json.speedUrl || !json.directionUrl) {
         throw new Error(json.error || "Sense dades")
       }
       setData(json)
@@ -97,9 +98,9 @@ export function AquariusMeteo() {
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
               {error}
             </div>
-          ) : data?.urls?.length ? (
+          ) : data?.speedUrl || data?.directionUrl ? (
             <div className="flex flex-col gap-3">
-              {data.urls[0] && (
+              {data.speedUrl && (
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     Velocitat del vent
@@ -107,7 +108,7 @@ export function AquariusMeteo() {
                   <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={proxyImage(data.urls[0])}
+                      src={proxyImage(data.speedUrl)}
                       alt="Velocitat del vent"
                       className="w-full max-w-2xl object-contain"
                       loading="lazy"
@@ -115,7 +116,7 @@ export function AquariusMeteo() {
                   </div>
                 </div>
               )}
-              {data.urls[1] && (
+              {data.directionUrl && (
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     Direcció del vent
@@ -123,7 +124,7 @@ export function AquariusMeteo() {
                   <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={proxyImage(data.urls[1])}
+                      src={proxyImage(data.directionUrl)}
                       alt="Direcció del vent"
                       className="max-h-40 w-auto object-contain"
                       loading="lazy"
