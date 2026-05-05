@@ -36,6 +36,11 @@ export function AquariusMeteo() {
     }
   }
 
+  const proxyImage = (url: string) => {
+    const params = new URLSearchParams({ img: url, k: refreshKey.toString() })
+    return `/api/aquarius-image?${params}`
+  }
+
   useEffect(() => {
     load()
     // La web origen refresca cada 30s; mantenim 60s per estalviar peticions
@@ -102,7 +107,7 @@ export function AquariusMeteo() {
                   <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`${data.urls[0]}?k=${refreshKey}`}
+                      src={proxyImage(data.urls[0])}
                       alt="Velocitat del vent"
                       className="w-full max-w-2xl object-contain"
                       loading="lazy"
@@ -118,7 +123,7 @@ export function AquariusMeteo() {
                   <div className="flex w-full items-center justify-center rounded-md border bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`${data.urls[1]}?k=${refreshKey}`}
+                      src={proxyImage(data.urls[1])}
                       alt="Direcció del vent"
                       className="max-h-40 w-auto object-contain"
                       loading="lazy"
