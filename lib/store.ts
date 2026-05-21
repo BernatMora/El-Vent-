@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import { DEFAULT_SPOT, VALID_SPOTS } from "./spot-coordinates"
 
 type UserPreferences = {
@@ -20,41 +21,35 @@ type SpotStore = {
   userPreferences: UserPreferences
   setSelectedSpot: (spot: string) => void
   setUserPreferences: (preferences: UserPreferences) => void
-  hydrateStore: () => void
 }
 
-
-
-function getStoredSpot() {
-  if (typeof window === "undefined") {
-    return DEFAULT_SPOT
-  }
-
-  const storedSpot = window.localStorage.getItem("selected-spot")
-  return storedSpot && VALID_SPOTS.has(storedSpot) ? storedSpot : DEFAULT_SPOT
+const DEFAULT_PREFERENCES: UserPreferences = {
+  weight: 75,
+  level: "intermediate",
+  windSpeed: { min: 10, max: 20 },
+  windDirection: ["E", "SE", "NE"],
+  considerTemperature: true,
+  minTemperature: 18,
+  considerWaves: true,
+  maxWaveHeight: 1.5,
 }
 
-export const useSpotStore = create<SpotStore>((set) => ({
-  selectedSpot: DEFAULT_SPOT,
-  userPreferences: {
-    weight: 75,
-    level: "intermediate",
-    windSpeed: {
-      min: 10,
-      max: 20,
-    },
-    windDirection: ["E", "SE", "NE"],
-    considerTemperature: true,
-    minTemperature: 18,
-    considerWaves: true,
-    maxWaveHeight: 1.5,
-  },
-  setSelectedSpot: (spot) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("selected-spot", spot)
+export const useSpotStore = create<SpotStore>()(
+  persist(
+    (set) => ({
+      selectedSpot: DEFAULT_SPOT,
+      userPreferences: DEFAULT_PREFERENCES,
+      setSelectedSpot: (spot) => {
+        if (VALID_SPOTS.has(spot)) set({ selectedSpot: spot })
+      },
+      setUserPreferences: (preferences) => set({ userPreferences: preferences }),
+    }),
+    {
+      name: "el-vent-store",
+      partialize: (state) => ({
+        selectedSpot: state.selectedSpot,
+        userPreferences: state.userPreferences,
+      }),
     }
-    set({ selectedSpot: spot })
-  },
-  setUserPreferences: (preferences) => set({ userPreferences: preferences }),
-  hydrateStore: () => set({ selectedSpot: getStoredSpot() }),
-}))
+  )
+)

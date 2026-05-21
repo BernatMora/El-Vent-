@@ -1,30 +1,81 @@
-# Kitesurf app with wind
+# El Vent
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+Aplicació PWA de predicció meteorològica per a kitesurf a Sant Pere Pescador (Alt Empordà).  
+Combina múltiples fonts de dades, calibratge amb l'estació local Davis i recomanacions de mida de cometa.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/bernatmora-maccoms-projects/v0-kitesurf-app-with-wind)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/cySdZLgNJCt)
+**[vent-kite.netlify.app](https://vent-kite.netlify.app)**
 
-## Overview
+---
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Funcionalitats
 
-## Deployment
+- **Predicció multi-font** — Open-Meteo (principal), Meteocat (oficial Catalunya), WeatherAPI, OpenWeatherMap i fallback simulat
+- **Go / No-Go** — indicador instantani basat en rang de vent i direccions preferides de l'usuari
+- **Recomanació de cometa** — talla òptima calculada a partir del pes i nivell de l'usuari
+- **Gràfics Aquarius** — imatges directes de l'estació Davis de la zona (vent real vs. previsió)
+- **Calibratge local** — correcció de prediccions amb mesures reals de l'estació, desades a Supabase
+- **Notificacions push** — avís quan s'obre una finestra òptima de vent (via VAPID + Netlify Functions)
+- **PWA instal·lable** — funciona a iOS/Android com a app nativa, amb service worker i auto-update
 
-Your project is live at:
+## Spots disponibles
 
-**[https://vercel.com/bernatmora-maccoms-projects/v0-kitesurf-app-with-wind](https://vercel.com/bernatmora-maccoms-projects/v0-kitesurf-app-with-wind)**
+| Spot | Coordenades |
+| --- | --- |
+| Sant Pere Pescador (default) | 42.1860°N, 3.1050°E |
+| Kitesurf Point | 42.1860°N, 3.1050°E |
+| La Ballena | 42.1780°N, 3.0900°E |
+| Can Martinet | 42.1710°N, 3.0800°E |
+| La Rubina | 42.1950°N, 3.1250°E |
 
-## Build your app
+## Stack
 
-Continue building your app on:
+- **Framework**: Next.js 14 (App Router)
+- **UI**: Tailwind CSS + shadcn/ui + Recharts
+- **Estat**: Zustand amb persist middleware
+- **Base de dades**: Supabase (calibratge + subscripcions push)
+- **Deploy**: Netlify + `@netlify/plugin-nextjs`
 
-**[https://v0.dev/chat/projects/cySdZLgNJCt](https://v0.dev/chat/projects/cySdZLgNJCt)**
+## Configuració local
 
-## How It Works
+```bash
+npm install
+cp .env.example .env.local
+# Omple les variables necessàries (vegeu més avall)
+npm run dev
+```
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+### Variables d'entorn
+
+Copia `.env.example` a `.env.local`. Les variables marcades com a **requerides** fan que parts de l'app no funcionin si falten.
+
+| Variable | Necessitat | Descripció |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Requerit | URL del projecte Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Requerit | Anon key de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Recomanat | Per a operacions servidor (bypass RLS) |
+| `METEOCAT_API_KEY` | Opcional | Dades oficials de Catalunya (Meteocat) |
+| `WEATHER_API_KEY` | Opcional | WeatherAPI.com |
+| `OPENWEATHER_API_KEY` | Opcional | OpenWeatherMap |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Push | Clau pública VAPID |
+| `VAPID_PRIVATE_KEY` | Push | Clau privada VAPID |
+| `VAPID_SUBJECT` | Push | `mailto:…` per a les push |
+| `CRON_SECRET` | Push | Protegeix `/api/push/check-windows` |
+
+Per generar les claus VAPID:
+
+```bash
+node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.log(k);"
+```
+
+## Base de dades (Supabase)
+
+Executa els scripts de `scripts/` al SQL Editor de Supabase per crear les taules necessàries.  
+Per a les push notifications, consulta [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md).  
+Per a la integració de Meteocat, consulta [METEOCAT_INTEGRATION.md](METEOCAT_INTEGRATION.md).
+
+## Deploy a Netlify
+
+El projecte ja té `netlify.toml` i `@netlify/plugin-nextjs` configurat.  
+Afegeix les variables d'entorn a **Netlify → Site settings → Environment variables**.
+
+La función programada `netlify/functions/check-wind-windows.ts` s'executa cada hora (06:00–21:00 UTC) per enviar notificacions push quan hi ha finestres de vent òptimes.
