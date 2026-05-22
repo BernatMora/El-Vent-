@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react"
 
 interface AquariusResponse {
   speedUrl: string
-  directionUrl: string
+  directionUrl: string | null
   source: string
   cachedAt?: string
   error?: string
@@ -25,7 +25,7 @@ export function AquariusMeteo() {
       setError(null)
       const res = await fetch("/api/aquarius-meteo")
       const json: AquariusResponse = await res.json()
-      if (!res.ok || !json.speedUrl || !json.directionUrl) {
+      if (!res.ok || !json.speedUrl) {
         throw new Error(json.error || "Sense dades")
       }
       setData(json)

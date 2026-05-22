@@ -9,7 +9,7 @@ const ENDPOINT = "https://www.campingaquarius.com/rutasTiempos"
 const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 
 // Cache en memoria per instancia serverless (60s; la web origen refresca cada 30s)
-let cache: { at: number; speedUrl: string; directionUrl: string } | null = null
+let cache: { at: number; speedUrl: string; directionUrl: string | null } | null = null
 const CACHE_MS = 60 * 1000
 
 export async function GET() {
@@ -51,8 +51,11 @@ export async function GET() {
       )
     }
 
-    const speedUrl = `${IMG_BASE}${files[0]}`
-    const directionUrl = `${IMG_BASE}${files[1] ?? files[0]}`
+    const speedFile = files.find((f) => /^b\d+\.png$/i.test(f)) ?? files[0]
+    const directionFile = files.find((f) => /^c\d+\.png$/i.test(f)) ?? (files.length > 1 ? files[1] : null)
+
+    const speedUrl = `${IMG_BASE}${speedFile}`
+    const directionUrl = directionFile ? `${IMG_BASE}${directionFile}` : null
 
     cache = { at: Date.now(), speedUrl, directionUrl }
 
