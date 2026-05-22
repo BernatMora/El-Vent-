@@ -173,7 +173,10 @@ async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindEx
   const plotBottom = Math.round(H * 0.81)
   const plotH = plotBottom - plotTop
 
-  const detected = detectScaleMax(data, W, C, plotLeft, plotRight, plotTop, plotBottom)
+  // Use a wider left margin for scale detection to exclude Y-axis label text,
+  // which creates false luminosity transitions that inflate the detected scale.
+  const scaleLeft = Math.round(W * 0.13)
+  const detected = detectScaleMax(data, W, C, scaleLeft, plotRight, plotTop, plotBottom)
   if (detected !== null) lastGoodScaleKmh = detected
   // Prioritat: detecció actual → última escala bona → fallback configurat
   const maxKmh = detected ?? lastGoodScaleKmh ?? hardFallbackKmh
