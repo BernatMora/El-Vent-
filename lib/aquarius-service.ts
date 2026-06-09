@@ -8,7 +8,7 @@ const IMG_BASE = "https://www.campingaquarius.com/meteo/img/"
 const REFERER = "https://www.campingaquarius.com/la-camara-web"
 // Escala real del Davis WeatherLink del Camping Aquàrius: 0–40 km/h
 // Sobreescrivible amb AQUARIUS_MAX_KMH si l'escala canvia (auto-escala en vent fort)
-const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 20)
+const SCALE_MAX_KMH = Number(process.env.AQUARIUS_MAX_KMH ?? 40)
 
 export function getAquariusMaxKmh(): number {
   return SCALE_MAX_KMH
@@ -83,11 +83,12 @@ function detectScaleMax(
 ): number | null {
   const plotH = plotBottom - plotTop
 
-  // Busca columnes de fons pur (sense cap píxel teal/orange) per detectar bandes.
-  // Quan la barra és molt alta (vent baix en escala 0-20), tapa gairebé tot el fons.
+  // Prefereix la banda esquerra de l'eix Y per evitar que les barres de vent
+  // tapin les transicions de quadrícula a la part central/dreta del gràfic.
+  const scaleRight = Math.min(plotLeft + Math.round((plotRight - plotLeft) * 0.22), plotRight - 2)
   const allXs: number[] = []
   const bgXs: number[] = []
-  for (let x = plotLeft + 2; x <= plotRight - 2; x += 4) {
+  for (let x = plotLeft + 2; x <= scaleRight; x += 4) {
     allXs.push(x)
     let hasBand = false
     for (let y = plotTop; y <= plotBottom; y++) {
@@ -98,7 +99,7 @@ function detectScaleMax(
     }
     if (!hasBand) bgXs.push(x)
   }
-  // Si hi ha prou columnes de fons lliures, les fem servir; sinó, escanejem totes
+  // Si la part esquerda és massa compromesa per les barres, fem servir tota la trama.
   const scanColumns = bgXs.length >= 4 ? bgXs : allXs
 
   // Lluminositat mitjana per fila (ignorant teal/orange)
@@ -116,7 +117,7 @@ function detectScaleMax(
   }
 
   // Detecta transicions entre bandes: la mitjana dels 3 pixels abans ≠ dels 3 després
-  const THRESH = 5
+  const THRESH = 8
   const rawTrans: number[] = []
   for (let i = 3; i < rowLum.length - 3; i++) {
     const before = (rowLum[i - 1] + rowLum[i - 2] + rowLum[i - 3]) / 3
@@ -124,16 +125,16 @@ function detectScaleMax(
     if (Math.abs(before - after) >= THRESH) rawTrans.push(i)
   }
 
-  // Fusiona transicions properes (< 6 px = mateixa línia de quadrícula)
+  // Fusiona transicions properes (< 10 px = mateixa línia de quadrícula)
   const gridlines: number[] = []
   let last = -999
   for (const y of rawTrans) {
-    if (y - last > 6) gridlines.push(y)
+    if (y - last > 10) gridlines.push(y)
     last = y
   }
 
   // Elimina transicions de vora (artefactes del límit plot/marge)
-  const EDGE = 12
+  const EDGE = 16
   const inner = gridlines.filter(y => y > EDGE && y < plotH - EDGE)
 
   // Línies interiors = quadrícules a 10, 20, …, (max-10) km/h

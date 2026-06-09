@@ -13,56 +13,18 @@ export function ApiStatus() {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        // Primer provar Open-Meteo (prioritat màxima)
-        const response = await fetch(
-          "https://api.open-meteo.com/v1/forecast?latitude=42.1833&longitude=3.0833&hourly=wind_speed_10m&forecast_days=1"
-        )
+        const response = await fetch("/api/current")
 
         if (response.ok) {
+          const data = await response.json()
           setApiStatus("real")
-
-          // Verificar si Meteocat també està disponible via API interna
-          try {
-            const meteocatResponse = await fetch("/api/current")
-            if (meteocatResponse.ok) {
-              setDataSource("Open-Meteo + Meteocat (Sant Pere Pescador)")
-            } else {
-              setDataSource("Open-Meteo (Gratuït)")
-            }
-          } catch {
-            setDataSource("Open-Meteo (Gratuït)")
-          }
+          setDataSource(data.source || data.current?.source || "Dades meteorològiques")
         } else {
-          // Si Open-Meteo falla, provar Meteocat via API interna
-          try {
-            const meteocatResponse = await fetch("/api/current")
-            if (meteocatResponse.ok) {
-              setApiStatus("real")
-              setDataSource("Meteocat (Sant Pere Pescador)")
-            } else {
-              setApiStatus("fallback")
-              setDataSource("Dades simulades")
-            }
-          } catch {
-            setApiStatus("fallback")
-            setDataSource("Dades simulades")
-          }
+          throw new Error("API response not ok")
         }
       } catch (error) {
-        // Si Open-Meteo falla, provar Meteocat via API interna
-        try {
-          const meteocatResponse = await fetch("/api/current")
-          if (meteocatResponse.ok) {
-            setApiStatus("real")
-            setDataSource("Meteocat (Sant Pere Pescador)")
-          } else {
-            setApiStatus("fallback")
-            setDataSource("Dades simulades")
-          }
-        } catch {
-          setApiStatus("fallback")
-          setDataSource("Dades simulades")
-        }
+        setApiStatus("fallback")
+        setDataSource("Dades simulades")
       }
 
       setLastUpdate(

@@ -38,6 +38,10 @@ interface CurrentResponse {
 
 export function CurrentConditions() {
   const [loading, setLoading] = useState(true)
+  const [preferredSource, setPreferredSource] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'auto'
+    return localStorage.getItem('preferredWindSource') || 'auto'
+  })
   const [currentData, setCurrentData] = useState<MeteocatConditions | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +51,34 @@ export function CurrentConditions() {
     try {
       setLoading(true)
       setError(null)
-      
+      // Respect user preference: 'auto' | 'meteocat' | 'aquarius'
+      if (preferredSource === 'aquarius') {
+        // Map aquarium readings into the current shape
+        const ar = await fetch(`/api/aquarius-readings${forceRefresh ? '?nocache=' + Date.now() : ''}`)
+        if (!ar.ok) throw new Error('No s\'ha pogut obtenir la lectura del camping')
+        const aj = await ar.json()
+        const mapped: MeteocatConditions = {
+          windSpeed: aj.windSpeed ?? 0,
+          windDirection: aj.windDirection ?? 0,
+          windGust: aj.windGust ?? 0,
+          temperature: 0,
+          humidity: 0,
+          lastUpdate: aj.timestamp ?? new Date().toISOString(),
+          stationName: 'Camping Aquarius',
+          stationCode: undefined,
+          isReal: false,
+        }
+        setCurrentData(mapped)
+        setStationInfo('Camping Aquarius')
+        if (mapped.lastUpdate) {
+          const updateDate = new Date(mapped.lastUpdate)
+          setLastUpdated(
+            updateDate.toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" })
+          )
+        }
+        return
+      }
+
       const response = await fetch(`/api/current${forceRefresh ? '?nocache=' + Date.now() : ''}`)
       
       if (!response.ok) {
@@ -121,6 +152,13 @@ export function CurrentConditions() {
     loadCurrentData(true)
   }
 
+  const setPreference = (value: string) => {
+    setPreferredSource(value)
+    try { localStorage.setItem('preferredWindSource', value) } catch {}
+    // Reload data using new preference
+    loadCurrentData(true)
+  }
+
   // Calcular antiguitat de la lectura (només si és Meteocat real)
   const staleMinutes = (() => {
     if (!currentData?.isReal || !currentData?.lastUpdate) return null
@@ -163,7 +201,21 @@ export function CurrentConditions() {
         <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 md:flex-row">
           <div className="flex flex-col items-center md:items-start">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Condicions Actuals</h2>
+                <div className="ml-2 flex items-center gap-1">
+                  <button
+                    className={`text-xs px-2 py-0.5 rounded ${preferredSource==='auto' ? 'bg-slate-200' : 'bg-transparent'}`}
+                    onClick={() => setPreference('auto')}
+                  >Auto</button>
+                  <button
+                    className={`text-xs px-2 py-0.5 rounded ${preferredSource==='meteocat' ? 'bg-slate-200' : 'bg-transparent'}`}
+                    onClick={() => setPreference('meteocat')}
+                  >Meteocat</button>
+                  <button
+                    className={`text-xs px-2 py-0.5 rounded ${preferredSource==='aquarius' ? 'bg-slate-200' : 'bg-transparent'}`}
+                    onClick={() => setPreference('aquarius')}
+                  >Aquarius</button>
+                </div>
               {currentData?.isReal ? (
                 <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />

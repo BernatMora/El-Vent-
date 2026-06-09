@@ -42,6 +42,37 @@ export function AquariusReadings() {
   const load = async () => {
     try {
       setError(null)
+      const pref = typeof window !== 'undefined' ? localStorage.getItem('preferredWindSource') || 'auto' : 'auto'
+      if (pref !== 'aquarius') {
+        // Try server /api/current first (prefers Meteocat U2 when available)
+        try {
+          const cur = await fetch("/api/current")
+          if (cur.ok) {
+            const curJson = await cur.json()
+            const c = curJson.current
+            if (c && c.isReal && (curJson.stationCode === "U2" || String(curJson.source || "").includes("Meteocat"))) {
+              const mapped: AquariusReadings = {
+                source: curJson.source || "Meteocat",
+                timestamp: c.lastUpdate ?? new Date().toISOString(),
+                cachedAt: new Date().toISOString(),
+                windDirection: c.windDirection ?? null,
+                windSpeedKmh: c.windSpeed != null ? Math.round((c.windSpeed as number) * 1.852) : null,
+                windGustKmh: c.windGust != null ? Math.round((c.windGust as number) * 1.852) : null,
+                windSpeed: c.windSpeed ?? null,
+                windGust: c.windGust ?? null,
+                assumedMaxKmh: 0,
+                isApproximate: false,
+                note: `Dades Meteocat U2 (${curJson.station || curJson.stationCode})`,
+              }
+              setData(mapped)
+              return
+            }
+          }
+        } catch (e) {
+          // ignore and fallback to aquarium
+        }
+      }
+
       const res = await fetch("/api/aquarius-readings")
       const json: AquariusReadings = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`)

@@ -12,7 +12,10 @@ export const dynamic = "force-dynamic"
 
 export async function GET() {
   // Auto-calibratge en segon pla (cada 30 min com a màxim)
-  void runAutoCalibrationIfDue().catch(() => {})
+  // En serverless, await és més segur per evitar que la funció es talli
+  if (process.env.NODE_ENV === 'production') {
+    void runAutoCalibrationIfDue().catch(err => console.error("Auto-calibration error:", err))
+  }
 
   // 1) Intentar Meteocat (dades REALS de l'estació de Sant Pere Pescador)
   if (process.env.METEOCAT_API_KEY) {

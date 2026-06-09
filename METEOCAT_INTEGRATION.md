@@ -15,9 +15,9 @@ S'ha integrat el **Servei Meteorològic de Catalunya (Meteocat)** com a font de 
 - **Humitat**: Humitat relativa (quan està disponible)
 
 ### Estació meteorològica utilitzada:
-- **Estació**: Roses (CG)
-- **Ubicació**: La més propera a Sant Pere Pescador
-- **Coordenades**: 42.1833°N, 3.0833°E
+- **Estació Principal**: Sant Pere Pescador (U2)
+- **Ubicació**: Dins del propi spot (3m d'altitud)
+- **Fallbacks**: Torroella de Fluvià (W2), Ventalló (W3) i Roses (D4)
 
 ## Implementació tècnica
 
@@ -53,15 +53,15 @@ S'ha integrat el **Servei Meteorològic de Catalunya (Meteocat)** com a font de 
 
 1. **Estacions meteorològiques**:
    ```
-   GET https://api.meteo.cat/xema/v1/estacions/CG
+   GET https://api.meteo.cat/xema/v1/estacions/U2
    ```
-   Obtenir informació sobre l'estació de Roses
+   Obtenir informació sobre l'estació de Sant Pere Pescador
 
 2. **Variables mesurades**:
    ```
-   GET https://api.meteo.cat/xema/v1/estacions/CG/variables/mesurades?estat=ope
+   GET https://api.meteo.cat/xema/v1/variables/mesurades/{codi}/ultimes?codiEstacio=U2
    ```
-   Obtenir dades meteorològiques actuals de l'estació
+   Obtenir les últimes dades mesurades a l'estació
 
 3. **Predicció municipal**:
    ```
