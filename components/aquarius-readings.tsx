@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Wind, Compass, AlertTriangle } from "lucide-react"
+import { Wind, AlertTriangle } from "lucide-react"
 import { useCurrentReadings, type StationReading } from "@/hooks/use-current-readings"
 
 interface AquariusFallback {
@@ -28,6 +28,29 @@ function verdictColor(knots: number | null): { bg: string; text: string; label: 
   if (knots >= 14) return { bg: "bg-lime-100", text: "text-lime-800", label: "Just" }
   if (knots >= 10) return { bg: "bg-amber-100", text: "text-amber-800", label: "Fluix" }
   return { bg: "bg-slate-100", text: "text-slate-600", label: "Insuficient" }
+}
+
+function WindArrow({ direction }: { direction: number }) {
+  const rotationDegree = (direction + 180) % 360
+  return (
+    <svg
+      width="48"
+      height="48"
+      className="sm:w-14 sm:h-14"
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ transform: `rotate(${rotationDegree}deg)`, transition: "transform 0.5s ease" }}
+    >
+      <circle cx="12" cy="12" r="11" stroke="#3b82f6" strokeWidth="1" fill="white" />
+      <path
+        d="M12 4L8 20L12 16.5L16 20L12 4Z"
+        fill="#3b82f6"
+        stroke="#2563eb"
+        strokeWidth="0.5"
+      />
+      <circle cx="12" cy="12" r="1.5" fill="white" />
+    </svg>
+  )
 }
 
 export function AquariusReadings() {
@@ -63,7 +86,6 @@ export function AquariusReadings() {
   }, [meteocat, meteocatLoading, meteocatErr])
 
   const loading = meteocatLoading || fallbackLoading
-  const error = (meteocat === null && meteocatErr) ? fallbackError : null
   const sourceData: StationReading | AquariusFallback | null = meteocat ?? fallback
 
   if (loading && !sourceData) {
@@ -76,13 +98,13 @@ export function AquariusReadings() {
     )
   }
 
-  if (error && !sourceData) {
+  if (fallbackError && !sourceData) {
     return (
       <Card>
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-2 text-xs text-amber-800">
             <AlertTriangle className="h-4 w-4" />
-            <span>Lectura de la platja no disponible: {error}</span>
+            <span>Lectura de la platja no disponible: {fallbackError}</span>
           </div>
         </CardContent>
       </Card>
@@ -135,13 +157,19 @@ export function AquariusReadings() {
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/30 p-2">
-            <Compass className="h-4 w-4 text-blue-600 mb-1" />
-            <span className="text-xl sm:text-2xl font-bold leading-none">
-              {sourceData.windDirection !== null ? `${sourceData.windDirection}°` : "—"}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">
-              {sourceData.windDirection !== null ? degToCardinal(sourceData.windDirection) : "direcció"}
-            </span>
+            {sourceData.windDirection !== null ? (
+              <WindArrow direction={sourceData.windDirection} />
+            ) : (
+              <Wind className="h-4 w-4 text-slate-500" />
+            )}
+            <div className="mt-1 text-center">
+              <div className="text-xs font-bold leading-tight">
+                {sourceData.windDirection !== null ? degToCardinal(sourceData.windDirection) : "—"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {sourceData.windDirection !== null ? `${sourceData.windDirection}°` : "direcció"}
+              </div>
+            </div>
           </div>
         </div>
 
