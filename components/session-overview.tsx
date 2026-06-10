@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, CheckCircle2, Wind, XCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronRight, Wind, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
@@ -223,6 +223,7 @@ export function SessionOverview() {
   )
 
   const summary = daySummaries[0] ?? null
+  const nextDays = daySummaries.slice(1, 3) // Demà i Passat demà
 
   const toneStyles = {
     fluix: {
@@ -260,11 +261,12 @@ export function SessionOverview() {
       <CardContent className="p-4 animate-in fade-in-50 duration-500 sm:p-6">
         {loading || !summary ? (
           <div className="space-y-3">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Avui: el verdict principal */}
             <div className={`rounded-2xl border p-5 ${toneConfig.panel}`}>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider opacity-80">
@@ -281,6 +283,30 @@ export function SessionOverview() {
               )}
             </div>
 
+            {/* Demà i Passat demà: resum compacte */}
+            {nextDays.length > 0 && nextDays.map((day, i) => {
+              const st = toneStyles[day.tone]
+              const StIcon = st.Icon
+              return (
+                <button
+                  key={day.label}
+                  type="button"
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors hover:bg-slate-50 ${st.panel} opacity-80 hover:opacity-100`}
+                >
+                  <div className="flex items-center gap-3">
+                    <StIcon className="h-5 w-5 shrink-0" />
+                    <div>
+                      <div className="text-sm font-semibold">{day.label}</div>
+                      <div className="text-xs opacity-80">{day.statusLabel} · {day.bestWindow}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold">{day.bestWindowAvg} kn</span>
+                    <ChevronRight className="h-4 w-4 opacity-50" />
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </CardContent>

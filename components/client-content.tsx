@@ -54,8 +54,13 @@ export function ClientContent() {
   if (!isHydrated) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <div className="h-12 rounded-2xl bg-slate-100 animate-pulse" />
         <div className="h-24 rounded-2xl bg-slate-100 animate-pulse" />
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+        </div>
+        <div className="h-20 rounded-2xl bg-slate-100 animate-pulse" />
         <div className="h-72 rounded-2xl bg-slate-100 animate-pulse" />
       </div>
     )

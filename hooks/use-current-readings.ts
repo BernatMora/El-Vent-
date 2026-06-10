@@ -44,31 +44,80 @@ async function fetchMeteocatCurrent(): Promise<StationReading | null> {
   }
 }
 
+// Module-level shared state per refresh interval — evita duplicar peticions
+const sharedState = new Map<number, {
+  data: StationReading | null
+  loading: boolean
+  error: string | null
+  listeners: Set<() => void>
+  lastFetch: number
+  inflight: Promise<void> | null
+}>()
+
+function getOrCreateShared(refreshMs: number) {
+  let s = sharedState.get(refreshMs)
+  if (!s) {
+    s = { data: null, loading: true, error: null, listeners: new Set(), lastFetch: 0, inflight: null }
+    sharedState.set(refreshMs, s)
+  }
+  return s
+}
+
 export function useCurrentReadings(refreshMs = 60000) {
-  const [data, setData] = useState<StationReading | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const shared = getOrCreateShared(refreshMs)
+  const [data, setData] = useState<StationReading | null>(shared.data)
+  const [loading, setLoading] = useState(shared.loading)
+  const [error, setError] = useState<string | null>(shared.error)
+
+  const notify = () => {
+    for (const cb of shared.listeners) cb()
+  }
 
   const load = async () => {
-    try {
-      setError(null)
-      const reading = await fetchMeteocatCurrent()
-      setData(reading)
-    } catch (e: any) {
-      setError(e?.message || "Error carregant dades")
-    } finally {
-      setLoading(false)
-    }
+    if (shared.inflight) return shared.inflight
+    shared.inflight = (async () => {
+      shared.loading = true
+      notify()
+      try {
+        const reading = await fetchMeteocatCurrent()
+        shared.data = reading
+        shared.error = null
+      } catch (e: any) {
+        shared.error = e?.message || "Error carregant dades"
+      } finally {
+        shared.loading = false
+        shared.inflight = null
+        shared.lastFetch = Date.now()
+        notify()
+      }
+    })()
+    return shared.inflight
   }
 
   useEffect(() => {
-    load()
-    const interval = setInterval(load, refreshMs)
+    const update = () => {
+      setData(shared.data)
+      setLoading(shared.loading)
+      setError(shared.error)
+    }
+    shared.listeners.add(update)
+    update()
+
+    if (Date.now() - shared.lastFetch > refreshMs) {
+      load()
+    }
+
+    const interval = setInterval(() => {
+      if (Date.now() - shared.lastFetch >= refreshMs) load()
+    }, refreshMs)
+
     const onVisibility = () => {
-      if (document.visibilityState === "visible") load()
+      if (document.visibilityState === "visible" && Date.now() - shared.lastFetch >= refreshMs) load()
     }
     document.addEventListener("visibilitychange", onVisibility)
+
     return () => {
+      shared.listeners.delete(update)
       clearInterval(interval)
       document.removeEventListener("visibilitychange", onVisibility)
     }
