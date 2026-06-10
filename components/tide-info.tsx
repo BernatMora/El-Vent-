@@ -2,94 +2,119 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Waves, ArrowUp, ArrowDown, Clock } from "lucide-react"
+import { Waves, ArrowUp, ArrowDown, Clock, Sunrise, Sunset } from "lucide-react"
+
+const TIDE_CYCLE = 745 // 12h 25min en minuts
 
 interface TideData {
   currentLevel: "alta" | "baixa" | "pujant" | "baixant"
-  currentHeight: number // metres
-  nextHighTide: string // hora
-  nextLowTide: string // hora
-  tidePercent: number // 0-100, on 100 és marea alta
+  currentHeight: number
+  nextHighTide: string
+  nextLowTide: string
+  tidePercent: number
 }
 
-// Simulació de marees basada en cicles lunars (aproximació)
-// A la Mediterrània les marees són molt petites (20-30cm)
-function calculateTideData(): TideData {
+interface TideDay {
+  dayLabel: string
+  highTides: string[]
+  lowTides: string[]
+}
+
+function calculateAllTides(): { current: TideData; days: TideDay[] } {
   const now = new Date()
-  const hours = now.getHours()
-  const minutes = now.getMinutes()
-  const totalMinutes = hours * 60 + minutes
-  
-  // Cicle de marea aproximat de 12h 25min (745 minuts)
-  const tideCycle = 745
-  const cyclePosition = totalMinutes % tideCycle
-  const tidePercent = Math.round(50 + 50 * Math.sin((cyclePosition / tideCycle) * 2 * Math.PI))
-  
-  // Altura de marea (Mediterrània: 0.1m - 0.3m)
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const currentPhase = nowMinutes % TIDE_CYCLE
+
+  const tidePercent = Math.round(50 + 50 * Math.sin((currentPhase / TIDE_CYCLE) * 2 * Math.PI))
   const currentHeight = 0.1 + (tidePercent / 100) * 0.2
-  
-  // Determinar estat de la marea
+
   let currentLevel: TideData["currentLevel"]
-  if (tidePercent > 85) {
-    currentLevel = "alta"
-  } else if (tidePercent < 15) {
-    currentLevel = "baixa"
-  } else if (cyclePosition < tideCycle / 2) {
-    currentLevel = "pujant"
-  } else {
-    currentLevel = "baixant"
+  if (tidePercent > 85) currentLevel = "alta"
+  else if (tidePercent < 15) currentLevel = "baixa"
+  else if (currentPhase < TIDE_CYCLE / 2) currentLevel = "pujant"
+  else currentLevel = "baixant"
+
+  const toNextHigh = ((TIDE_CYCLE / 4 - currentPhase) % TIDE_CYCLE + TIDE_CYCLE) % TIDE_CYCLE
+  const toNextLow = ((3 * TIDE_CYCLE / 4 - currentPhase) % TIDE_CYCLE + TIDE_CYCLE) % TIDE_CYCLE
+
+  const nextHighTime = new Date(now.getTime() + toNextHigh * 60000)
+  const nextLowTime = new Date(now.getTime() + toNextLow * 60000)
+
+  // Previsió 7 dies
+  const days: TideDay[] = []
+  for (let offset = 0; offset < 7; offset++) {
+    const day = new Date(now)
+    day.setDate(day.getDate() + offset)
+    day.setHours(0, 0, 0, 0)
+
+    const dayLabel =
+      offset === 0 ? "Avui" :
+      offset === 1 ? "Demà" :
+      offset === 2 ? "Passat demà" :
+      `${day.getDate()}/${day.getMonth() + 1}`
+
+    const diffMs = day.getTime() - now.getTime()
+    const diffMin = diffMs / 60000
+    const midnightPhase = ((currentPhase + diffMin) % TIDE_CYCLE + TIDE_CYCLE) % TIDE_CYCLE
+
+    const highTides: string[] = []
+    const lowTides: string[] = []
+    for (let n = 0; n < 4; n++) {
+      const hp = TIDE_CYCLE / 4 + n * TIDE_CYCLE
+      if (hp >= midnightPhase && hp <= midnightPhase + 1440) {
+        const m = hp - midnightPhase
+        const hh = Math.floor(m / 60)
+        const mm = Math.round(m % 60)
+        if (hh >= 0 && hh < 24) highTides.push(`${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`)
+      }
+      const lp = 3 * TIDE_CYCLE / 4 + n * TIDE_CYCLE
+      if (lp >= midnightPhase && lp <= midnightPhase + 1440) {
+        const m = lp - midnightPhase
+        const hh = Math.floor(m / 60)
+        const mm = Math.round(m % 60)
+        if (hh >= 0 && hh < 24) lowTides.push(`${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`)
+      }
+      if (hp > midnightPhase + 1440 && lp > midnightPhase + 1440) break
+    }
+    days.push({ dayLabel, highTides: highTides.slice(0, 2), lowTides: lowTides.slice(0, 2) })
   }
-  
-  // Calcular properes marees
-  const minutesToNextHigh = cyclePosition < tideCycle / 4 
-    ? Math.round(tideCycle / 4 - cyclePosition)
-    : Math.round(tideCycle * 5 / 4 - cyclePosition)
-  
-  const minutesToNextLow = cyclePosition < tideCycle * 3 / 4
-    ? Math.round(tideCycle * 3 / 4 - cyclePosition)
-    : Math.round(tideCycle * 7 / 4 - cyclePosition)
-  
-  const nextHighTime = new Date(now.getTime() + minutesToNextHigh * 60000)
-  const nextLowTime = new Date(now.getTime() + minutesToNextLow * 60000)
-  
+
   return {
-    currentLevel,
-    currentHeight: Math.round(currentHeight * 100) / 100,
-    nextHighTide: `${nextHighTime.getHours().toString().padStart(2, '0')}:${nextHighTime.getMinutes().toString().padStart(2, '0')}`,
-    nextLowTide: `${nextLowTime.getHours().toString().padStart(2, '0')}:${nextLowTime.getMinutes().toString().padStart(2, '0')}`,
-    tidePercent
+    current: {
+      currentLevel,
+      currentHeight: Math.round(currentHeight * 100) / 100,
+      nextHighTide: `${nextHighTime.getHours().toString().padStart(2, '0')}:${nextHighTime.getMinutes().toString().padStart(2, '0')}`,
+      nextLowTide: `${nextLowTime.getHours().toString().padStart(2, '0')}:${nextLowTime.getMinutes().toString().padStart(2, '0')}`,
+      tidePercent,
+    },
+    days,
   }
 }
 
-const levelLabels = {
+const levelLabels: Record<string, string> = {
   alta: "Marea alta",
-  baixa: "Marea baixa", 
+  baixa: "Marea baixa",
   pujant: "Marea pujant",
-  baixant: "Marea baixant"
+  baixant: "Marea baixant",
 }
 
-const levelColors = {
+const levelColors: Record<string, string> = {
   alta: "text-blue-600 bg-blue-50",
   baixa: "text-amber-600 bg-amber-50",
   pujant: "text-cyan-600 bg-cyan-50",
-  baixant: "text-slate-600 bg-slate-50"
+  baixant: "text-slate-600 bg-slate-50",
 }
 
 export function TideInfo() {
-  const [tideData, setTideData] = useState<TideData | null>(null)
-  
+  const [data, setData] = useState<{ current: TideData; days: TideDay[] } | null>(null)
+
   useEffect(() => {
-    setTideData(calculateTideData())
-    
-    // Actualitzar cada 5 minuts
-    const interval = setInterval(() => {
-      setTideData(calculateTideData())
-    }, 5 * 60 * 1000)
-    
+    setData(calculateAllTides())
+    const interval = setInterval(() => setData(calculateAllTides()), 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
-  
-  if (!tideData) {
+
+  if (!data) {
     return (
       <Card>
         <CardContent className="p-4">
@@ -98,10 +123,9 @@ export function TideInfo() {
       </Card>
     )
   }
-  
-  const LevelIcon = tideData.currentLevel === "pujant" || tideData.currentLevel === "alta" 
-    ? ArrowUp 
-    : ArrowDown
+
+  const tideData = data.current
+  const LevelIcon = tideData.currentLevel === "pujant" || tideData.currentLevel === "alta" ? ArrowUp : ArrowDown
 
   return (
     <Card>
@@ -115,6 +139,7 @@ export function TideInfo() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Estat actual */}
         <div className={`flex items-center justify-between rounded-lg p-3 ${levelColors[tideData.currentLevel]}`}>
           <div className="flex items-center gap-2">
             <LevelIcon className="h-5 w-5" />
@@ -122,15 +147,14 @@ export function TideInfo() {
           </div>
           <span className="text-sm font-semibold">{tideData.currentHeight} m</span>
         </div>
-        
-        {/* Barra visual del nivell de marea */}
+
         <div className="relative h-2 overflow-hidden rounded-full bg-slate-200">
-          <div 
+          <div
             className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
             style={{ width: `${tideData.tidePercent}%` }}
           />
         </div>
-        
+
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-1.5 rounded-md bg-slate-50 p-2">
             <Clock className="h-3.5 w-3.5 text-blue-500" />
@@ -147,7 +171,27 @@ export function TideInfo() {
             </div>
           </div>
         </div>
-        
+
+        {/* Previsió 7 dies */}
+        <div className="pt-2">
+          <h4 className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Previsió 7 dies</h4>
+          <div className="divide-y rounded-lg border text-xs">
+            {data.days.map((day) => (
+              <div key={day.dayLabel} className="grid grid-cols-3 items-center gap-2 px-3 py-2 hover:bg-slate-50">
+                <div className="font-medium text-slate-700">{day.dayLabel}</div>
+                <div className="flex items-center gap-1.5 text-blue-600">
+                  <Sunrise className="h-3 w-3" />
+                  <span>{day.highTides.join(", ") || "—"}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-amber-600">
+                  <Sunset className="h-3 w-3" />
+                  <span>{day.lowTides.join(", ") || "—"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <p className="text-[10px] leading-relaxed text-slate-400">
           A Sant Pere les marees tenen poc impacte, però amb marea baixa hi ha més zona de sorra.
         </p>

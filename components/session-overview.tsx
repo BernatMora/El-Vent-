@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo } from "react"
-import { AlertTriangle, CheckCircle2, ChevronRight, Wind, XCircle } from "lucide-react"
+import { useMemo, useState } from "react"
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Wind, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { type ForecastDay, type ForecastHour } from "@/lib/api"
 import { useForecastData } from "@/hooks/use-forecast-data"
+import { getWindDirectionName } from "@/lib/utils"
 
 // Llindars de vent en nusos (5 categories)
 // Molt fluix:      < 10 kn  → no apte (platja)
@@ -45,6 +46,7 @@ type DaySummary = {
   reason: string
   decisionTitle: string
   decisionText: string
+  dayIndex: number
 }
 
 // Offshore per Sant Pere Pescador: vents de terra cap a mar
@@ -138,7 +140,7 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
   const { tone, statusLabel } = classifyWind(avgRounded)
   const label = getDayLabel(index)
   const scoreLabel = `${avgRounded} kn de mitjana`
-  const baseSummary = { label, score, scoreLabel, bestWindow, bestWindowAvg, gustQuality }
+  const baseSummary = { label, score, scoreLabel, bestWindow, bestWindowAvg, gustQuality, dayIndex: index }
 
   // Avís offshore (només té sentit quan es pot navegar)
   const offshoreWarning =
@@ -198,6 +200,7 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
 
 export function SessionOverview() {
   const { data: forecast, loading } = useForecastData()
+  const [expandedCard, setExpandedCard] = useState(-1)
 
   const daySummaries = useMemo(
     () => (forecast ?? []).slice(0, 7).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),
@@ -205,7 +208,7 @@ export function SessionOverview() {
   )
 
   const summary = daySummaries[0] ?? null
-  const nextDays = daySummaries.slice(1) // Demà fins a 7 dies
+  const nextDays = daySummaries.slice(1, 3).filter((d) => d.bestWindowAvg > 0) // Demà + Passat demà, només amb vent
 
   const toneStyles = {
     fluix: {
@@ -265,28 +268,67 @@ export function SessionOverview() {
               )}
             </div>
 
-            {/* Dies vinents: resum compacte */}
-            {nextDays.length > 0 && nextDays.map((day, i) => {
+            {/* Dies vinents: resum compacte desplegable */}
+            {nextDays.length > 0 && nextDays.map((day) => {
               const st = toneStyles[day.tone]
               const StIcon = st.Icon
+              const isOpen = expandedCard === day.dayIndex
+              const fDay = forecast?.[day.dayIndex]
+              const hours = (fDay?.hours ?? []).filter((h) => {
+                const n = parseInt(h.time.split(":")[0])
+                return n >= 9 && n <= 21
+              })
+
               return (
-                <button
-                  key={day.label}
-                  type="button"
-                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors hover:bg-slate-50 ${st.panel}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <StIcon className="h-5 w-5 shrink-0" />
-                    <div>
-                      <div className="text-sm font-semibold">{day.label}</div>
-                      <div className="text-xs opacity-80">{day.statusLabel} · {day.bestWindow}</div>
+                <div key={day.label} className="overflow-hidden rounded-xl border">
+                  <button
+                    type="button"
+                    className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-slate-50 ${st.panel}`}
+                    onClick={() => setExpandedCard(isOpen ? -1 : day.dayIndex)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <StIcon className="h-5 w-5 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">{day.label}</div>
+                        <div className="text-xs opacity-80 truncate">{day.statusLabel} · {day.bestWindow}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold">{day.bestWindowAvg} kn</span>
-                    <ChevronRight className="h-4 w-4 opacity-50" />
-                  </div>
-                </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold">{day.bestWindowAvg} kn</span>
+                      {isOpen
+                        ? <ChevronUp className="h-4 w-4 opacity-50" />
+                        : <ChevronDown className="h-4 w-4 opacity-50" />}
+                    </div>
+                  </button>
+
+                  {isOpen && hours.length > 0 && (
+                    <div className="border-t bg-white p-2 space-y-1">
+                      <div className="grid grid-cols-4 gap-1 rounded-md bg-gradient-to-r from-blue-50 to-cyan-50 px-2 py-1.5 text-center text-[10px] font-medium text-blue-900">
+                        <div>Hora</div>
+                        <div>Vent</div>
+                        <div>Dir.</div>
+                        <div>Raf.</div>
+                      </div>
+                      {hours.map((h) => (
+                        <div
+                          key={h.time}
+                          className="grid grid-cols-4 items-center gap-1 rounded-md border px-2 py-1 text-center text-[10px] hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="font-medium">{h.time}</div>
+                          <div className="font-semibold">{Math.round(h.windSpeed)} kn</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                              style={{ transform: `rotate(${(h.windDirection + 180) % 360}deg)` }}>
+                              <path d="M12 4L4 20L12 17L20 20L12 4Z" fill="#3b82f6" stroke="#3b82f6" strokeWidth="1" />
+                            </svg>
+                            <span className="text-[9px]">{getWindDirectionName(h.windDirection)}</span>
+                          </div>
+                          <div className="font-medium text-amber-600">{Math.round(h.windGust)} kn</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
