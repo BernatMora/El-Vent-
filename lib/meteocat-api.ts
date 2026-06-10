@@ -409,10 +409,16 @@ export async function getMeteocatTodayHistory(): Promise<MeteocatReading[]> {
     for (const variable of stationData.variables) {
       const code = variable.codi
       
-      for (const lecture of variable.lectures || []) {
+        for (const lecture of variable.lectures || []) {
         const time = lecture.data
         const lectureDate = new Date(time)
-        const hour = lectureDate.getUTCHours() + 2 // UTC a hora local (CEST)
+        const hour = Number(
+          new Intl.DateTimeFormat('ca-ES', {
+            hour: 'numeric',
+            hour12: false,
+            timeZone: 'Europe/Madrid',
+          }).format(lectureDate),
+        )
         
         // Només hores de navegació (9:00 - 21:00)
         if (hour < 9 || hour > 21) continue

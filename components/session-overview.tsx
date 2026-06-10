@@ -78,7 +78,7 @@ function getDayLabel(index: number) {
 // Calcula el vent efectiu: mitjana entre vent sostingut i ràfegues
 // Això representa millor el que realment notes quan fas kite
 function getEffectiveWind(hour: ForecastHour): number {
-  const gust = hour.windGust || hour.windSpeed
+  const gust = hour.windGust ?? hour.windSpeed
   // Ponderat: 60% vent sostingut + 40% ràfegues (el vent sostingut és més representatiu)
   return hour.windSpeed * 0.6 + gust * 0.4
 }

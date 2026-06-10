@@ -69,7 +69,7 @@ export function AquariusReadings() {
             }
           }
         } catch (e) {
-          // ignore and fallback to aquarium
+          // ignore and fallback to Aquarius
         }
       }
 

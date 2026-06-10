@@ -53,7 +53,7 @@ export function CurrentConditions() {
       setError(null)
       // Respect user preference: 'auto' | 'meteocat' | 'aquarius'
       if (preferredSource === 'aquarius') {
-        // Map aquarium readings into the current shape
+        // Map Aquarius readings into the current shape
         const ar = await fetch(`/api/aquarius-readings${forceRefresh ? '?nocache=' + Date.now() : ''}`)
         if (!ar.ok) throw new Error('No s\'ha pogut obtenir la lectura del camping')
         const aj = await ar.json()

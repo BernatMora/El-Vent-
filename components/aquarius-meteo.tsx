@@ -60,7 +60,7 @@ export function AquariusMeteo() {
             }
           }
         } catch (e) {
-          // ignore and fall back to aquarium images
+          // ignore and fall back to Aquarius images
         }
       }
 

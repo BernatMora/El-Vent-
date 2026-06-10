@@ -128,7 +128,7 @@ export function GoNoGoIndicator() {
     {
       min: userPreferences.windSpeed?.min ?? 12,
       max: userPreferences.windSpeed?.max ?? 22,
-      allowedDirs: userPreferences.windDirection ?? ["E", "SE", "NE", "N"],
+      allowedDirs: userPreferences.windDirection ?? ["E", "SE", "NE"],
     },
     !!data.isOffHours,
   )
