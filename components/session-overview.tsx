@@ -223,7 +223,7 @@ export function SessionOverview() {
   )
 
   const summary = daySummaries[0] ?? null
-  const nextDays = daySummaries.slice(1, 3) // Demà i Passat demà
+  const nextDays = daySummaries.slice(1) // Demà fins a 7 dies
 
   const toneStyles = {
     fluix: {
@@ -283,7 +283,7 @@ export function SessionOverview() {
               )}
             </div>
 
-            {/* Demà i Passat demà: resum compacte */}
+            {/* Dies vinents: resum compacte */}
             {nextDays.length > 0 && nextDays.map((day, i) => {
               const st = toneStyles[day.tone]
               const StIcon = st.Icon
