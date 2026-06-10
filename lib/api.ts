@@ -54,12 +54,7 @@ function getFromCache(spot: string): ForecastDay[] | null {
 
 // Cridat des de la ruta /api/forecast (costat servidor)
 export async function fetchForecastDataDirect(spot: string): Promise<ForecastDay[]> {
-  try {
-    return await getOpenMeteoForecast(spot)
-  } catch (err) {
-    console.warn("⚠️ Open-Meteo no disponible, usant fallback simulat:", err)
-    return generateSimulatedData()
-  }
+  return getOpenMeteoForecast(spot)
 }
 
 // Cridat des dels components (costat client) → passa per /api/forecast
@@ -101,39 +96,4 @@ export async function getForecastData(
   }
 
   return fetchForecastDataDirect(spot)
-}
-
-// ---- Fallback simulat (si Open-Meteo falla) ----
-
-function generateSimulatedData(): ForecastDay[] {
-  const days: ForecastDay[] = []
-  const now = new Date()
-
-  for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
-    const date = new Date(now.getTime() + dayOffset * 86_400_000)
-    const dateStr = date.toISOString().split("T")[0]
-    const hours: ForecastHour[] = []
-
-    for (let h = 9; h <= 21; h++) {
-      let speed = 2
-      if (h >= 11 && h <= 17) speed = 6 + Math.sin(((h - 11) / 6) * Math.PI) * 6
-      else if (h >= 9 && h < 11) speed = 2 + (h - 9) * 2
-      else if (h > 17 && h <= 19) speed = 8 - (h - 17) * 2
-      speed *= dayOffset === 1 ? 1.1 : dayOffset === 2 ? 0.9 : 1.0
-      speed += (Math.random() - 0.5) * 2
-      speed = Math.max(1, Math.round(speed))
-
-      hours.push({
-        time: `${h.toString().padStart(2, "0")}:00`,
-        windSpeed: speed,
-        windDirection: Math.round(75 + Math.random() * 30) % 360,
-        windGust: Math.round(Math.max(speed * 1.3, speed + 2)),
-        temperature: Math.round(14 + (h - 9) * 0.5 + dayOffset * 0.5),
-        source: "Simulat",
-      })
-    }
-
-    days.push({ date: dateStr, hours })
-  }
-  return days
 }

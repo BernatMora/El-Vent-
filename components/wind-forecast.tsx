@@ -1,14 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
+import { type ForecastHour } from "@/lib/api"
 import { formatDate, getWindDirectionName, getShoreType } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Brain, CheckCircle2, ChevronDown, ChevronUp, CloudRain, RefreshCw } from "lucide-react"
-
-const SPOT = "sant-pere-pescador"
+import { useForecastData } from "@/hooks/use-forecast-data"
 
 // Colors per qualitat de vent (nusos), no per confiança del model
 function windDot(kn: number) {
@@ -33,36 +32,8 @@ function windText(kn: number) {
 }
 
 export function WindForecast() {
-  const [loading, setLoading] = useState(true)
-  const [forecast, setForecast] = useState<ForecastDay[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const { data: forecast, loading, error, refresh } = useForecastData()
   const [expandedDay, setExpandedDay] = useState(0)
-
-  const loadForecast = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await getForecastData(SPOT)
-      if (!data || data.length === 0) {
-        setError("No s'han pogut carregar les dades de previsió")
-        return
-      }
-      setForecast(data)
-    } catch (err) {
-      console.error("Error carregant la previsió:", err)
-      setError("No s'han pogut carregar les dades ara mateix.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadForecast()
-  }, [])
-
-  const hasSimulatedData = forecast.some((day) =>
-    day.hours?.some((hour: ForecastHour) => hour.source?.includes("Simulat")),
-  )
 
   const renderWindArrow = (direction: number) => {
     const rotationDegree = (direction + 180) % 360
@@ -110,21 +81,13 @@ export function WindForecast() {
         ) : error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
             <p>{error}</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={loadForecast}>
+            <Button variant="outline" size="sm" className="mt-3" onClick={refresh}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Torna-ho a provar
             </Button>
           </div>
         ) : forecast && forecast.length > 0 ? (
           <>
-            {hasSimulatedData && (
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                <div className="font-medium">Mode de continuïtat actiu</div>
-                <div className="text-xs text-amber-800 sm:text-sm">
-                  Algunes franges es mostren amb dades simulades o guardades localment perquè la connexió o la font en temps real no està disponible.
-                </div>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               {forecast.map((day, dayIndex) => {

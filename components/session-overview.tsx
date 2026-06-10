@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { AlertTriangle, CheckCircle2, ChevronRight, Wind, XCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { type ForecastDay, type ForecastHour, getForecastData } from "@/lib/api"
-
-const SPOT = "sant-pere-pescador"
+import { type ForecastDay, type ForecastHour } from "@/lib/api"
+import { useForecastData } from "@/hooks/use-forecast-data"
 
 // Llindars de vent en nusos (5 categories)
 // Molt fluix:      < 10 kn  → no apte (platja)
@@ -198,27 +197,10 @@ function buildDaySummary(day: ForecastDay, index: number): DaySummary | null {
 }
 
 export function SessionOverview() {
-  const [loading, setLoading] = useState(true)
-  const [forecast, setForecast] = useState<ForecastDay[]>([])
-
-  useEffect(() => {
-    async function loadForecast() {
-      try {
-        setLoading(true)
-        const data = await getForecastData(SPOT)
-        setForecast(data)
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadForecast()
-  }, [])
+  const { data: forecast, loading } = useForecastData()
 
   const daySummaries = useMemo(
-    () => forecast.slice(0, 7).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),
+    () => (forecast ?? []).slice(0, 7).map((day, index) => buildDaySummary(day, index)).filter((item): item is DaySummary => item !== null),
     [forecast],
   )
 
@@ -291,7 +273,7 @@ export function SessionOverview() {
                 <button
                   key={day.label}
                   type="button"
-                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors hover:bg-slate-50 ${st.panel} opacity-80 hover:opacity-100`}
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors hover:bg-slate-50 ${st.panel}`}
                 >
                   <div className="flex items-center gap-3">
                     <StIcon className="h-5 w-5 shrink-0" />
