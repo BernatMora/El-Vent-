@@ -17,6 +17,7 @@ export async function GET() {
       windSpeed: reading.windSpeed,
       windGust: reading.windGust,
       assumedMaxKmh: reading.maxKmhUsed,
+      scaleMethod: reading.scaleMethod,
       isApproximate: reading.isApproximate,
       note: reading.note,
       images: reading.images,
