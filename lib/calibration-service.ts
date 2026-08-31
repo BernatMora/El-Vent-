@@ -83,8 +83,8 @@ function emptyFactors(): Record<DirectionCategory, DirectionFactor> {
 
 function loadState(): CalibrationState {
   try {
-    if (fs.existsSync(STATE_PATH())) {
-      const raw = JSON.parse(fs.readFileSync(STATE_PATH(), "utf8"))
+    if (fs.existsSync(resolveStatePath())) {
+      const raw = JSON.parse(fs.readFileSync(resolveStatePath(), "utf8"))
       return {
         lastRun: raw.lastRun ?? null,
         factors: { ...emptyFactors(), ...(raw.factors || {}) },
@@ -99,7 +99,7 @@ function loadState(): CalibrationState {
 
 function saveState(state: CalibrationState) {
   try {
-    fs.writeFileSync(STATE_PATH(), JSON.stringify(state, null, 2))
+    fs.writeFileSync(resolveStatePath(), JSON.stringify(state, null, 2))
   } catch (err) {
     console.warn("No s'ha pogut escriure l'estat de calibratge:", err)
   }
@@ -176,7 +176,7 @@ export async function getCalibrationStatus() {
       ? new Date(new Date(state.lastRun).getTime() + RUN_INTERVAL_MS).toISOString()
       : null,
     intervalMinutes: RUN_INTERVAL_MS / 60000,
-    stateDir: path.dirname(STATE_PATH()),
+    stateDir: path.dirname(resolveStatePath()),
     totalSamples: Object.values(state.factors).reduce((sum, f) => sum + f.sampleCount, 0),
     factors: await getCalibrationFactors(),
   }
