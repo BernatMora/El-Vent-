@@ -38,6 +38,103 @@ async function fetchPng(url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer())
 }
 
+// ---- Detecció d'escala per etiquetes de l'eix Y ----
+// El Davis auto-escala la gràfica (0-20, 0-30, 0-40, 0-60 km/h). Llegim les
+// etiquetes numèriques (0, 10, 20...) com a files de text fosc a la franja
+// esquerra i busquem la seqüència aritmètica més llarga: n etiquetes = n-1
+// intervals de 10 km/h. Immune a la franja nocturna lila i a les corbes,
+// que eren les fonts d'error del mètode anterior (transicions de lluminositat).
+// Retorna maxKmh + files d'anclatge del 0 i del màxim, per mapar fraccions exactes.
+
+interface ScaleDetection {
+  maxKmh: number
+  yZero: number
+  yMax: number
+}
+
+export function detectScaleByLabels(
+  data: Buffer,
+  W: number,
+  H: number,
+  C: number,
+): ScaleDetection | null {
+  // Franja d'etiquetes: entre el marge esquerre i el començament del plot.
+  // Amb la mida nativa 500x180: x 27..41 (les corbes comencen a x=43).
+  const x0 = Math.round(W * 0.055)
+  const x1 = Math.round(W * 0.082)
+  if (x1 - x0 < 6) return null
+
+  // Files amb text fosc (etiquetes) — llindar alt perquè el text és gris
+  const darkRows: number[] = []
+  for (let y = 0; y < H; y++) {
+    let dark = 0
+    for (let x = x0; x < x1; x++) {
+      const i = (y * W + x) * C
+      const lum = (data[i] + data[i + 1] + data[i + 2]) / 3
+      if (lum < 175) dark++
+    }
+    if (dark >= 2) darkRows.push(y)
+  }
+  if (darkRows.length < 8) return null
+
+  // Agrupa files conscuctives -> un centre per etiqueta
+  const centers: number[] = []
+  let start = darkRows[0], prev = darkRows[0]
+  for (let i = 1; i <= darkRows.length; i++) {
+    if (i < darkRows.length && darkRows[i] - prev <= 3) {
+      prev = darkRows[i]
+      continue
+    }
+    centers.push((start + prev) / 2)
+    if (i < darkRows.length) {
+      start = darkRows[i]
+      prev = darkRows[i]
+    }
+  }
+  if (centers.length < 3) return null
+
+  // Clúster de gaps: el més poblat amb tolerància ±3 (el títol "km/h" i la
+  // marca horària generen gaps aliens; la quadrícula real és equidistant)
+  const gaps = centers.slice(1).map((c, i) => c - centers[i])
+  if (gaps.length < 2) return null
+  const sortedGaps = [...gaps].sort((a, b) => a - b)
+  let bestCluster: number[] = []
+  for (let i = 0; i < sortedGaps.length; i++) {
+    const cluster = [sortedGaps[i]]
+    for (let j = i + 1; j < sortedGaps.length; j++) {
+      if (sortedGaps[j] - sortedGaps[i] <= 3) cluster.push(sortedGaps[j])
+      else break
+    }
+    if (cluster.length > bestCluster.length) bestCluster = cluster
+  }
+  const gap = bestCluster.reduce((a, b) => a + b, 0) / bestCluster.length
+  if (gap < 10 || gap < H * 0.12 || gap > H * 0.35) return null
+
+  // Seqüència aritmètica més llarga amb passos ~gap
+  let bestStart = 0, bestLen = 1
+  let curStart = 0, curLen = 1
+  for (let i = 0; i < gaps.length; i++) {
+    if (Math.abs(gaps[i] - gap) <= Math.max(3, gap * 0.12)) {
+      curLen++
+      if (curLen > bestLen) { bestLen = curLen; bestStart = curStart }
+    } else {
+      curStart = i + 1
+      curLen = 1
+    }
+  }
+  const run = centers.slice(bestStart, bestStart + bestLen)
+  if (run.length < 3) return null
+
+  // n intervals de 10 km/h; valida contra escales Davis conegudes
+  const maxKmhRaw = (run.length - 1) * 10
+  const valid = [20, 30, 40, 60, 80]
+  const maxKmh = valid.reduce((b, s) =>
+    Math.abs(s - maxKmhRaw) < Math.abs(b - maxKmhRaw) ? s : b
+  )
+  if (Math.abs(maxKmh - maxKmhRaw) > 5) return null
+  return { maxKmh, yZero: run[run.length - 1], yMax: run[0] }
+}
+
 // ---- Extracció de direcció de la brúixola (c.png) ----
 // rMin=0.50, rMax=0.78: evita el text de graus (dins 0.30–0.49) i els marcadors
 // cardinals (~0.82) i el marc exterior (~0.88). Sense filtre textBand.
@@ -163,6 +260,7 @@ interface WindExtraction {
   speedFraction: number | null
   gustFraction: number | null
   detectedMaxKmh: number
+  scaleMethod: "labels" | "luminosity" | "last-good" | "fallback"
 }
 
 async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindExtraction> {
@@ -174,13 +272,26 @@ async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindEx
   const plotBottom = Math.round(H * 0.81)
   const plotH = plotBottom - plotTop
 
-  // Use a wider left margin for scale detection to exclude Y-axis label text,
-  // which creates false luminosity transitions that inflate the detected scale.
+  // 1) Detecció per etiquetes (robusta): max + anclatge exacte de files 0/max
+  const labels = detectScaleByLabels(data, W, H, C)
+
+  // 2) Fallback: detecció per transicions de lluminositat (mètode antic)
   const scaleLeft = Math.round(W * 0.13)
   const detected = detectScaleMax(data, W, C, scaleLeft, plotRight, plotTop, plotBottom)
   if (detected !== null) lastGoodScaleKmh = detected
-  // Prioritat: detecció actual → última escala bona → fallback configurat
-  const maxKmh = detected ?? lastGoodScaleKmh ?? hardFallbackKmh
+  // Prioritat: etiquetes → detecció actual → última escala bona → fallback configurat
+  const maxKmh = labels?.maxKmh ?? detected ?? lastGoodScaleKmh ?? hardFallbackKmh
+
+  // Anclatge: si tenim les files reals del 0 i del màxim, la fracció es calcula
+  // entre etiquetes (corrigeix el ~9% d'error dels marges fixos 8%/81%)
+  const fracDen = labels ? labels.yZero - labels.yMax : plotH
+  const toFraction = (y: number | null) => {
+    if (y === null) return null
+    if (labels && fracDen > 10) {
+      return Math.max(0, Math.min(1, (labels.yZero - y) / fracDen))
+    }
+    return Math.max(0, Math.min(1, (plotBottom - y) / plotH))
+  }
 
   type Col = { x: number; speedYs: number[]; gustYs: number[] }
   const columns: Col[] = []
@@ -206,9 +317,6 @@ async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindEx
   const speedY = speedCol ? avg(speedCol.speedYs) : null
   const gustY  = gustCol  ? avg(gustCol.gustYs)   : null
 
-  const toFraction = (y: number | null) =>
-    y !== null ? Math.max(0, Math.min(1, (plotBottom - y) / plotH)) : null
-
   const sFrac = toFraction(speedY)
   const gFrac = toFraction(gustY)
 
@@ -224,6 +332,7 @@ async function extractWind(buf: Buffer, hardFallbackKmh: number): Promise<WindEx
     speedFraction: sFrac,
     gustFraction: gFrac,
     detectedMaxKmh: maxKmh,
+    scaleMethod: labels ? "labels" : detected !== null ? "luminosity" : lastGoodScaleKmh !== null ? "last-good" : "fallback",
   }
 }
 
@@ -239,6 +348,7 @@ export interface AquariusReading {
   speedFraction: number | null
   gustFraction: number | null
   maxKmhUsed: number
+  scaleMethod?: string
   isApproximate: boolean
   note: string
   images: { speedChart: string; direction: string }
@@ -284,8 +394,11 @@ export async function getAquariusReading(forceRefresh = false): Promise<Aquarius
     speedFraction: wind.speedFraction,
     gustFraction: wind.gustFraction,
     maxKmhUsed: wind.detectedMaxKmh,
-    isApproximate: true,
-    note: `Velocitat: aprox. (escala detectada ${wind.detectedMaxKmh} km/h). Direcció: fiable.`,
+    scaleMethod: wind.scaleMethod,
+    isApproximate: wind.scaleMethod !== "labels",
+    note: wind.scaleMethod === "labels"
+      ? `Velocitat: escala llegida de l'eix (${wind.detectedMaxKmh} km/h, anclatge 0-${wind.detectedMaxKmh}). Direcció: fiable.`
+      : `Velocitat: aprox. (escala detectada ${wind.detectedMaxKmh} km/h, mètode ${wind.scaleMethod}). Direcció: fiable.`,
     images: { speedChart: bUrl, direction: cUrl },
   }
 

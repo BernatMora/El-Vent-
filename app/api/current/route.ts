@@ -11,10 +11,15 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function GET() {
-  // Auto-calibratge en segon pla (cada 30 min com a màxim)
-  // En serverless, await és més segur per evitar que la funció es talli
-  if (process.env.NODE_ENV === 'production') {
-    void runAutoCalibrationIfDue().catch(err => console.error("Auto-calibration error:", err))
+  // Auto-calibratge: AWAIT obligatori en serverless — un `void` fire-and-forget
+  // es congela quan l'handler retorna i la passada mai acaba (era el motiu
+  // pel què /api/calibration informava lastRun: null des de sempre).
+  // Amb await: Meteocat serveix dades cachades (<5 min de rtt) i la passada
+  // afegeix ~1-2 s a la resposta. runAutoCalibrationIfDue ja és idempotent.
+  try {
+    await runAutoCalibrationIfDue()
+  } catch (err) {
+    console.error("Auto-calibration error:", err)
   }
 
   // 1) Intentar Meteocat (dades REALS de l'estació de Sant Pere Pescador)

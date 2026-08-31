@@ -10,8 +10,13 @@ import {
 export const runtime = "nodejs"
 
 export async function GET(request: Request) {
-  // Auto-calibratge en segon pla (cada 30 min com a màxim)
-  void runAutoCalibrationIfDue().catch(() => {})
+  // Auto-calibratge: AWAIT (vegeu /api/current — un `void` en serverless no
+  // acaba mai la passada). Idempotent: si no toca, retorna tot seguit.
+  try {
+    await runAutoCalibrationIfDue()
+  } catch {
+    // no blocar la previsió per un error de calibratge
+  }
 
   const { searchParams } = new URL(request.url)
   const requestedSpot = searchParams.get("spot")
