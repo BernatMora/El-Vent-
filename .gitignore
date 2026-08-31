@@ -40,3 +40,8 @@ next-env.d.ts
 .calibration-state.json
 .meteocat-usage.json
 
+
+# secrets — mai al repo (configurar a Netlify UI)
+.env
+.calibration-state.json
+.meteocat-usage.json
