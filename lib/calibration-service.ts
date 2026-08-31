@@ -176,6 +176,7 @@ export async function getCalibrationStatus() {
       ? new Date(new Date(state.lastRun).getTime() + RUN_INTERVAL_MS).toISOString()
       : null,
     intervalMinutes: RUN_INTERVAL_MS / 60000,
+    stateDir: path.dirname(STATE_PATH()),
     totalSamples: Object.values(state.factors).reduce((sum, f) => sum + f.sampleCount, 0),
     factors: await getCalibrationFactors(),
   }
