@@ -5,11 +5,32 @@
 // Estat persistit a `.calibration-state.json` (com `.meteocat-usage.json`).
 
 import fs from "fs"
+import os from "os"
 import path from "path"
 import { getMultiModelForecast } from "./open-meteo-api"
 import { getMeteocatCurrentConditions } from "./meteocat-api"
 
-const STATE_PATH = path.join(process.cwd(), ".calibration-state.json")
+// A serverless (Netlify) process.cwd() és READ-ONLY: el calibratge corria,
+// escrivia sense èxit (excepció capturada a saveState) i cada invocació nova
+// partia de zero — per això els factors mai acumulaven mostres. Mateix patrimoni
+// de resolució que .meteocat-usage.json: /tmp quan la plataforma ho demana.
+function resolveStatePath(): string {
+  const fileName = ".calibration-state.json"
+  const candidates = [
+    process.env.METEOCAT_CACHE_DIR,
+    process.env.NETLIFY ? os.tmpdir() : null,
+    process.env.VERCEL ? os.tmpdir() : null,
+    process.cwd(),
+    os.tmpdir(),
+  ].filter(Boolean) as string[]
+  for (const dir of candidates) {
+    try {
+      fs.accessSync(dir, fs.constants.W_OK)
+      return path.join(dir, fileName)
+    } catch {}
+  }
+  return path.join(os.tmpdir(), fileName)
+}
 
 const RUN_INTERVAL_MS = 60 * 60 * 1000 // cada 60 minuts (alineat amb la freqüència fixa de Meteocat)
 const HISTORY_LIMIT = 200
@@ -62,8 +83,8 @@ function emptyFactors(): Record<DirectionCategory, DirectionFactor> {
 
 function loadState(): CalibrationState {
   try {
-    if (fs.existsSync(STATE_PATH)) {
-      const raw = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"))
+    if (fs.existsSync(STATE_PATH())) {
+      const raw = JSON.parse(fs.readFileSync(STATE_PATH(), "utf8"))
       return {
         lastRun: raw.lastRun ?? null,
         factors: { ...emptyFactors(), ...(raw.factors || {}) },
@@ -78,7 +99,7 @@ function loadState(): CalibrationState {
 
 function saveState(state: CalibrationState) {
   try {
-    fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2))
+    fs.writeFileSync(STATE_PATH(), JSON.stringify(state, null, 2))
   } catch (err) {
     console.warn("No s'ha pogut escriure l'estat de calibratge:", err)
   }
