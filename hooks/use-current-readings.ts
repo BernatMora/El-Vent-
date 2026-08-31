@@ -16,8 +16,11 @@ export interface StationReading {
 }
 
 async function fetchMeteocatCurrent(): Promise<StationReading | null> {
-  const pref = typeof window !== "undefined" ? localStorage.getItem("preferredWindSource") || "auto" : "auto"
-  if (pref === "aquarius") return null
+  // Per defecte la targeta "A la platja ara" mostra el Davis del Càmping
+  // Aquàrius (la referència visual de l'usuari, la mateixa que la web oficial).
+  // Meteocat U2 només si l'usuari ho tria explícitament (preferredWindSource).
+  const pref = typeof window !== "undefined" ? localStorage.getItem("preferredWindSource") || "aquarius" : "aquarius"
+  if (pref !== "meteocat") return null
 
   try {
     const cur = await fetch("/api/current")

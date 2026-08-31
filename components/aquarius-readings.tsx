@@ -15,6 +15,7 @@ interface AquariusFallback {
   timestamp: string | null
   isApproximate: boolean
   assumedMaxKmh: number
+  note?: string | null
 }
 
 function degToCardinal(deg: number): string {
@@ -54,13 +55,30 @@ function WindArrow({ direction }: { direction: number }) {
 }
 
 export function AquariusReadings() {
-  const { data: meteocat, loading: meteocatLoading, error: meteocatErr } = useCurrentReadings()
+  const { data: meteocat, loading: meteocatLoading, error: meteocatErr, refresh } = useCurrentReadings()
   const [fallback, setFallback] = useState<AquariusFallback | null>(null)
   const [fallbackLoading, setFallbackLoading] = useState(false)
   const [fallbackError, setFallbackError] = useState<string | null>(null)
+  const [pref, setPref] = useState<string>("aquarius")
+
+  // Carrega la preferència un cop muntat (localStorage no és accessible en SSR)
+  useEffect(() => {
+    const saved = localStorage.getItem("preferredWindSource")
+    if (saved === "meteocat" || saved === "aquarius") setPref(saved)
+  }, [])
+
+  const changePref = (p: string) => {
+    setPref(p)
+    localStorage.setItem("preferredWindSource", p)
+    setFallback(null)
+    setFallbackError(null)
+    refresh()
+  }
 
   useEffect(() => {
-    if (meteocat !== null || meteocatLoading) return
+    if (pref === "meteocat") return // el hook de Meteocat ja gestiona aquest cas
+    if (meteocat !== null) return
+    if (meteocatLoading) return
     if (meteocatErr) {
       setFallbackError(meteocatErr)
       return
@@ -79,6 +97,7 @@ export function AquariusReadings() {
           timestamp: json.timestamp ?? null,
           isApproximate: json.isApproximate ?? true,
           assumedMaxKmh: json.assumedMaxKmh ?? 0,
+          note: json.note ?? null,
         })
       })
       .catch((e) => setFallbackError(e.message))
@@ -136,9 +155,27 @@ export function AquariusReadings() {
               {updated ? `Actualitzat ${updated}` : "Lectura en directe"}
             </span>
           </div>
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${verdict.bg} ${verdict.text}`}>
-            {verdict.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden text-[10px]">
+              <button
+                onClick={() => changePref("aquarius")}
+                className={`px-2 py-0.5 ${pref === "aquarius" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900" : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                title="Anemòmetre del Càmping Aquàrius (Davis)"
+              >
+                Càmping
+              </button>
+              <button
+                onClick={() => changePref("meteocat")}
+                className={`px-2 py-0.5 ${pref === "meteocat" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900" : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                title="Estació Meteocat U2 (platja)"
+              >
+                Meteocat
+              </button>
+            </div>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${verdict.bg} ${verdict.text}`}>
+              {verdict.label}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -183,7 +220,12 @@ export function AquariusReadings() {
 
         {"isApproximate" in sourceData && sourceData.isApproximate && (
           <p className="mt-2 text-[10px] text-muted-foreground italic">
-            Velocitat aprox. extreta del gràfic (escala {(sourceData as AquariusFallback).assumedMaxKmh} km/h). Direcció exacta.
+            {sourceData.note || `Velocitat aprox. extreta del gràfic (escala ${(sourceData as AquariusFallback).assumedMaxKmh} km/h). Direcció exacta.`}
+          </p>
+        )}
+        {!("isApproximate" in sourceData) && (
+          <p className="mt-2 text-[10px] text-muted-foreground italic">
+            Mesures reals de l'estació Meteocat U2 · Sant Pere Pescador
           </p>
         )}
       </CardContent>
