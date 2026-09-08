@@ -76,7 +76,6 @@ export function AquariusReadings() {
   }
 
   useEffect(() => {
-    if (pref === "meteocat") return // el hook de Meteocat ja gestiona aquest cas
     if (meteocat !== null) return
     if (meteocatLoading) return
     if (meteocatErr) {
