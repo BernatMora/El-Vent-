@@ -136,6 +136,7 @@ export function WindForecast() {
                           <div>Vent</div>
                           <div>Dir.</div>
                           <div>Raf.</div>
+                          <div className="sm:hidden">Pluja</div>
                           <div className="hidden sm:block">Shore</div>
                           <div className="hidden sm:block">Temp</div>
                           <div className="hidden sm:block">Pluja</div>
@@ -180,6 +181,15 @@ export function WindForecast() {
                                       </span>
                                     )
                                   })()}
+                                </div>
+
+                                <div className="sm:hidden text-xs">
+                                  {(hour.precipitation ?? 0) > 0 ? (
+                                    <span className="inline-flex items-center justify-center gap-0.5 text-blue-600 font-medium">
+                                      <CloudRain className="h-3 w-3" />
+                                      <span>{hour.precipitation}</span>
+                                    </span>
+                                  ) : null}
                                 </div>
 
                                 <div className="hidden sm:block text-xs text-slate-700">
