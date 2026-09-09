@@ -85,7 +85,7 @@ interface ModelData {
 export async function getMultiModelForecast(spot?: string): Promise<any[]> {
   const coords = getSpotCoords(spot)
   const modelNames = Object.keys(WEATHER_MODELS)
-  
+
   console.log(`Obtenint dades de ${modelNames.length} models per ${spot ?? "default"}...`)
 
   // Consultar tots els models en paral·lel
@@ -93,7 +93,7 @@ export async function getMultiModelForecast(spot?: string): Promise<any[]> {
     try {
       const url = `${OPEN_METEO_BASE}/forecast?` +
         `latitude=${coords.lat}&longitude=${coords.lon}&` +
-        `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m&` +
+        `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation&` +
         `models=${model}&` +
         `wind_speed_unit=kn&` +
         `timezone=Europe/Madrid&` +
@@ -101,7 +101,7 @@ export async function getMultiModelForecast(spot?: string): Promise<any[]> {
 
       const response = await fetch(url)
       if (!response.ok) return null
-      
+
       const data = await response.json()
       return {
         model,
@@ -115,7 +115,7 @@ export async function getMultiModelForecast(spot?: string): Promise<any[]> {
   })
 
   const results = (await Promise.all(modelPromises)).filter((r): r is ModelData => r !== null)
-  
+
   if (results.length === 0) {
     throw new Error("Cap model meteorològic disponible")
   }
@@ -139,7 +139,7 @@ function combineModelData(modelResults: ModelData[]): any[] {
   time.forEach((timestamp: string, index: number) => {
     const date = new Date(timestamp)
     const hour = date.getHours()
-    
+
     if (hour >= 9 && hour <= 21) {
       const dateKey = timestamp.split('T')[0]
       if (!dayGroups[dateKey]) dayGroups[dateKey] = []
@@ -149,6 +149,7 @@ function combineModelData(modelResults: ModelData[]): any[] {
       const windGusts: { value: number; weight: number }[] = []
       const windDirections: { value: number; weight: number }[] = []
       const temperatures: { value: number; weight: number }[] = []
+      const precipitations: { value: number; weight: number }[] = []
       const modelNames: string[] = []
 
       for (const result of modelResults) {
@@ -159,6 +160,7 @@ function combineModelData(modelResults: ModelData[]): any[] {
         windGusts.push({ value: hourly.wind_gusts_10m?.[index] ?? hourly.wind_speed_10m[index] * 1.3, weight: result.weight })
         windDirections.push({ value: hourly.wind_direction_10m?.[index] ?? 0, weight: result.weight })
         temperatures.push({ value: hourly.temperature_2m?.[index] ?? 20, weight: result.weight })
+        precipitations.push({ value: hourly.precipitation?.[index] ?? 0, weight: result.weight })
         modelNames.push(WEATHER_MODELS[result.model as keyof typeof WEATHER_MODELS].name)
       }
 
@@ -167,6 +169,7 @@ function combineModelData(modelResults: ModelData[]): any[] {
       const avgWindGust = weightedAverage(windGusts)
       const avgWindDir = weightedAverageDirection(windDirections)
       const avgTemp = weightedAverage(temperatures)
+      const avgPrecipitation = weightedAverage(precipitations)
 
       // Calcular confiança basada en concordança entre models
       const confidence = calculateConfidence(windSpeeds)
@@ -178,7 +181,7 @@ function combineModelData(modelResults: ModelData[]): any[] {
         windGust: Math.round(Math.max(avgWindGust, avgWindSpeed)),
         temperature: Math.round(avgTemp),
         humidity: 70,
-        precipitation: 0,
+        precipitation: Math.round(avgPrecipitation * 10) / 10,
         source: `Multi-model (${modelNames.slice(0, 3).join(', ')})`,
         confidence: Math.round(confidence * 100) / 100,
         isReal: true,
@@ -219,15 +222,15 @@ function weightedAverageDirection(values: { value: number; weight: number }[]): 
 
 function calculateConfidence(values: { value: number; weight: number }[]): number {
   if (values.length < 2) return 0.7
-  
+
   // Calcular desviació estàndard relativa
   const avg = weightedAverage(values)
   if (avg === 0) return 0.8
-  
+
   const variance = values.reduce((sum, v) => sum + Math.pow(v.value - avg, 2), 0) / values.length
   const stdDev = Math.sqrt(variance)
   const relativeStdDev = stdDev / avg
-  
+
   // Més concordança = més confiança (0.5 a 0.95)
   // Si els models difereixen molt (>30%), baixa confiança
   // Si concorden (<10%), alta confiança
@@ -258,7 +261,7 @@ export async function getOpenMeteoForecast(spot?: string): Promise<any[]> {
       `forecast_days=7`
 
     const response = await fetch(url)
-    
+
     if (!response.ok) {
       throw new Error(`Error HTTP d'Open-Meteo: ${response.status}`)
     }
@@ -277,14 +280,14 @@ function processOpenMeteoData(data: any): any[] {
     throw new Error("Dades d'Open-Meteo invàlides")
   }
 
-  const { 
-    time, 
-    temperature_2m, 
-    relative_humidity_2m, 
-    wind_speed_10m, 
-    wind_direction_10m, 
+  const {
+    time,
+    temperature_2m,
+    relative_humidity_2m,
+    wind_speed_10m,
+    wind_direction_10m,
     wind_gusts_10m,
-    precipitation 
+    precipitation
   } = data.hourly
 
   // Agrupar per dies
@@ -293,11 +296,11 @@ function processOpenMeteoData(data: any): any[] {
   time.forEach((timestamp: string, index: number) => {
     const date = new Date(timestamp)
     const hour = date.getHours()
-    
+
     // Només incloure hores de navegació (9:00 - 21:00)
     if (hour >= 9 && hour <= 21) {
       const dateKey = timestamp.split('T')[0]
-      
+
       if (!dayGroups[dateKey]) {
         dayGroups[dateKey] = []
       }
